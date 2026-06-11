@@ -1,4 +1,4 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="zh-CN">
 <head>
   <meta charset="utf-8" />
@@ -112,13 +112,25 @@
       height: 38px;
       display: grid;
       place-items: center;
-      border: 1px solid var(--red);
+      border: 0;
       border-radius: 999px;
       color: var(--red);
       font-size: 12px;
-      font-weight: 800;
+      font-weight: 950;
+      letter-spacing: -0.04em;
       position: relative;
       margin-bottom: 6px;
+      isolation: isolate;
+      overflow: visible;
+      background:
+        radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.98) 0 48%, transparent 49%),
+        conic-gradient(from 225deg, rgba(211, 17, 69, 0.96), rgba(34, 126, 166, 0.78), rgba(25, 145, 97, 0.68), rgba(211, 17, 69, 0.96));
+      box-shadow:
+        0 10px 24px rgba(211, 17, 69, 0.1),
+        inset 0 1px 0 rgba(255, 255, 255, 0.92);
+      text-shadow:
+        -0.7px 0 rgba(34, 126, 166, 0.38),
+        0.7px 0 rgba(211, 17, 69, 0.22);
     }
 
     .logo::after {
@@ -1955,17 +1967,24 @@
       height: 54px;
       margin-bottom: 0;
       background:
-        radial-gradient(circle at 50% 50%, rgba(211, 17, 69, 0.1), transparent 54%),
-        #fff;
+        radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.98) 0 43%, rgba(255, 255, 255, 0.82) 44% 54%, transparent 55%),
+        radial-gradient(circle at 72% 32%, rgba(34, 126, 166, 0.16), transparent 22%),
+        conic-gradient(from 220deg, rgba(211, 17, 69, 1) 0 26%, rgba(34, 126, 166, 0.9) 36% 50%, rgba(25, 145, 97, 0.78) 64%, rgba(211, 17, 69, 0.94) 84% 100%);
       box-shadow:
-        0 10px 24px rgba(211, 17, 69, 0.12),
-        inset 0 1px 0 rgba(255, 255, 255, 0.84);
+        0 14px 30px rgba(211, 17, 69, 0.14),
+        0 0 0 8px rgba(255, 255, 255, 0.56),
+        inset 0 1px 0 rgba(255, 255, 255, 0.92);
       animation: brand-logo-float 5.8s ease-in-out infinite;
     }
 
     .login-brand .logo::after {
       display: block;
-      border-color: rgba(211, 17, 69, 0.18);
+      width: 72px;
+      height: 72px;
+      border-color: rgba(211, 17, 69, 0.16);
+      background:
+        radial-gradient(circle at 80% 60%, rgba(25, 145, 97, 0.72) 0 3px, transparent 4px),
+        radial-gradient(circle at 22% 34%, rgba(34, 126, 166, 0.68) 0 2px, transparent 3px);
       animation: pulse-ring 3.8s ease-out infinite;
     }
 
@@ -1977,6 +1996,10 @@
       border: 1px solid transparent;
       border-top-color: rgba(34, 126, 166, 0.34);
       border-right-color: rgba(211, 17, 69, 0.26);
+      border-bottom-color: rgba(25, 145, 97, 0.18);
+      background:
+        radial-gradient(circle at 80% 18%, rgba(34, 126, 166, 0.88) 0 2px, transparent 3px),
+        radial-gradient(circle at 18% 76%, rgba(211, 17, 69, 0.76) 0 2px, transparent 3px);
       animation: brand-orbit 7.2s linear infinite;
     }
 
@@ -2433,13 +2456,16 @@
       border-radius: 22px;
       border-color: rgba(34, 126, 166, 0.2);
       background:
+        radial-gradient(circle at 18% 12%, rgba(211, 17, 69, 0.08), transparent 5.8rem),
+        radial-gradient(circle at 82% 72%, rgba(34, 126, 166, 0.07), transparent 7.5rem),
         linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(248, 252, 253, 0.9)),
         linear-gradient(rgba(34, 126, 166, 0.035) 1px, transparent 1px),
         linear-gradient(90deg, rgba(34, 126, 166, 0.035) 1px, transparent 1px);
-      background-size: auto, 28px 28px, 28px 28px;
+      background-size: auto, auto, auto, 28px 28px, 28px 28px;
       box-shadow:
         0 24px 62px rgba(31, 41, 51, 0.09),
         inset 0 1px 0 rgba(255, 255, 255, 0.9);
+      overflow: hidden;
     }
 
     .board > .screen:not(:first-child) .nav::before {
@@ -2452,11 +2478,27 @@
     }
 
     .board > .screen:not(:first-child) .nav::after {
-      display: none;
-      top: 132px;
-      left: 18px;
-      right: 18px;
-      background: linear-gradient(90deg, transparent, rgba(34, 126, 166, 0.2), rgba(211, 17, 69, 0.16), transparent);
+      display: block;
+      content: "";
+      position: absolute;
+      left: 36px;
+      top: 44px;
+      bottom: 146px;
+      width: 1px;
+      background:
+        linear-gradient(180deg, transparent, rgba(211, 17, 69, 0.24), rgba(34, 126, 166, 0.18), rgba(25, 145, 97, 0.18), transparent);
+      box-shadow:
+        54px 0 0 rgba(34, 126, 166, 0.035),
+        108px 0 0 rgba(211, 17, 69, 0.025);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .board > .screen:not(:first-child) .nav > a,
+    .board > .screen:not(:first-child) .nav > .nav-spacer,
+    .board > .screen:not(:first-child) .nav > .nav-tools {
+      position: relative;
+      z-index: 1;
     }
 
     .board > .screen:not(:first-child) .nav > .logo,
@@ -2512,10 +2554,11 @@
       overflow-wrap: normal;
       background:
         radial-gradient(circle at 12% 50%, color-mix(in srgb, var(--nav-accent, var(--blue)), transparent 86%), transparent 3.4rem),
+        linear-gradient(90deg, color-mix(in srgb, var(--nav-accent, var(--blue)), transparent 94%) 0 0 / 44px 100% no-repeat),
         linear-gradient(rgba(34, 126, 166, 0.04) 1px, transparent 1px),
         linear-gradient(90deg, rgba(34, 126, 166, 0.04) 1px, transparent 1px),
         rgba(255, 255, 255, 0.62);
-      background-size: auto, 18px 18px, 18px 18px, auto;
+      background-size: auto, auto, 18px 18px, 18px 18px, auto;
       box-shadow:
         inset 0 1px 0 rgba(255, 255, 255, 0.86),
         0 8px 18px rgba(31, 41, 51, 0.025);
@@ -2528,6 +2571,7 @@
       color: var(--red);
       background:
         radial-gradient(circle at 12% 50%, color-mix(in srgb, var(--nav-accent, var(--red)), transparent 72%), transparent 3.8rem),
+        linear-gradient(90deg, color-mix(in srgb, var(--nav-accent, var(--red)), transparent 84%) 0 0 / 54px 100% no-repeat),
         linear-gradient(90deg, rgba(211, 17, 69, 0.14), rgba(211, 17, 69, 0.05)),
         rgba(255, 255, 255, 0.76);
       box-shadow:
@@ -2573,18 +2617,26 @@
     }
 
     .board > .screen:not(:first-child) .nav a:nth-of-type(3) {
-      --nav-accent: var(--yellow);
+      --nav-accent: #2d8aa5;
     }
 
     .board > .screen:not(:first-child) .nav a:nth-of-type(4) {
-      --nav-accent: var(--green);
+      --nav-accent: #256f86;
     }
 
     .board > .screen:not(:first-child) .nav a:nth-of-type(5) {
-      --nav-accent: #7b8fa7;
+      --nav-accent: var(--yellow);
     }
 
     .board > .screen:not(:first-child) .nav a:nth-of-type(6) {
+      --nav-accent: var(--green);
+    }
+
+    .board > .screen:not(:first-child) .nav a:nth-of-type(7) {
+      --nav-accent: #7b8fa7;
+    }
+
+    .board > .screen:not(:first-child) .nav a:nth-of-type(8) {
       --nav-accent: var(--dark);
     }
 
@@ -2596,9 +2648,14 @@
     .nav-spacer {
       position: relative;
       flex: 1 1 88px;
-      min-height: 34px;
-      margin: 0 0 2px;
-      border-radius: 16px;
+      min-height: 124px;
+      margin: 2px 0 4px;
+      border: 1px solid rgba(34, 126, 166, 0.06);
+      border-radius: 18px;
+      background:
+        radial-gradient(circle at 26% 82%, rgba(25, 145, 97, 0.1), transparent 2.8rem),
+        radial-gradient(circle at 78% 20%, rgba(211, 17, 69, 0.08), transparent 3.2rem),
+        linear-gradient(180deg, rgba(255, 255, 255, 0.24), rgba(255, 255, 255, 0.04));
       overflow: hidden;
       isolation: isolate;
     }
@@ -2606,11 +2663,20 @@
     .nav-spacer::before {
       content: "";
       position: absolute;
-      left: 18px;
-      right: 18px;
+      left: 28px;
+      right: 28px;
       top: 50%;
-      height: 1px;
-      background: linear-gradient(90deg, transparent, rgba(34, 126, 166, 0.2), rgba(211, 17, 69, 0.18), transparent);
+      height: 62px;
+      border: 1px solid rgba(34, 126, 166, 0.13);
+      border-left-color: transparent;
+      border-right-color: transparent;
+      border-radius: 999px;
+      transform: translateY(-50%) rotate(-7deg);
+      background:
+        radial-gradient(circle at 20% 50%, rgba(34, 126, 166, 0.34) 0 2px, transparent 3px),
+        radial-gradient(circle at 52% 50%, rgba(211, 17, 69, 0.3) 0 2px, transparent 3px),
+        radial-gradient(circle at 82% 50%, rgba(25, 145, 97, 0.3) 0 2px, transparent 3px);
+      animation: nav-orbit-sway 7.4s ease-in-out infinite;
     }
 
     .nav-spacer::after {
@@ -2688,9 +2754,26 @@
       }
     }
 
+    @keyframes nav-orbit-sway {
+      0%,
+      100% {
+        transform: translateY(-50%) rotate(-7deg) scaleX(0.96);
+        opacity: 0.58;
+      }
+      50% {
+        transform: translateY(-50%) rotate(6deg) scaleX(1.03);
+        opacity: 0.82;
+      }
+    }
+
     .board > .screen:not(:first-child) .search {
       height: 38px;
       border-radius: 10px;
+      background:
+        linear-gradient(90deg, rgba(255, 255, 255, 0.78), rgba(248, 252, 253, 0.72)),
+        linear-gradient(rgba(34, 126, 166, 0.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(34, 126, 166, 0.035) 1px, transparent 1px);
+      background-size: auto, 16px 16px, 16px 16px;
     }
 
     .board > .screen:not(:first-child) .nav-actions {
@@ -3605,16 +3688,23 @@
       height: 60px;
       margin: 0;
       background:
-        radial-gradient(circle at 50% 50%, rgba(211, 17, 69, 0.1), transparent 54%),
-        #fff;
+        radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.98) 0 43%, rgba(255, 255, 255, 0.82) 44% 54%, transparent 55%),
+        radial-gradient(circle at 72% 32%, rgba(34, 126, 166, 0.14), transparent 22%),
+        conic-gradient(from 220deg, rgba(211, 17, 69, 1) 0 26%, rgba(34, 126, 166, 0.9) 36% 50%, rgba(25, 145, 97, 0.78) 64%, rgba(211, 17, 69, 0.94) 84% 100%);
       box-shadow:
-        0 10px 24px rgba(211, 17, 69, 0.12),
+        0 14px 30px rgba(211, 17, 69, 0.13),
+        0 0 0 8px rgba(255, 255, 255, 0.52),
         inset 0 1px 0 rgba(255, 255, 255, 0.96);
     }
 
     .app-capsule .logo::after {
       display: block;
-      border-color: rgba(211, 17, 69, 0.18);
+      width: 78px;
+      height: 78px;
+      border-color: rgba(211, 17, 69, 0.16);
+      background:
+        radial-gradient(circle at 80% 60%, rgba(25, 145, 97, 0.72) 0 3px, transparent 4px),
+        radial-gradient(circle at 22% 34%, rgba(34, 126, 166, 0.68) 0 2px, transparent 3px);
       animation: pulse-ring 3.8s ease-out infinite;
     }
 
@@ -3626,6 +3716,10 @@
       border: 1px solid transparent;
       border-top-color: rgba(34, 126, 166, 0.34);
       border-right-color: rgba(211, 17, 69, 0.26);
+      border-bottom-color: rgba(25, 145, 97, 0.18);
+      background:
+        radial-gradient(circle at 80% 18%, rgba(34, 126, 166, 0.88) 0 2px, transparent 3px),
+        radial-gradient(circle at 18% 76%, rgba(211, 17, 69, 0.76) 0 2px, transparent 3px);
       animation: brand-orbit 7.2s linear infinite;
     }
 
@@ -3703,19 +3797,19 @@
     }
 
     .capsule-current strong {
-      height: 42px;
-      min-width: 132px;
+      height: 36px;
+      min-width: 118px;
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      padding: 0 18px;
+      padding: 0 16px;
       border: 1px solid rgba(211, 17, 69, 0.18);
       border-radius: 999px;
       background:
         radial-gradient(circle at 12% 50%, rgba(211, 17, 69, 0.12), transparent 4rem),
         rgba(255, 255, 255, 0.76);
       color: var(--ink);
-      font-size: 22px;
+      font-size: 17px;
       font-weight: 900;
       line-height: 1;
       white-space: nowrap;
@@ -3741,7 +3835,11 @@
     .board > .screen:nth-child(2) .capsule-current,
     .board > .screen:nth-child(3) .capsule-current,
     .board > .screen:nth-child(4) .capsule-current,
-    .board > .screen:nth-child(5) .capsule-current {
+    .board > .screen:nth-child(5) .capsule-current,
+    .board > .screen:nth-child(6) .capsule-current,
+    .board > .screen:nth-child(7) .capsule-current,
+    .board > .screen:nth-child(8) .capsule-current,
+    .board > .screen:nth-child(9) .capsule-current {
       transform: translateY(-2px);
     }
 
@@ -3750,6 +3848,991 @@
     }
 
     .board > .screen:nth-child(4) .app-capsule .brand-signal {
+      margin-left: 0;
+    }
+
+    .rag-hero,
+    .rag-health {
+      position: absolute;
+      top: 144px;
+      height: 96px;
+      z-index: 2;
+      border: 1px solid rgba(34, 126, 166, 0.16);
+      border-radius: 18px;
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(248, 252, 253, 0.84)),
+        linear-gradient(rgba(34, 126, 166, 0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(34, 126, 166, 0.025) 1px, transparent 1px);
+      background-size: auto, 24px 24px, 24px 24px;
+      box-shadow: 0 16px 38px rgba(31, 41, 51, 0.06);
+      overflow: hidden;
+    }
+
+    .rag-hero {
+      left: 300px;
+      width: 610px;
+      display: grid;
+      grid-template-columns: 68px 1fr;
+      gap: 16px;
+      align-items: center;
+      padding: 16px 20px;
+    }
+
+    .rag-hero::after,
+    .rag-health::after {
+      content: "";
+      position: absolute;
+      left: 24px;
+      right: 24px;
+      bottom: 18px;
+      height: 1px;
+      background: linear-gradient(90deg, rgba(34, 126, 166, 0.28), rgba(211, 17, 69, 0.15), transparent);
+    }
+
+    .rag-orb {
+      position: relative;
+      width: 58px;
+      height: 58px;
+      border-radius: 18px;
+      background:
+        radial-gradient(circle at 32% 32%, rgba(255, 255, 255, 0.96) 0 14%, transparent 15%),
+        radial-gradient(circle at 72% 72%, rgba(25, 145, 97, 0.72) 0 7%, transparent 8%),
+        conic-gradient(from 210deg, rgba(34, 126, 166, 0.92), rgba(211, 17, 69, 0.78), rgba(25, 145, 97, 0.74), rgba(34, 126, 166, 0.92));
+      box-shadow: 0 16px 30px rgba(34, 126, 166, 0.14), 0 0 0 10px rgba(34, 126, 166, 0.06);
+      animation: rag-orb-breathe 5.8s ease-in-out infinite;
+    }
+
+    .rag-orb::before,
+    .rag-orb::after {
+      content: "";
+      position: absolute;
+      border: 1px solid rgba(34, 126, 166, 0.2);
+      border-radius: 999px;
+      inset: -10px -16px;
+      transform: rotate(-12deg);
+    }
+
+    .rag-orb::after {
+      inset: -16px -8px;
+      border-color: rgba(211, 17, 69, 0.16);
+      transform: rotate(18deg);
+    }
+
+    .rag-hero h2,
+    .rag-health h2 {
+      margin: 0;
+      color: var(--ink);
+      font-size: 22px;
+      line-height: 1.1;
+    }
+
+    .rag-hero p,
+    .rag-health p {
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .rag-health {
+      left: 934px;
+      right: 70px;
+      padding: 18px 22px;
+    }
+
+    .rag-health-grid {
+      position: absolute;
+      right: 22px;
+      top: 20px;
+      width: 78px;
+      display: grid;
+      grid-template-columns: repeat(4, 10px);
+      gap: 8px;
+    }
+
+    .rag-health-grid span {
+      width: 10px;
+      height: 10px;
+      border-radius: 3px;
+      background: rgba(34, 126, 166, 0.14);
+    }
+
+    .rag-health-grid span:nth-child(3n) {
+      background: rgba(211, 17, 69, 0.18);
+    }
+
+    .rag-health-grid span:nth-child(4n) {
+      background: rgba(25, 145, 97, 0.18);
+    }
+
+    .rag-layout {
+      position: absolute;
+      left: 300px;
+      right: 70px;
+      top: 264px;
+      bottom: 88px;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 324px;
+      gap: 24px;
+    }
+
+    .rag-window,
+    .rag-side-card {
+      border: 1px solid rgba(34, 126, 166, 0.16);
+      border-radius: 18px;
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(248, 252, 253, 0.9)),
+        linear-gradient(rgba(34, 126, 166, 0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(34, 126, 166, 0.025) 1px, transparent 1px);
+      background-size: auto, 24px 24px, 24px 24px;
+      box-shadow: 0 18px 44px rgba(31, 41, 51, 0.065);
+      overflow: hidden;
+    }
+
+    .rag-window {
+      display: grid;
+      grid-template-rows: 76px minmax(0, 1fr) 112px;
+    }
+
+    .rag-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      padding: 18px 22px;
+      border-bottom: 1px solid rgba(34, 126, 166, 0.1);
+      background: radial-gradient(circle at 12% 0%, rgba(34, 126, 166, 0.09), transparent 8rem), linear-gradient(90deg, rgba(255, 255, 255, 0.72), rgba(248, 252, 253, 0.64));
+    }
+
+    .rag-head h2 {
+      margin: 0;
+      color: var(--ink);
+      font-size: 22px;
+      line-height: 1.1;
+    }
+
+    .rag-head span:not(.badge) {
+      display: block;
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .rag-body {
+      padding: 22px;
+      overflow: hidden;
+    }
+
+    .rag-question {
+      max-width: 610px;
+      margin-left: auto;
+      padding: 18px 20px;
+      border: 1px solid rgba(211, 17, 69, 0.15);
+      border-radius: 18px;
+      background: rgba(255, 248, 250, 0.82);
+      color: var(--ink);
+      font-size: 15px;
+      line-height: 1.65;
+      box-shadow: 0 12px 26px rgba(211, 17, 69, 0.045);
+    }
+
+    .rag-answer {
+      margin-top: 20px;
+      max-width: 720px;
+      padding: 18px 20px 20px;
+      border: 1px solid rgba(34, 126, 166, 0.14);
+      border-radius: 18px;
+      background: rgba(248, 252, 253, 0.8);
+    }
+
+    .rag-answer strong,
+    .rag-citation strong {
+      display: block;
+      color: var(--ink);
+      font-size: 13px;
+      line-height: 1.1;
+    }
+
+    .rag-answer p {
+      margin: 12px 0 0;
+      color: #36414e;
+      font-size: 14px;
+      line-height: 1.7;
+    }
+
+    .rag-evidence {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 16px;
+    }
+
+    .rag-evidence span {
+      min-height: 54px;
+      padding: 11px 12px;
+      border: 1px solid rgba(34, 126, 166, 0.14);
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.82);
+      color: #536171;
+      font-size: 11px;
+      font-weight: 900;
+      line-height: 1.35;
+    }
+
+    .rag-evidence b {
+      display: block;
+      margin-bottom: 5px;
+      color: var(--blue);
+      font-size: 10px;
+    }
+
+    .rag-composer {
+      padding: 16px 20px;
+      border-top: 1px solid rgba(34, 126, 166, 0.1);
+      background: rgba(255, 255, 255, 0.62);
+    }
+
+    .rag-input {
+      height: 78px;
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 14px 14px 14px 16px;
+      border: 1px solid rgba(34, 126, 166, 0.16);
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.84);
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .rag-send {
+      width: 42px;
+      height: 42px;
+      flex: 0 0 auto;
+      display: grid;
+      place-items: center;
+      border-radius: 14px;
+      background: var(--blue);
+      color: #fff;
+      box-shadow: 0 12px 24px rgba(34, 126, 166, 0.14);
+    }
+
+    .rag-send svg {
+      width: 20px;
+      height: 20px;
+    }
+
+    .rag-side {
+      display: grid;
+      gap: 18px;
+      min-height: 0;
+    }
+
+    .rag-side-card {
+      padding: 18px;
+    }
+
+    .rag-side-card h3 {
+      margin: 0 0 14px;
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      color: var(--ink);
+      font-size: 18px;
+      line-height: 1.1;
+    }
+
+    .rag-side-card h3::before {
+      content: "";
+      width: 22px;
+      height: 22px;
+      border-radius: 8px;
+      background: radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.8) 0 20%, transparent 21%), var(--blue);
+      box-shadow: 0 0 0 8px rgba(34, 126, 166, 0.08);
+    }
+
+    .rag-source,
+    .rag-citation {
+      display: grid;
+      grid-template-columns: 12px minmax(0, 1fr) auto;
+      gap: 10px;
+      align-items: center;
+      padding: 12px 0;
+      border-top: 1px solid rgba(34, 126, 166, 0.08);
+    }
+
+    .rag-source i,
+    .rag-citation i {
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      background: var(--source, var(--blue));
+      box-shadow: 0 0 0 6px color-mix(in srgb, var(--source, var(--blue)), transparent 88%);
+    }
+
+    .rag-source span,
+    .rag-citation span {
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 900;
+      line-height: 1.35;
+    }
+
+    .rag-source em,
+    .rag-citation em {
+      color: var(--green);
+      font-size: 10px;
+      font-style: normal;
+      font-weight: 950;
+      white-space: nowrap;
+    }
+
+    .rag-footer {
+      left: 300px;
+      right: 70px;
+    }
+
+    .rag-footer .footer-lock i {
+      background: var(--blue);
+    }
+
+    @keyframes rag-orb-breathe {
+      0%,
+      100% {
+        transform: translateY(0);
+        filter: saturate(0.95);
+      }
+      50% {
+        transform: translateY(-3px);
+        filter: saturate(1.08);
+      }
+    }
+
+    .board > .screen:nth-child(5) .title {
+      display: none;
+    }
+
+    .board > .screen:nth-child(5) .app-capsule .brand-signal {
+      margin-left: 0;
+    }
+
+    .sql-hero,
+    .sql-guard {
+      position: absolute;
+      top: 144px;
+      height: 96px;
+      z-index: 2;
+      border: 1px solid rgba(34, 126, 166, 0.16);
+      border-radius: 18px;
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(248, 252, 253, 0.84)),
+        linear-gradient(rgba(34, 126, 166, 0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(34, 126, 166, 0.025) 1px, transparent 1px);
+      background-size: auto, 24px 24px, 24px 24px;
+      box-shadow: 0 16px 38px rgba(31, 41, 51, 0.06);
+      overflow: hidden;
+    }
+
+    .sql-hero {
+      left: 300px;
+      width: 610px;
+      display: grid;
+      grid-template-columns: 68px 1fr;
+      gap: 16px;
+      align-items: center;
+      padding: 16px 20px;
+    }
+
+    .sql-guard {
+      left: 934px;
+      right: 70px;
+      padding: 18px 22px;
+    }
+
+    .sql-hero::after,
+    .sql-guard::after {
+      content: "";
+      position: absolute;
+      left: 24px;
+      right: 24px;
+      bottom: 18px;
+      height: 1px;
+      background: linear-gradient(90deg, rgba(37, 111, 134, 0.24), rgba(25, 145, 97, 0.16), rgba(211, 17, 69, 0.12), transparent);
+    }
+
+    .sql-database-icon {
+      position: relative;
+      width: 58px;
+      height: 58px;
+      border-radius: 17px;
+      background:
+        radial-gradient(ellipse at 50% 18%, rgba(255, 255, 255, 0.96) 0 32%, transparent 34%),
+        linear-gradient(180deg, rgba(37, 111, 134, 0.96), rgba(25, 145, 97, 0.78));
+      box-shadow: 0 16px 30px rgba(37, 111, 134, 0.16), 0 0 0 10px rgba(37, 111, 134, 0.06);
+    }
+
+    .sql-database-icon::before,
+    .sql-database-icon::after {
+      content: "";
+      position: absolute;
+      left: 13px;
+      right: 13px;
+      height: 1px;
+      background: rgba(255, 255, 255, 0.62);
+    }
+
+    .sql-database-icon::before { top: 27px; }
+    .sql-database-icon::after { top: 39px; }
+
+    .sql-hero h2,
+    .sql-guard h2 {
+      margin: 0;
+      color: var(--ink);
+      font-size: 22px;
+      line-height: 1.1;
+    }
+
+    .sql-hero p,
+    .sql-guard p {
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .sql-guard-grid {
+      position: absolute;
+      right: 22px;
+      top: 18px;
+      width: 86px;
+      display: grid;
+      grid-template-columns: repeat(5, 10px);
+      gap: 7px;
+    }
+
+    .sql-guard-grid span {
+      width: 10px;
+      height: 10px;
+      border-radius: 3px;
+      background: rgba(37, 111, 134, 0.14);
+    }
+
+    .sql-guard-grid span:nth-child(4n) { background: rgba(25, 145, 97, 0.17); }
+    .sql-guard-grid span:nth-child(5n) { background: rgba(211, 17, 69, 0.14); }
+
+    .board > .screen:nth-child(5) .sql-hero,
+    .board > .screen:nth-child(5) .sql-guard {
+      display: none !important;
+    }
+
+    .sql-toolbar {
+      position: absolute;
+      left: 300px;
+      right: 70px;
+      top: 144px;
+      height: 82px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 18px;
+      border: 1px solid rgba(34, 126, 166, 0.16);
+      border-radius: 18px;
+      background:
+        linear-gradient(90deg, rgba(255, 255, 255, 0.94), rgba(248, 252, 253, 0.8)),
+        linear-gradient(rgba(34, 126, 166, 0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(34, 126, 166, 0.025) 1px, transparent 1px);
+      background-size: auto, 22px 22px, 22px 22px;
+      box-shadow: 0 14px 34px rgba(31, 41, 51, 0.055);
+    }
+
+    .sql-toolbar .filter-search { max-width: 360px; }
+    .sql-toolbar .filter-select { flex: 0 0 136px; }
+
+    .sql-run-state {
+      margin-left: auto;
+      height: 34px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 0 12px;
+      border: 1px solid rgba(37, 111, 134, 0.18);
+      border-radius: 999px;
+      background: rgba(37, 111, 134, 0.06);
+      color: #256f86;
+      font-size: 11px;
+      font-weight: 950;
+      white-space: nowrap;
+    }
+
+    .sql-run-state::before {
+      content: "";
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: #256f86;
+      box-shadow: 0 0 0 6px rgba(37, 111, 134, 0.1);
+    }
+
+    .sql-layout {
+      position: absolute;
+      left: 300px;
+      right: 70px;
+      top: 250px;
+      bottom: 88px;
+      display: grid;
+      grid-template-columns: 1.05fr 0.9fr 0.86fr;
+      gap: 24px;
+    }
+
+    .sql-card {
+      border: 1px solid rgba(34, 126, 166, 0.16);
+      border-radius: 18px;
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(248, 252, 253, 0.9)),
+        linear-gradient(rgba(34, 126, 166, 0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(34, 126, 166, 0.025) 1px, transparent 1px);
+      background-size: auto, 24px 24px, 24px 24px;
+      box-shadow: 0 18px 44px rgba(31, 41, 51, 0.065);
+      overflow: hidden;
+      padding: 22px;
+    }
+
+    .sql-card h2 {
+      margin: 0;
+      color: var(--ink);
+      font-size: 22px;
+      line-height: 1.1;
+    }
+
+    .sql-card h2::after {
+      content: "";
+      display: block;
+      height: 1px;
+      margin: 16px 0 0;
+      background: linear-gradient(90deg, rgba(31, 41, 51, 0.14), rgba(34, 126, 166, 0.12), transparent);
+    }
+
+    .sql-editor-box {
+      margin-top: 18px;
+      min-height: 188px;
+      padding: 18px;
+      border: 1px solid rgba(37, 111, 134, 0.16);
+      border-radius: 14px;
+      background:
+        linear-gradient(180deg, rgba(248, 252, 253, 0.92), rgba(255, 255, 255, 0.84)),
+        linear-gradient(rgba(37, 111, 134, 0.035) 1px, transparent 1px);
+      background-size: auto, 28px 28px;
+      color: var(--ink);
+      font-size: 13px;
+      font-weight: 850;
+      line-height: 1.7;
+    }
+
+    .sql-editor-box code {
+      display: block;
+      white-space: pre-wrap;
+    }
+
+    .sql-chip-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 16px;
+    }
+
+    .sql-chip-row span {
+      padding: 8px 10px;
+      border: 1px solid rgba(34, 126, 166, 0.16);
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.76);
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 900;
+    }
+
+    .sql-action-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    .sql-action-row .button {
+      height: 46px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 10px;
+      font-size: 13px;
+    }
+
+    .sql-action-row .button.secondary {
+      background: rgba(255, 255, 255, 0.78);
+      color: var(--ink);
+      border: 1px solid rgba(31, 41, 51, 0.12);
+      box-shadow: none;
+    }
+
+    .sql-path,
+    .sql-suggestions {
+      display: grid;
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    .sql-step,
+    .sql-suggestion {
+      position: relative;
+      min-height: 64px;
+      padding: 12px 12px 12px 42px;
+      border: 1px solid rgba(34, 126, 166, 0.14);
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.76);
+    }
+
+    .sql-step::before,
+    .sql-suggestion::before {
+      content: "";
+      position: absolute;
+      left: 15px;
+      top: 18px;
+      width: 11px;
+      height: 11px;
+      border-radius: 999px;
+      background: var(--sql-step, var(--tip, #256f86));
+      box-shadow: 0 0 0 7px color-mix(in srgb, var(--sql-step, var(--tip, #256f86)), transparent 88%);
+    }
+
+    .sql-step strong,
+    .sql-suggestion strong {
+      display: block;
+      color: var(--ink);
+      font-size: 12px;
+      line-height: 1.1;
+    }
+
+    .sql-step span,
+    .sql-suggestion span {
+      display: block;
+      margin-top: 7px;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 800;
+      line-height: 1.35;
+    }
+
+    .sql-score {
+      display: grid;
+      grid-template-columns: 92px 1fr;
+      gap: 16px;
+      align-items: center;
+      margin-top: 18px;
+      padding: 16px;
+      border: 1px solid rgba(25, 145, 97, 0.16);
+      border-radius: 14px;
+      background: rgba(25, 145, 97, 0.055);
+    }
+
+    .sql-score-ring {
+      display: grid;
+      place-items: center;
+      width: 74px;
+      height: 74px;
+      border-radius: 999px;
+      background:
+        radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.96) 0 48%, transparent 49%),
+        conic-gradient(var(--green) 0 74%, rgba(34, 126, 166, 0.16) 74% 100%);
+      color: var(--green);
+      font-size: 18px;
+      font-weight: 950;
+    }
+
+    .sql-score strong {
+      display: block;
+      color: var(--ink);
+      font-size: 14px;
+      line-height: 1.2;
+    }
+
+    .sql-score span {
+      display: block;
+      margin-top: 7px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+      line-height: 1.35;
+    }
+
+    .sql-footer {
+      left: 300px;
+      right: 70px;
+    }
+
+    .sql-footer .footer-lock i {
+      background: #256f86;
+      box-shadow: 0 0 0 7px rgba(37, 111, 134, 0.1);
+    }
+
+    .sql-layout {
+      grid-template-columns: 262px minmax(0, 1fr);
+      gap: 18px;
+    }
+
+    .sql-card.compact,
+    .sql-card.main {
+      padding: 16px;
+    }
+
+    .sql-card.compact h2,
+    .sql-card.main h2 {
+      font-size: 19px;
+    }
+
+    .sql-card.compact h2::after,
+    .sql-card.main h2::after {
+      margin-top: 12px;
+    }
+
+    .sql-card-kicker {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      height: 24px;
+      margin-bottom: 10px;
+      padding: 0 9px;
+      border: 1px solid rgba(34, 126, 166, 0.14);
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.76);
+      color: #256f86;
+      font-size: 10px;
+      font-weight: 950;
+      white-space: nowrap;
+    }
+
+    .sql-card-kicker::before {
+      content: "";
+      width: 7px;
+      height: 7px;
+      border-radius: 999px;
+      background: var(--dot, #256f86);
+      box-shadow: 0 0 0 5px color-mix(in srgb, var(--dot, #256f86), transparent 88%);
+    }
+
+    .sql-connection-list,
+    .sql-tree,
+    .sql-config-list,
+    .sql-ai-list {
+      display: grid;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .sql-connection,
+    .sql-tree-item,
+    .sql-config-item,
+    .sql-ai-item {
+      position: relative;
+      min-height: 38px;
+      padding: 8px 9px 8px 32px;
+      border: 1px solid rgba(34, 126, 166, 0.14);
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.76);
+    }
+
+    .sql-connection::before,
+    .sql-tree-item::before,
+    .sql-config-item::before,
+    .sql-ai-item::before {
+      content: "";
+      position: absolute;
+      left: 12px;
+      top: 14px;
+      width: 9px;
+      height: 9px;
+      border-radius: 999px;
+      background: var(--dot, #256f86);
+      box-shadow: 0 0 0 6px color-mix(in srgb, var(--dot, #256f86), transparent 88%);
+    }
+
+    .sql-connection strong,
+    .sql-tree-item strong,
+    .sql-config-item strong,
+    .sql-ai-item strong {
+      display: block;
+      color: var(--ink);
+      font-size: 12px;
+      line-height: 1.15;
+    }
+
+    .sql-connection span,
+    .sql-tree-item span,
+    .sql-config-item span,
+    .sql-ai-item span {
+      display: block;
+      margin-top: 5px;
+      color: var(--muted);
+      font-size: 10px;
+      font-weight: 850;
+      line-height: 1.3;
+    }
+
+    .sql-console-tabs,
+    .sql-result-tabs {
+      display: flex;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .sql-console-tabs span,
+    .sql-result-tabs span {
+      padding: 7px 10px;
+      border: 1px solid rgba(34, 126, 166, 0.16);
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.78);
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 900;
+      white-space: nowrap;
+    }
+
+    .sql-console-tabs span.active,
+    .sql-result-tabs span.active {
+      color: #256f86;
+      border-color: rgba(37, 111, 134, 0.24);
+      background: rgba(37, 111, 134, 0.08);
+    }
+
+    .sql-console-meta,
+    .sql-config-strip {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .sql-config-strip {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .sql-console-meta span,
+    .sql-config-strip span {
+      min-width: 0;
+      padding: 7px 9px;
+      border: 1px solid rgba(34, 126, 166, 0.12);
+      border-radius: 11px;
+      background: rgba(37, 111, 134, 0.045);
+      color: var(--muted);
+      font-size: 9px;
+      font-weight: 900;
+      line-height: 1.2;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .sql-console-meta b,
+    .sql-config-strip b {
+      display: block;
+      margin-top: 2px;
+      color: var(--ink);
+      font-size: 11px;
+    }
+
+    .sql-editor-box.console {
+      min-height: 86px;
+      margin-top: 10px;
+      padding: 11px 14px;
+      font-size: 11px;
+      line-height: 1.42;
+    }
+
+    .sql-console-actions {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      margin-top: 10px;
+    }
+
+    .sql-console-actions .button {
+      height: 32px;
+      padding: 0 12px;
+      border-radius: 10px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+    }
+
+    .sql-console-actions .button.secondary {
+      background: rgba(255, 255, 255, 0.78);
+      color: var(--ink);
+      border: 1px solid rgba(31, 41, 51, 0.12);
+      box-shadow: none;
+    }
+
+    .sql-result-grid {
+      margin-top: 10px;
+      border: 1px solid rgba(34, 126, 166, 0.14);
+      border-radius: 12px;
+      overflow: hidden;
+      background: rgba(255, 255, 255, 0.7);
+    }
+
+    .sql-result-grid table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 11px;
+      color: var(--ink);
+    }
+
+    .sql-result-grid th,
+    .sql-result-grid td {
+      padding: 6px 9px;
+      border-bottom: 1px solid rgba(34, 126, 166, 0.1);
+      text-align: left;
+      white-space: nowrap;
+    }
+
+    .sql-result-grid th {
+      color: var(--muted);
+      font-size: 10px;
+      font-weight: 950;
+      background: rgba(37, 111, 134, 0.04);
+    }
+
+    .sql-explain-mini {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .sql-explain-mini span {
+      padding: 7px 8px;
+      border: 1px solid rgba(34, 126, 166, 0.14);
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.76);
+      color: var(--muted);
+      font-size: 10px;
+      font-weight: 900;
+    }
+
+    .sql-explain-mini b {
+      display: block;
+      margin-top: 3px;
+      color: var(--ink);
+      font-size: 13px;
+    }
+
+    .board > .screen:nth-child(6) .title {
+      display: none;
+    }
+
+    .board > .screen:nth-child(6) .app-capsule .brand-signal {
       margin-left: 0;
     }
 
@@ -3878,7 +4961,7 @@
       background: rgba(34, 126, 166, 0.2);
     }
 
-    .board > .screen:nth-child(4) .flow-corridor {
+    .board > .screen:nth-child(6) .flow-corridor {
       top: 252px;
       left: 324px;
       right: 94px;
@@ -3888,7 +4971,7 @@
       background: linear-gradient(90deg, rgba(194, 127, 25, 0.22), rgba(211, 17, 69, 0.22), rgba(34, 126, 166, 0.18));
     }
 
-    .board > .screen:nth-child(4) .flow-corridor::before {
+    .board > .screen:nth-child(6) .flow-corridor::before {
       inset: auto;
       left: 0;
       right: 0;
@@ -3898,13 +4981,13 @@
       animation: footer-scan 4.8s ease-in-out infinite;
     }
 
-    .board > .screen:nth-child(4) .flow-corridor::after {
+    .board > .screen:nth-child(6) .flow-corridor::after {
       display: none;
     }
 
-    .board > .screen:nth-child(4) .form,
-    .board > .screen:nth-child(4) .timeline.compact,
-    .board > .screen:nth-child(4) .result {
+    .board > .screen:nth-child(6) .form,
+    .board > .screen:nth-child(6) .timeline.compact,
+    .board > .screen:nth-child(6) .result {
       top: 276px;
       bottom: 88px;
       height: auto;
@@ -3919,31 +5002,31 @@
       box-shadow: 0 18px 44px rgba(31, 41, 51, 0.065);
     }
 
-    .board > .screen:nth-child(4) .form {
+    .board > .screen:nth-child(6) .form {
       left: 300px;
       width: 350px;
       display: flex;
       flex-direction: column;
     }
 
-    .board > .screen:nth-child(4) .timeline.compact {
+    .board > .screen:nth-child(6) .timeline.compact {
       left: 674px;
       width: 410px;
     }
 
-    .board > .screen:nth-child(4) .result {
+    .board > .screen:nth-child(6) .result {
       left: 1108px;
       width: 262px;
     }
 
-    .board > .screen:nth-child(4) .form h2,
-    .board > .screen:nth-child(4) .timeline h2,
-    .board > .screen:nth-child(4) .result h2 {
+    .board > .screen:nth-child(6) .form h2,
+    .board > .screen:nth-child(6) .timeline h2,
+    .board > .screen:nth-child(6) .result h2 {
       font-size: 22px;
       line-height: 1.1;
     }
 
-    .board > .screen:nth-child(4) .form .hint {
+    .board > .screen:nth-child(6) .form .hint {
       margin: 10px 0 18px;
       padding-bottom: 14px;
       border-bottom: 1px solid rgba(34, 126, 166, 0.12);
@@ -3951,15 +5034,15 @@
       line-height: 1.55;
     }
 
-    .board > .screen:nth-child(4) .field {
+    .board > .screen:nth-child(6) .field {
       margin-top: 14px;
     }
 
-    .board > .screen:nth-child(4) .field label {
+    .board > .screen:nth-child(6) .field label {
       font-size: 12px;
     }
 
-    .board > .screen:nth-child(4) .input {
+    .board > .screen:nth-child(6) .input {
       height: 42px;
       padding: 0 13px;
       border-radius: 10px;
@@ -3971,17 +5054,17 @@
       text-overflow: ellipsis;
     }
 
-    .board > .screen:nth-child(4) .form-actions {
+    .board > .screen:nth-child(6) .form-actions {
       margin-top: auto;
       padding-top: 18px;
     }
 
-    .board > .screen:nth-child(4) .form-actions .button {
+    .board > .screen:nth-child(6) .form-actions .button {
       flex: 1;
       justify-content: center;
     }
 
-    .board > .screen:nth-child(4) .timeline small {
+    .board > .screen:nth-child(6) .timeline small {
       display: block;
       margin-top: 8px;
       padding-bottom: 14px;
@@ -3991,27 +5074,27 @@
       line-height: 1.45;
     }
 
-    .board > .screen:nth-child(4) .event {
+    .board > .screen:nth-child(6) .event {
       margin-top: 22px;
       padding-left: 38px;
     }
 
-    .board > .screen:nth-child(4) .event strong {
+    .board > .screen:nth-child(6) .event strong {
       font-size: 14px;
       white-space: nowrap;
     }
 
-    .board > .screen:nth-child(4) .event span {
+    .board > .screen:nth-child(6) .event span {
       font-size: 12px;
       line-height: 1.45;
     }
 
-    .board > .screen:nth-child(4) .result .badge {
+    .board > .screen:nth-child(6) .result .badge {
       margin-top: 16px !important;
       margin-bottom: 4px;
     }
 
-    .board > .screen:nth-child(4) .result h2::after {
+    .board > .screen:nth-child(6) .result h2::after {
       content: "";
       display: block;
       height: 1px;
@@ -4019,7 +5102,7 @@
       background: linear-gradient(90deg, rgba(34, 126, 166, 0.12), rgba(211, 17, 69, 0.1), transparent);
     }
 
-    .board > .screen:nth-child(4) .metric {
+    .board > .screen:nth-child(6) .metric {
       margin-top: 22px;
     }
 
@@ -4080,16 +5163,16 @@
       box-shadow: 0 0 0 7px rgba(194, 127, 25, 0.1);
     }
 
-    .board > .screen:nth-child(5) .title {
+    .board > .screen:nth-child(7) .title {
       display: none;
     }
 
-    .board > .screen:nth-child(5) .app-capsule .brand-signal {
+    .board > .screen:nth-child(7) .app-capsule .brand-signal {
       margin-left: 0;
     }
 
     .registry-context,
-    .board > .screen:nth-child(5) .contract-rail {
+    .board > .screen:nth-child(7) .contract-rail {
       position: absolute;
       top: 144px;
       z-index: 2;
@@ -4108,9 +5191,9 @@
     }
 
     .registry-context {
+      display: none;
       left: 300px;
       width: 511px;
-      display: grid;
       grid-template-columns: 62px 1fr;
       gap: 16px;
       align-items: center;
@@ -4118,7 +5201,7 @@
     }
 
     .registry-context::after,
-    .board > .screen:nth-child(5) .contract-rail::after {
+    .board > .screen:nth-child(7) .contract-rail::after {
       content: "";
       position: absolute;
       left: 22px;
@@ -4173,7 +5256,7 @@
     }
 
     .registry-context h2,
-    .board > .screen:nth-child(5) .contract-rail strong {
+    .board > .screen:nth-child(7) .contract-rail strong {
       margin: 0;
       color: var(--ink);
       font-size: 19px;
@@ -4190,20 +5273,22 @@
       text-overflow: ellipsis;
     }
 
-    .board > .screen:nth-child(5) .contract-rail {
-      left: 835px;
+    .board > .screen:nth-child(7) .contract-rail {
+      display: none;
+      left: 1042px;
       right: 70px;
       width: auto;
-      padding: 18px 22px;
+      height: 74px;
+      padding: 14px 18px;
       backdrop-filter: blur(14px);
     }
 
-    .board > .screen:nth-child(5) .contract-rail span {
-      height: 24px;
+    .board > .screen:nth-child(7) .contract-rail span {
+      height: 22px;
       display: inline-flex;
       align-items: center;
-      margin: 13px 7px 0 0;
-      padding: 0 10px;
+      margin: 10px 5px 0 0;
+      padding: 0 8px;
       border-color: rgba(34, 126, 166, 0.14);
       border-radius: 999px;
       background: rgba(255, 255, 255, 0.88);
@@ -4213,15 +5298,16 @@
       white-space: nowrap;
     }
 
-    .board > .screen:nth-child(5) .filters {
-      top: 264px;
+    .board > .screen:nth-child(7) .filters {
+      top: 144px;
       left: 300px;
       right: 70px;
       width: auto;
-      height: 62px;
-      align-items: center;
-      padding: 14px 18px;
-      gap: 10px;
+      height: 124px;
+      padding: 16px 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
       border-radius: 18px;
       border-color: rgba(34, 126, 166, 0.16);
       background:
@@ -4232,9 +5318,105 @@
       box-shadow: 0 14px 34px rgba(31, 41, 51, 0.055);
     }
 
-    .board > .screen:nth-child(5) .chip {
-      height: 30px;
-      padding: 0 13px;
+    .filter-row {
+      min-width: 0;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .filter-row.primary {
+      height: 42px;
+    }
+
+    .filter-row.secondary {
+      height: 32px;
+      padding-top: 1px;
+      border-top: 1px solid rgba(34, 126, 166, 0.08);
+    }
+
+    .filter-search,
+    .filter-select {
+      height: 42px;
+      display: flex;
+      align-items: center;
+      border: 1px solid rgba(34, 126, 166, 0.14);
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.84);
+      color: #536171;
+      font-size: 12px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .filter-search {
+      flex: 1 1 360px;
+      max-width: 430px;
+      padding: 0 14px;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.86);
+    }
+
+    .filter-search::before {
+      content: "";
+      width: 10px;
+      height: 10px;
+      margin-right: 9px;
+      border: 2px solid rgba(34, 126, 166, 0.5);
+      border-radius: 999px;
+      box-shadow: 6px 6px 0 -4px rgba(34, 126, 166, 0.5);
+    }
+
+    .filter-select {
+      flex: 0 0 138px;
+      justify-content: space-between;
+      padding: 0 12px;
+    }
+
+    .filter-select.status {
+      flex-basis: 176px;
+    }
+
+    .filter-select b {
+      color: var(--muted);
+      font-size: 10px;
+      text-transform: uppercase;
+    }
+
+    .filter-select span {
+      color: var(--ink);
+      font-size: 11px;
+    }
+
+    .filter-select::after {
+      content: "";
+      width: 6px;
+      height: 6px;
+      border-right: 1px solid rgba(34, 126, 166, 0.55);
+      border-bottom: 1px solid rgba(34, 126, 166, 0.55);
+      transform: rotate(45deg) translateY(-2px);
+    }
+
+    .filter-chips {
+      min-width: 0;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 0 2px;
+      overflow: visible;
+    }
+
+    .filter-label {
+      flex: 0 0 auto;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 900;
+      letter-spacing: 0;
+      white-space: nowrap;
+    }
+
+    .board > .screen:nth-child(7) .chip {
+      height: 28px;
+      padding: 0 14px;
       border-color: rgba(34, 126, 166, 0.14);
       color: #384351;
       background: rgba(255, 255, 255, 0.82);
@@ -4242,15 +5424,57 @@
       white-space: nowrap;
     }
 
-    .board > .screen:nth-child(5) .chip.active {
+    .board > .screen:nth-child(7) .chip.active {
       border-color: rgba(25, 145, 97, 0.24);
       background: var(--green);
       color: #fff;
     }
 
-    .board > .screen:nth-child(5) .registry-table,
-    .board > .screen:nth-child(5) .detail {
-      top: 350px;
+    .registry-install-button {
+      flex: 0 0 118px;
+      margin-left: auto;
+      height: 42px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 12px;
+      background: var(--red);
+      color: #fff;
+      font-size: 11px;
+      font-weight: 900;
+      box-shadow: 0 12px 24px rgba(211, 17, 69, 0.14);
+      white-space: nowrap;
+    }
+
+    .filter-count {
+      flex: 0 0 auto;
+      margin-left: auto;
+      height: 34px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 0 12px;
+      border: 1px solid rgba(34, 126, 166, 0.14);
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.74);
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 900;
+      white-space: nowrap;
+    }
+
+    .filter-count::before {
+      content: "";
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: var(--green);
+      box-shadow: 0 0 0 6px rgba(25, 145, 97, 0.1);
+    }
+
+    .board > .screen:nth-child(7) .registry-table,
+    .board > .screen:nth-child(7) .detail {
+      top: 288px;
       bottom: 88px;
       height: auto;
       border-radius: 18px;
@@ -4263,28 +5487,28 @@
       box-shadow: 0 18px 44px rgba(31, 41, 51, 0.065);
     }
 
-    .board > .screen:nth-child(5) .registry-table {
+    .board > .screen:nth-child(7) .registry-table {
       left: 300px;
       width: 718px;
-      padding: 22px;
+      padding: 22px 22px 74px;
       overflow: hidden;
     }
 
-    .board > .screen:nth-child(5) .detail {
+    .board > .screen:nth-child(7) .detail {
       left: 1042px;
       right: 70px;
       width: auto;
       padding: 22px;
     }
 
-    .board > .screen:nth-child(5) .registry-table h2,
-    .board > .screen:nth-child(5) .detail h2 {
+    .board > .screen:nth-child(7) .registry-table h2,
+    .board > .screen:nth-child(7) .detail h2 {
       font-size: 22px;
       line-height: 1.1;
     }
 
-    .board > .screen:nth-child(5) .registry-table h2::after,
-    .board > .screen:nth-child(5) .detail h2::after {
+    .board > .screen:nth-child(7) .registry-table h2::after,
+    .board > .screen:nth-child(7) .detail h2::after {
       content: "";
       display: block;
       height: 1px;
@@ -4292,21 +5516,40 @@
       background: linear-gradient(90deg, rgba(34, 126, 166, 0.12), rgba(25, 145, 97, 0.12), transparent);
     }
 
-    .board > .screen:nth-child(5) table {
+    .board > .screen:nth-child(7) table {
       margin-top: 18px;
       font-size: 12px;
       table-layout: fixed;
+      border-collapse: separate;
+      border-spacing: 0;
     }
 
-    .board > .screen:nth-child(5) th {
-      padding: 10px 8px;
+    .board > .screen:nth-child(7) th {
+      padding: 12px 8px;
+      border-top: 1px solid rgba(34, 126, 166, 0.1);
+      border-bottom: 1px solid rgba(34, 126, 166, 0.18);
+      background: linear-gradient(180deg, rgba(236, 247, 251, 0.72), rgba(248, 252, 253, 0.88));
+      color: #627080;
       font-size: 10px;
+      font-weight: 950;
       white-space: nowrap;
     }
 
-    .board > .screen:nth-child(5) td {
+    .board > .screen:nth-child(7) th:first-child {
+      border-left: 1px solid rgba(34, 126, 166, 0.08);
+      border-radius: 10px 0 0 10px;
+      padding-left: 12px;
+    }
+
+    .board > .screen:nth-child(7) th:last-child {
+      border-right: 1px solid rgba(34, 126, 166, 0.08);
+      border-radius: 0 10px 10px 0;
+      padding-right: 12px;
+    }
+
+    .board > .screen:nth-child(7) td {
       padding: 14px 8px;
-      border-top-color: rgba(34, 126, 166, 0.1);
+      border-top-color: rgba(34, 126, 166, 0.08);
       font-size: 11px;
       line-height: 1.25;
       white-space: nowrap;
@@ -4314,39 +5557,190 @@
       text-overflow: ellipsis;
     }
 
-    .board > .screen:nth-child(5) th:nth-child(1),
-    .board > .screen:nth-child(5) td:nth-child(1) {
-      width: 150px;
+    .board > .screen:nth-child(7) th:nth-child(1),
+    .board > .screen:nth-child(7) td:nth-child(1) {
+      width: 210px;
       color: var(--ink);
       font-weight: 900;
     }
 
-    .board > .screen:nth-child(5) th:nth-child(2),
-    .board > .screen:nth-child(5) td:nth-child(2) {
-      width: 110px;
+    .board > .screen:nth-child(7) th:nth-child(2),
+    .board > .screen:nth-child(7) td:nth-child(2) {
+      width: 70px;
     }
 
-    .board > .screen:nth-child(5) th:nth-child(3),
-    .board > .screen:nth-child(5) td:nth-child(3),
-    .board > .screen:nth-child(5) th:nth-child(4),
-    .board > .screen:nth-child(5) td:nth-child(4) {
+    .board > .screen:nth-child(7) th:nth-child(3),
+    .board > .screen:nth-child(7) td:nth-child(3) {
       width: 62px;
     }
 
-    .board > .screen:nth-child(5) th:nth-child(5),
-    .board > .screen:nth-child(5) td:nth-child(5),
-    .board > .screen:nth-child(5) th:nth-child(7),
-    .board > .screen:nth-child(5) td:nth-child(7) {
-      width: 78px;
+    .board > .screen:nth-child(7) th:nth-child(4),
+    .board > .screen:nth-child(7) td:nth-child(4),
+    .board > .screen:nth-child(7) th:nth-child(6),
+    .board > .screen:nth-child(7) td:nth-child(6) {
+      width: 84px;
     }
 
-    .board > .screen:nth-child(5) th:nth-child(6),
-    .board > .screen:nth-child(5) td:nth-child(6) {
-      width: 78px;
+    .board > .screen:nth-child(7) th:nth-child(7),
+    .board > .screen:nth-child(7) td:nth-child(7) {
+      width: 120px;
+      text-align: right;
     }
 
-    .board > .screen:nth-child(5) tr:nth-child(even) td {
-      background: rgba(248, 252, 253, 0.72);
+    .board > .screen:nth-child(7) tr:nth-child(even) td {
+      background: rgba(248, 252, 253, 0.82);
+    }
+
+    .board > .screen:nth-child(7) tbody tr:first-child td {
+      border-top: 1px solid rgba(34, 126, 166, 0.18);
+    }
+
+    .board > .screen:nth-child(7) tbody tr:first-child td:first-child {
+      padding-left: 12px;
+    }
+
+    .board > .screen:nth-child(7) tbody tr:first-child td:last-child {
+      padding-right: 12px;
+    }
+
+    .skill-id {
+      display: block;
+      color: var(--ink);
+      font-size: 11px;
+      line-height: 1.1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .skill-desc {
+      display: block;
+      margin-top: 5px;
+      color: var(--muted);
+      font-size: 10px;
+      font-weight: 800;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .status-pill {
+      height: 22px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 8px;
+      border: 1px solid rgba(25, 145, 97, 0.16);
+      border-radius: 999px;
+      background: rgba(25, 145, 97, 0.09);
+      color: var(--green);
+      font-size: 10px;
+      font-weight: 900;
+      white-space: nowrap;
+    }
+
+    .status-pill.pending {
+      border-color: rgba(194, 127, 25, 0.18);
+      background: rgba(194, 127, 25, 0.09);
+      color: var(--yellow);
+    }
+
+    .table-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 6px;
+    }
+
+    .registry-pagination {
+      position: absolute;
+      left: 22px;
+      right: 22px;
+      bottom: 18px;
+      height: 38px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding-top: 12px;
+      border-top: 1px solid rgba(34, 126, 166, 0.1);
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 900;
+    }
+
+    .page-size {
+      height: 28px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 0 10px;
+      border: 1px solid rgba(34, 126, 166, 0.14);
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.8);
+      color: #536171;
+      white-space: nowrap;
+    }
+
+    .page-size::after {
+      content: "";
+      width: 6px;
+      height: 6px;
+      border-right: 1px solid rgba(34, 126, 166, 0.5);
+      border-bottom: 1px solid rgba(34, 126, 166, 0.5);
+      transform: rotate(45deg) translateY(-2px);
+    }
+
+    .page-controls {
+      margin-left: auto;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .page-btn {
+      min-width: 28px;
+      height: 28px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 9px;
+      border: 1px solid rgba(34, 126, 166, 0.14);
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.82);
+      color: #384351;
+      font-size: 11px;
+      font-weight: 900;
+      white-space: nowrap;
+    }
+
+    .page-btn.active {
+      border-color: rgba(211, 17, 69, 0.18);
+      background: rgba(211, 17, 69, 0.08);
+      color: var(--red);
+    }
+
+    .page-btn.disabled {
+      opacity: 0.42;
+    }
+
+    .action-btn {
+      height: 24px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 9px;
+      border: 1px solid rgba(34, 126, 166, 0.16);
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.88);
+      color: var(--blue);
+      font-size: 10px;
+      font-weight: 900;
+      white-space: nowrap;
+    }
+
+    .action-btn.danger {
+      border-color: rgba(211, 17, 69, 0.16);
+      color: var(--red);
+      background: rgba(211, 17, 69, 0.06);
     }
 
     .detail-stack {
@@ -4393,9 +5787,768 @@
       line-height: 1.3;
     }
 
+    .detail-actions {
+      position: absolute;
+      left: 22px;
+      right: 22px;
+      bottom: 20px;
+      min-height: 48px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding-top: 14px;
+      border-top: 1px solid rgba(34, 126, 166, 0.1);
+    }
+
+    .detail-actions .action-btn {
+      height: 28px;
+      padding: 0 12px;
+      border-radius: 999px;
+      font-size: 11px;
+      background: rgba(255, 255, 255, 0.8);
+    }
+
+    .detail-actions .primary {
+      border-color: rgba(34, 126, 166, 0.16);
+      background: rgba(34, 126, 166, 0.06);
+      color: var(--blue);
+      box-shadow: none;
+    }
+
+    .detail-actions .danger {
+      border-color: rgba(211, 17, 69, 0.14);
+      background: rgba(211, 17, 69, 0.045);
+      color: var(--red);
+    }
+
+    .detail-action-label {
+      margin-right: auto;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 900;
+      white-space: nowrap;
+    }
+
     .registry-footer .footer-lock i {
       background: var(--green);
       box-shadow: 0 0 0 7px rgba(25, 145, 97, 0.1);
+    }
+
+    .board > .screen:nth-child(8) .title {
+      display: none;
+    }
+
+    .board > .screen:nth-child(8) .capsule-current {
+      transform: translateY(-2px);
+    }
+
+    .board > .screen:nth-child(8) .app-capsule .brand-signal {
+      margin-left: 0;
+    }
+
+    .workflow-hero,
+    .workflow-state {
+      position: absolute;
+      top: 144px;
+      height: 96px;
+      z-index: 2;
+      border: 1px solid rgba(34, 126, 166, 0.16);
+      border-radius: 18px;
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(248, 252, 253, 0.84)),
+        linear-gradient(rgba(34, 126, 166, 0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(34, 126, 166, 0.025) 1px, transparent 1px);
+      background-size: auto, 24px 24px, 24px 24px;
+      box-shadow: 0 16px 38px rgba(31, 41, 51, 0.06);
+      overflow: hidden;
+    }
+
+    .workflow-hero {
+      left: 300px;
+      width: 610px;
+      display: grid;
+      grid-template-columns: 68px 1fr;
+      gap: 16px;
+      align-items: center;
+      padding: 16px 20px;
+    }
+
+    .workflow-state {
+      left: 934px;
+      right: 70px;
+      padding: 18px 22px;
+    }
+
+    .workflow-hero::after,
+    .workflow-state::after {
+      content: "";
+      position: absolute;
+      left: 24px;
+      right: 24px;
+      bottom: 18px;
+      height: 1px;
+      background: linear-gradient(90deg, rgba(34, 126, 166, 0.24), rgba(211, 17, 69, 0.16), rgba(25, 145, 97, 0.14), transparent);
+    }
+
+    .workflow-orb {
+      position: relative;
+      width: 58px;
+      height: 58px;
+      border-radius: 18px;
+      background:
+        radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.96) 0 22%, transparent 23%),
+        conic-gradient(from 210deg, var(--blue), var(--red), var(--green), var(--blue));
+      box-shadow: 0 16px 30px rgba(34, 126, 166, 0.16), 0 0 0 10px rgba(34, 126, 166, 0.06);
+    }
+
+    .workflow-orb::before,
+    .workflow-orb::after {
+      content: "";
+      position: absolute;
+      border-radius: 999px;
+      border: 1px solid rgba(34, 126, 166, 0.18);
+      inset: -9px -16px;
+      transform: rotate(16deg);
+    }
+
+    .workflow-orb::after {
+      inset: -16px -8px;
+      border-color: rgba(211, 17, 69, 0.14);
+      transform: rotate(-16deg);
+    }
+
+    .workflow-hero h2,
+    .workflow-state h2 {
+      margin: 0;
+      color: var(--ink);
+      font-size: 22px;
+      line-height: 1.1;
+    }
+
+    .workflow-hero p,
+    .workflow-state p {
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .workflow-pulse-grid {
+      position: absolute;
+      right: 22px;
+      top: 18px;
+      width: 92px;
+      display: grid;
+      grid-template-columns: repeat(6, 9px);
+      gap: 6px;
+    }
+
+    .workflow-pulse-grid span {
+      width: 9px;
+      height: 9px;
+      border-radius: 3px;
+      background: rgba(34, 126, 166, 0.14);
+    }
+
+    .workflow-pulse-grid span:nth-child(4n) {
+      background: rgba(211, 17, 69, 0.16);
+    }
+
+    .workflow-pulse-grid span:nth-child(5n) {
+      background: rgba(25, 145, 97, 0.17);
+    }
+
+    .workflow-filter {
+      position: absolute;
+      left: 300px;
+      right: 70px;
+      top: 264px;
+      height: 86px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 18px;
+      border: 1px solid rgba(34, 126, 166, 0.16);
+      border-radius: 18px;
+      background:
+        linear-gradient(90deg, rgba(255, 255, 255, 0.94), rgba(248, 252, 253, 0.8)),
+        linear-gradient(rgba(34, 126, 166, 0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(34, 126, 166, 0.025) 1px, transparent 1px);
+      background-size: auto, 22px 22px, 22px 22px;
+      box-shadow: 0 14px 34px rgba(31, 41, 51, 0.055);
+    }
+
+    .workflow-filter .filter-search {
+      max-width: 390px;
+    }
+
+    .workflow-filter .filter-select {
+      flex: 0 0 148px;
+    }
+
+    .workflow-counter {
+      margin-left: auto;
+      height: 34px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 0 12px;
+      border: 1px solid rgba(25, 145, 97, 0.18);
+      border-radius: 999px;
+      background: rgba(25, 145, 97, 0.06);
+      color: var(--green);
+      font-size: 11px;
+      font-weight: 950;
+      white-space: nowrap;
+    }
+
+    .workflow-counter::before {
+      content: "";
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: var(--green);
+      box-shadow: 0 0 0 6px rgba(25, 145, 97, 0.1);
+    }
+
+    .workflow-layout {
+      position: absolute;
+      left: 300px;
+      right: 70px;
+      top: 374px;
+      bottom: 88px;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 324px;
+      gap: 24px;
+    }
+
+    .workflow-stream,
+    .workflow-side {
+      border: 1px solid rgba(34, 126, 166, 0.16);
+      border-radius: 18px;
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(248, 252, 253, 0.9)),
+        linear-gradient(rgba(34, 126, 166, 0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(34, 126, 166, 0.025) 1px, transparent 1px);
+      background-size: auto, 24px 24px, 24px 24px;
+      box-shadow: 0 18px 44px rgba(31, 41, 51, 0.065);
+      overflow: hidden;
+      padding: 22px;
+    }
+
+    .workflow-stream h2,
+    .workflow-side h2 {
+      margin: 0;
+      color: var(--ink);
+      font-size: 22px;
+      line-height: 1.1;
+    }
+
+    .workflow-stream h2::after,
+    .workflow-side h2::after {
+      content: "";
+      display: block;
+      height: 1px;
+      margin: 16px 0 0;
+      background: linear-gradient(90deg, rgba(31, 41, 51, 0.14), rgba(34, 126, 166, 0.12), transparent);
+    }
+
+    .event-stream {
+      position: relative;
+      display: grid;
+      gap: 12px;
+      margin-top: 18px;
+      padding-left: 18px;
+    }
+
+    .event-stream::before {
+      content: "";
+      position: absolute;
+      left: 5px;
+      top: 18px;
+      bottom: 18px;
+      width: 1px;
+      background: linear-gradient(180deg, rgba(34, 126, 166, 0.22), rgba(211, 17, 69, 0.16), rgba(25, 145, 97, 0.18));
+    }
+
+    .workflow-event {
+      position: relative;
+      min-height: 72px;
+      display: grid;
+      grid-template-columns: 108px minmax(0, 1fr) 132px;
+      gap: 16px;
+      align-items: center;
+      padding: 14px 16px;
+      border: 1px solid rgba(34, 126, 166, 0.12);
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.78);
+    }
+
+    .workflow-event::before {
+      content: "";
+      position: absolute;
+      left: -18px;
+      top: 30px;
+      width: 11px;
+      height: 11px;
+      border-radius: 999px;
+      background: var(--event, var(--blue));
+      box-shadow: 0 0 0 7px color-mix(in srgb, var(--event, var(--blue)), transparent 88%);
+    }
+
+    .event-seq {
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 900;
+      line-height: 1.45;
+    }
+
+    .event-main strong {
+      display: block;
+      color: var(--ink);
+      font-size: 14px;
+      line-height: 1.1;
+    }
+
+    .event-main span {
+      display: block;
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+      line-height: 1.35;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .event-badge {
+      justify-self: end;
+      max-width: 132px;
+      padding: 7px 9px;
+      border: 1px solid rgba(34, 126, 166, 0.14);
+      border-radius: 999px;
+      background: rgba(248, 252, 253, 0.82);
+      color: var(--blue);
+      font-size: 10px;
+      font-weight: 950;
+      white-space: nowrap;
+    }
+
+    .workflow-side-stack {
+      display: grid;
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    .workflow-cardlet {
+      position: relative;
+      min-height: 58px;
+      padding: 12px 12px 12px 42px;
+      border: 1px solid rgba(34, 126, 166, 0.14);
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.76);
+    }
+
+    .workflow-cardlet::before {
+      content: "";
+      position: absolute;
+      left: 15px;
+      top: 18px;
+      width: 11px;
+      height: 11px;
+      border-radius: 999px;
+      background: var(--state, var(--blue));
+      box-shadow: 0 0 0 7px color-mix(in srgb, var(--state, var(--blue)), transparent 88%);
+    }
+
+    .workflow-cardlet strong {
+      display: block;
+      color: var(--ink);
+      font-size: 12px;
+      line-height: 1.1;
+      white-space: nowrap;
+    }
+
+    .workflow-cardlet span {
+      display: block;
+      margin-top: 7px;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 800;
+      line-height: 1.3;
+    }
+
+    .workflow-footer {
+      left: 300px;
+      right: 70px;
+    }
+
+    .workflow-footer .footer-lock i {
+      background: var(--green);
+      box-shadow: 0 0 0 7px rgba(25, 145, 97, 0.1);
+    }
+
+    .board > .screen:nth-child(9) .title {
+      display: none;
+    }
+
+    .board > .screen:nth-child(9) .capsule-current {
+      transform: translateY(-2px);
+    }
+
+    .board > .screen:nth-child(9) .app-capsule .brand-signal {
+      margin-left: 0;
+    }
+
+    .audit-hero,
+    .audit-integrity {
+      position: absolute;
+      top: 144px;
+      height: 96px;
+      z-index: 2;
+      border: 1px solid rgba(34, 126, 166, 0.16);
+      border-radius: 18px;
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(248, 252, 253, 0.84)),
+        linear-gradient(rgba(34, 126, 166, 0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(34, 126, 166, 0.025) 1px, transparent 1px);
+      background-size: auto, 24px 24px, 24px 24px;
+      box-shadow: 0 16px 38px rgba(31, 41, 51, 0.06);
+      overflow: hidden;
+    }
+
+    .audit-hero {
+      left: 300px;
+      width: 610px;
+      display: grid;
+      grid-template-columns: 68px 1fr;
+      gap: 16px;
+      align-items: center;
+      padding: 16px 20px;
+    }
+
+    .audit-integrity {
+      left: 934px;
+      right: 70px;
+      padding: 18px 22px;
+    }
+
+    .audit-hero::after,
+    .audit-integrity::after {
+      content: "";
+      position: absolute;
+      left: 24px;
+      right: 24px;
+      bottom: 18px;
+      height: 1px;
+      background: linear-gradient(90deg, rgba(31, 41, 51, 0.24), rgba(34, 126, 166, 0.2), rgba(211, 17, 69, 0.12), transparent);
+    }
+
+    .audit-seal {
+      position: relative;
+      width: 58px;
+      height: 58px;
+      border-radius: 18px;
+      background:
+        radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.95) 0 24%, transparent 25%),
+        conic-gradient(from 180deg, var(--dark), rgba(34, 126, 166, 0.78), rgba(211, 17, 69, 0.72), var(--dark));
+      box-shadow: 0 16px 30px rgba(31, 41, 51, 0.16), 0 0 0 10px rgba(31, 41, 51, 0.05);
+    }
+
+    .audit-seal::before,
+    .audit-seal::after {
+      content: "";
+      position: absolute;
+      border-radius: 999px;
+      border: 1px solid rgba(34, 126, 166, 0.18);
+      inset: -10px -16px;
+      transform: rotate(-12deg);
+    }
+
+    .audit-seal::after {
+      inset: -16px -8px;
+      border-color: rgba(211, 17, 69, 0.14);
+      transform: rotate(18deg);
+    }
+
+    .audit-hero h2,
+    .audit-integrity h2 {
+      margin: 0;
+      color: var(--ink);
+      font-size: 22px;
+      line-height: 1.1;
+    }
+
+    .audit-hero p,
+    .audit-integrity p {
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .audit-hash-grid {
+      position: absolute;
+      right: 22px;
+      top: 20px;
+      width: 86px;
+      display: grid;
+      grid-template-columns: repeat(5, 10px);
+      gap: 7px;
+    }
+
+    .audit-hash-grid span {
+      width: 10px;
+      height: 10px;
+      border-radius: 3px;
+      background: rgba(31, 41, 51, 0.12);
+    }
+
+    .audit-hash-grid span:nth-child(3n) {
+      background: rgba(34, 126, 166, 0.18);
+    }
+
+    .audit-hash-grid span:nth-child(5n) {
+      background: rgba(211, 17, 69, 0.16);
+    }
+
+    .audit-filter {
+      position: absolute;
+      left: 300px;
+      right: 70px;
+      top: 264px;
+      height: 86px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 18px;
+      border: 1px solid rgba(34, 126, 166, 0.16);
+      border-radius: 18px;
+      background:
+        linear-gradient(90deg, rgba(255, 255, 255, 0.94), rgba(248, 252, 253, 0.8)),
+        linear-gradient(rgba(34, 126, 166, 0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(34, 126, 166, 0.025) 1px, transparent 1px);
+      background-size: auto, 22px 22px, 22px 22px;
+      box-shadow: 0 14px 34px rgba(31, 41, 51, 0.055);
+    }
+
+    .audit-filter .filter-search {
+      max-width: 390px;
+    }
+
+    .audit-filter .filter-select {
+      flex: 0 0 148px;
+    }
+
+    .audit-filter .filter-select.wide {
+      flex-basis: 180px;
+    }
+
+    .audit-filter-count {
+      margin-left: auto;
+      height: 34px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 0 12px;
+      border: 1px solid rgba(31, 41, 51, 0.12);
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.74);
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 900;
+      white-space: nowrap;
+    }
+
+    .audit-filter-count::before {
+      content: "";
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: var(--dark);
+      box-shadow: 0 0 0 6px rgba(31, 41, 51, 0.08);
+    }
+
+    .audit-layout {
+      position: absolute;
+      left: 300px;
+      right: 70px;
+      top: 374px;
+      bottom: 88px;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 324px;
+      gap: 24px;
+    }
+
+    .audit-ledger,
+    .audit-detail {
+      border: 1px solid rgba(34, 126, 166, 0.16);
+      border-radius: 18px;
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(248, 252, 253, 0.9)),
+        linear-gradient(rgba(34, 126, 166, 0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(34, 126, 166, 0.025) 1px, transparent 1px);
+      background-size: auto, 24px 24px, 24px 24px;
+      box-shadow: 0 18px 44px rgba(31, 41, 51, 0.065);
+      overflow: hidden;
+    }
+
+    .audit-ledger,
+    .audit-detail {
+      padding: 22px;
+    }
+
+    .audit-ledger h2,
+    .audit-detail h2 {
+      margin: 0;
+      color: var(--ink);
+      font-size: 22px;
+      line-height: 1.1;
+    }
+
+    .audit-ledger h2::after,
+    .audit-detail h2::after {
+      content: "";
+      display: block;
+      height: 1px;
+      margin: 16px 0 0;
+      background: linear-gradient(90deg, rgba(31, 41, 51, 0.14), rgba(34, 126, 166, 0.12), transparent);
+    }
+
+    .audit-chain {
+      position: relative;
+      display: grid;
+      gap: 12px;
+      margin-top: 18px;
+      padding-left: 18px;
+    }
+
+    .audit-chain::before {
+      content: "";
+      position: absolute;
+      left: 5px;
+      top: 18px;
+      bottom: 18px;
+      width: 1px;
+      background: linear-gradient(180deg, rgba(31, 41, 51, 0.22), rgba(34, 126, 166, 0.16), rgba(211, 17, 69, 0.14));
+    }
+
+    .audit-entry {
+      position: relative;
+      min-height: 74px;
+      display: grid;
+      grid-template-columns: 132px minmax(0, 1fr) 116px;
+      gap: 16px;
+      align-items: center;
+      padding: 14px 16px;
+      border: 1px solid rgba(34, 126, 166, 0.12);
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.78);
+    }
+
+    .audit-entry::before {
+      content: "";
+      position: absolute;
+      left: -18px;
+      top: 30px;
+      width: 11px;
+      height: 11px;
+      border-radius: 999px;
+      background: var(--audit, var(--blue));
+      box-shadow: 0 0 0 7px color-mix(in srgb, var(--audit, var(--blue)), transparent 88%);
+    }
+
+    .audit-time {
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 900;
+      line-height: 1.45;
+    }
+
+    .audit-main strong {
+      display: block;
+      color: var(--ink);
+      font-size: 14px;
+      line-height: 1.1;
+    }
+
+    .audit-main span {
+      display: block;
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+      line-height: 1.35;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .audit-hash {
+      justify-self: end;
+      max-width: 116px;
+      padding: 7px 9px;
+      border: 1px solid rgba(31, 41, 51, 0.1);
+      border-radius: 999px;
+      background: rgba(248, 252, 253, 0.82);
+      color: var(--dark);
+      font-size: 10px;
+      font-weight: 950;
+      white-space: nowrap;
+    }
+
+    .audit-proof {
+      display: grid;
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    .audit-proof-item {
+      position: relative;
+      min-height: 58px;
+      padding: 12px 12px 12px 42px;
+      border: 1px solid rgba(34, 126, 166, 0.14);
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.76);
+    }
+
+    .audit-proof-item::before {
+      content: "";
+      position: absolute;
+      left: 15px;
+      top: 18px;
+      width: 11px;
+      height: 11px;
+      border-radius: 999px;
+      background: var(--proof, var(--blue));
+      box-shadow: 0 0 0 7px color-mix(in srgb, var(--proof, var(--blue)), transparent 88%);
+    }
+
+    .audit-proof-item strong {
+      display: block;
+      color: var(--ink);
+      font-size: 12px;
+      line-height: 1.1;
+      white-space: nowrap;
+    }
+
+    .audit-proof-item span {
+      display: block;
+      margin-top: 7px;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 800;
+      line-height: 1.3;
+    }
+
+    .audit-footer {
+      left: 300px;
+      right: 70px;
+    }
+
+    .audit-footer .footer-lock i {
+      background: var(--dark);
     }
   </style>
 </head>
@@ -4487,6 +6640,7 @@
         <div class="brand">企业智能 Agent</div>
         <a class="active">总览</a>
         <a>Agent 工作区</a>
+        <a>RAG 问答</a>
         <a>诊断工作台</a>
         <a>Skill 注册中心</a>
         <a>工作流事件</a>
@@ -4593,6 +6747,7 @@
         <div class="brand">企业智能 Agent</div>
         <a>总览</a>
         <a class="active">Agent 工作区</a>
+        <a>RAG 问答</a>
         <a>诊断工作台</a>
         <a>Skill 注册中心</a>
         <a>工作流事件</a>
@@ -4721,7 +6876,213 @@
     <section class="screen">
       <nav class="nav">
         <div class="logo">EA</div><div class="brand">企业智能 Agent</div>
-        <a>总览</a><a>Agent 工作区</a><a class="active">诊断工作台</a><a>Skill 注册中心</a><a>工作流事件</a><a>审计记录</a>
+        <a>总览</a><a>Agent 工作区</a><a class="active">RAG 问答</a><a>SQL 工作台</a><a>诊断工作台</a><a>Skill 注册中心</a><a>工作流事件</a><a>审计记录</a>
+        <div class="nav-spacer" aria-hidden="true"><span></span><span></span><span></span></div>
+        <div class="nav-tools"><div class="search">搜索知识 / 文档 / 工单</div><div class="nav-actions"><span class="badge" style="background: var(--blue)">可信检索</span><span class="button">新建问答</span></div></div>
+      </nav>
+
+      <div class="app-capsule">
+        <div class="logo">EA</div>
+        <div class="brand-lockup">
+          <span>企业智能 Agent</span>
+        </div>
+        <div class="capsule-current">
+          <strong>RAG 问答</strong>
+          <i aria-hidden="true"></i>
+          <small>知识检索</small>
+          <span>带引用</span>
+        </div>
+        <div class="brand-signal" aria-hidden="true">
+          <i class="signal-node"></i>
+          <i class="signal-node"></i>
+          <i class="signal-node"></i>
+        </div>
+      </div>
+
+      <div class="title">
+        <h1>RAG 问答</h1>
+        <p>围绕内部文档、故障案例、运维手册和变更记录进行带引用问答。</p>
+      </div>
+
+      <div class="rag-hero">
+        <div class="rag-orb" aria-hidden="true"></div>
+        <div>
+          <h2>知识问答入口</h2>
+          <p>只回答可检索到的内容，输出引用来源、可信度和缺口提示。</p>
+        </div>
+      </div>
+
+      <div class="rag-health">
+        <h2>检索状态</h2>
+        <p>4 个知识源在线，向量索引最近 12 分钟更新。</p>
+        <div class="rag-health-grid" aria-hidden="true">
+          <span></span><span></span><span></span><span></span>
+          <span></span><span></span><span></span><span></span>
+          <span></span><span></span><span></span><span></span>
+        </div>
+      </div>
+
+      <div class="rag-layout">
+        <div class="rag-window">
+          <div class="rag-head">
+            <div>
+              <h2>知识库问答</h2>
+              <span>当前范围：Runbook、ADR、工单复盘、发布记录</span>
+            </div>
+            <span class="badge" style="background: var(--green)">引用已开启</span>
+          </div>
+          <div class="rag-body">
+            <div class="rag-question">
+              payment-api 最近 7 天错误率升高时，应该先查哪些 Runbook 和历史工单？
+            </div>
+            <div class="rag-answer">
+              <strong>Agent 回答</strong>
+              <p>建议先从服务依赖、发布窗口和数据库慢查询三个方向排查。当前知识库中可直接引用的材料包括 payment-api 故障 Runbook、订单库慢查询复盘和 6 月发布检查记录。未检索到生产写操作授权文档，因此回答只给出排查路径。</p>
+              <div class="rag-evidence">
+                <span><b>Runbook</b>payment-api 错误率排查，第 3 节</span>
+                <span><b>工单复盘</b>INC-2841 订单库慢查询关联</span>
+                <span><b>发布记录</b>release-2026-06 前置检查</span>
+              </div>
+            </div>
+          </div>
+          <div class="rag-composer">
+            <div class="rag-input">
+              <span>输入问题，例如：根据最近故障复盘，总结 payment-api 超时的常见原因，并列出引用来源。</span>
+              <span class="rag-send" aria-label="提交 RAG 问题">
+                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                  <path d="M4.5 12.4 19.6 5.2c.7-.3 1.4.4 1.1 1.1l-7.1 15.2c-.3.7-1.3.6-1.5-.1l-1.6-6-5.9-1.5c-.8-.2-.8-1.2-.1-1.5Z" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/>
+                  <path d="m10.8 14.8 4.1-4.2" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
+                </svg>
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <aside class="rag-side">
+          <div class="rag-side-card">
+            <h3>知识源</h3>
+            <div class="rag-source" style="--source: var(--blue)"><i></i><span>Runbook / 运维手册</span><em>在线</em></div>
+            <div class="rag-source" style="--source: var(--green)"><i></i><span>故障复盘 / 工单</span><em>在线</em></div>
+            <div class="rag-source" style="--source: var(--yellow)"><i></i><span>ADR / 架构决策</span><em>在线</em></div>
+            <div class="rag-source" style="--source: var(--red)"><i></i><span>发布记录 / 变更说明</span><em>在线</em></div>
+          </div>
+          <div class="rag-side-card">
+            <h3>引用与可信度</h3>
+            <div class="rag-citation" style="--source: var(--green)"><i></i><span>最高相似度</span><em>0.86</em></div>
+            <div class="rag-citation" style="--source: var(--blue)"><i></i><span>引用片段</span><em>3 条</em></div>
+            <div class="rag-citation" style="--source: var(--yellow)"><i></i><span>缺口提示</span><em>1 项</em></div>
+          </div>
+          <div class="rag-side-card">
+            <h3>检索参数</h3>
+            <div class="rag-citation" style="--source: var(--blue)"><i></i><span>TopK</span><em>5</em></div>
+            <div class="rag-citation" style="--source: var(--green)"><i></i><span>重排模型</span><em>开启</em></div>
+            <div class="rag-citation" style="--source: var(--red)"><i></i><span>无引用回答</span><em>禁止</em></div>
+          </div>
+        </aside>
+      </div>
+
+      <div class="overview-footer rag-footer">
+        <div class="footer-lock"><i aria-hidden="true"></i><strong>RAG 引用模式</strong><small>知识源在线 / 无引用不回答</small></div>
+        <div class="footer-status"><span>Runbook</span><span>工单复盘</span><span>发布记录</span></div>
+      </div>
+    </section>
+
+    <section class="screen">
+      <nav class="nav">
+        <div class="logo">EA</div><div class="brand">企业智能 Agent</div>
+        <a>总览</a><a>Agent 工作区</a><a>RAG 问答</a><a class="active">SQL 工作台</a><a>诊断工作台</a><a>Skill 注册中心</a><a>工作流事件</a><a>审计记录</a>
+        <div class="nav-spacer" aria-hidden="true"><span></span><span></span><span></span></div>
+        <div class="nav-tools"><div class="search">搜索连接 / 表 / SQL 指纹</div><div class="nav-actions"><span class="badge" style="background: #256f86">SQL 控制台</span><span class="button">新建会话</span></div></div>
+      </nav>
+
+      <div class="app-capsule">
+        <div class="logo">EA</div>
+        <div class="brand-lockup">
+          <span>企业智能 Agent</span>
+        </div>
+        <div class="capsule-current">
+          <strong>SQL 工作台</strong>
+          <i aria-hidden="true"></i>
+          <small>读写查配</small>
+          <span>AI Copilot</span>
+        </div>
+        <div class="brand-signal" aria-hidden="true">
+          <i class="signal-node"></i>
+          <i class="signal-node"></i>
+          <i class="signal-node"></i>
+        </div>
+      </div>
+
+      <div class="title">
+        <h1>SQL 工作台</h1>
+        <p>完整数据库控制台，覆盖连接、查询、写入、结果、配置、审计和大模型辅助。</p>
+      </div>
+
+      <div class="sql-toolbar">
+        <div class="filter-search">搜索连接 / 库表 / SQL 指纹</div>
+        <div class="filter-select"><b>连接</b><span>orders-dev</span></div>
+        <div class="filter-select"><b>模式</b><span>读写</span></div>
+        <div class="filter-select"><b>事务</b><span>手动提交</span></div>
+        <span class="sql-run-state">AI Copilot 已接入 / 策略已加载</span>
+      </div>
+
+      <div class="sql-layout">
+        <div class="sql-card compact">
+          <span class="sql-card-kicker" style="--dot: var(--green)">连接管理</span>
+          <h2>连接与库表</h2>
+          <div class="sql-connection-list">
+            <div class="sql-connection" style="--dot: var(--green)"><strong>orders-dev</strong><span>PostgreSQL / 读写 / 23ms</span></div>
+            <div class="sql-connection" style="--dot: var(--blue)"><strong>inventory-dev</strong><span>MySQL / 只读 / 31ms</span></div>
+            <div class="sql-connection" style="--dot: var(--yellow)"><strong>reporting</strong><span>ClickHouse / 分析 / 18ms</span></div>
+          </div>
+          <div class="sql-tree">
+            <div class="sql-tree-item" style="--dot: #256f86"><strong>orders</strong><span>order_id, user_id, status, amount</span></div>
+            <div class="sql-tree-item" style="--dot: var(--green)"><strong>order_items</strong><span>sku_id, quantity, price</span></div>
+            <div class="sql-tree-item" style="--dot: var(--red)"><strong>payments</strong><span>payment_id, channel, state</span></div>
+          </div>
+          <div class="sql-config-list">
+            <div class="sql-config-item" style="--dot: var(--dark)"><strong>连接配置</strong><span>超时 30s / 返回 500 行 / 自动提交关闭</span></div>
+            <div class="sql-config-item" style="--dot: var(--red)"><strong>写入策略</strong><span>DML 需预览影响行，生产需审批</span></div>
+          </div>
+        </div>
+
+        <div class="sql-card main">
+          <span class="sql-card-kicker" style="--dot: var(--red)">读 / 写 / 查 / 配置</span>
+          <h2>查询编辑器</h2>
+          <div class="sql-console-tabs"><span class="active">Query 1</span><span>DML 变更</span><span>Explain</span><span>配置</span><span>历史</span></div>
+          <div class="sql-console-meta"><span>连接<b>orders-dev</b></span><span>事务<b>manual</b></span><span>返回上限<b>500 行</b></span><span>AI 辅助<b>解释 / 优化 / 预检</b></span></div>
+          <div class="sql-editor-box console"><code>UPDATE orders
+SET status = 'REVIEW_REQUIRED'
+WHERE user_id = :userId
+  AND created_at &gt; now() - interval '7 days'
+RETURNING order_id, status, updated_at;</code></div>
+          <div class="sql-console-actions"><span class="button">执行 SQL</span><span class="button secondary">预览影响</span><span class="button secondary">Explain</span><span class="button secondary">保存片段</span></div>
+          <div class="sql-result-tabs"><span class="active">结果集</span><span>执行计划</span><span>变更预览</span><span>日志</span></div>
+          <div class="sql-result-grid">
+            <table>
+              <thead><tr><th>order_id</th><th>status</th><th>updated_at</th><th>rows</th></tr></thead>
+              <tbody>
+                <tr><td>OD-10482</td><td>REVIEW_REQUIRED</td><td>20:38:14</td><td>1</td></tr>
+                <tr><td>OD-10483</td><td>REVIEW_REQUIRED</td><td>20:38:14</td><td>1</td></tr>
+                <tr><td>OD-10491</td><td>PENDING</td><td>未变更</td><td>0</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="sql-explain-mini"><span>扫描行数<b>1,248</b></span><span>影响行数<b>2</b></span><span>风险等级<b>中</b></span></div>
+          <div class="sql-config-strip"><span>提交控制<b>Commit / Rollback</b></span><span>慢 SQL 阈值<b>300ms</b></span><span>审计绑定<b>trace + operator</b></span></div>
+        </div>
+
+      </div>
+
+      <div class="overview-footer sql-footer">
+        <div class="footer-lock"><i aria-hidden="true"></i><strong>SQL 控制台在线</strong><small>读 / 写 / 查 / 配置 / AI 辅助</small></div>
+        <div class="footer-status"><span>连接管理</span><span>查询执行</span><span>结果集</span><span>模型助手</span></div>
+      </div>
+    </section>
+<section class="screen">
+      <nav class="nav">
+        <div class="logo">EA</div><div class="brand">企业智能 Agent</div>
+        <a>总览</a><a>Agent 工作区</a><a>RAG 问答</a><a>SQL 工作台</a><a class="active">诊断工作台</a><a>Skill 注册中心</a><a>工作流事件</a><a>审计记录</a>
         <div class="nav-spacer" aria-hidden="true"><span></span><span></span><span></span></div>
         <div class="nav-tools"><div class="search">搜索服务 / 数据库 / 工单</div><div class="nav-actions"><span class="badge" style="background: var(--blue)">安全模式</span><span class="button">新建任务</span></div></div>
       </nav>
@@ -4804,7 +7165,7 @@
     <section class="screen">
       <nav class="nav">
         <div class="logo">EA</div><div class="brand">企业智能 Agent</div>
-        <a>总览</a><a>Agent 工作区</a><a>诊断工作台</a><a class="active">Skill 注册中心</a><a>工作流事件</a><a>审计记录</a>
+        <a>总览</a><a>Agent 工作区</a><a>RAG 问答</a><a>SQL 工作台</a><a>诊断工作台</a><a class="active">Skill 注册中心</a><a>工作流事件</a><a>审计记录</a>
         <div class="nav-spacer" aria-hidden="true"><span></span><span></span><span></span></div>
         <div class="nav-tools"><div class="search">搜索服务 / 数据库 / 工单</div><div class="nav-actions"><span class="badge" style="background: var(--blue)">安全模式</span><span class="button">新建任务</span></div></div>
       </nav>
@@ -4832,42 +7193,51 @@
         <p>查看 P1 只读诊断 Skill 的版本、风险、角色、签名和治理拦截器。</p>
       </div>
 
-      <div class="registry-context">
-        <div class="registry-icon" aria-hidden="true"></div>
-        <div>
-          <h2>只读 Skill 目录</h2>
-          <p>集中查看可被 Agent 调用的已签名 Skill、版本和风险边界。</p>
-        </div>
-      </div>
-
-      <div class="contract-rail">
-        <strong>契约守护</strong>
-        <span>Schema</span>
-        <span>Signature</span>
-        <span>Audit</span>
-      </div>
-
       <div class="card filters">
-        <span class="chip active">全部</span><span class="chip">INFRASTRUCTURE</span><span class="chip">APPLICATION</span><span class="chip">OBSERVABILITY</span><span class="chip">READ_ONLY</span><span class="chip">已签名</span>
+        <div class="filter-row primary">
+          <div class="filter-search">搜索 Skill / Owner</div>
+          <div class="filter-select"><b>分类</b><span>全部</span></div>
+          <div class="filter-select"><b>风险</b><span>READ_ONLY</span></div>
+          <div class="filter-select status"><b>状态</b><span>已安装</span></div>
+          <span class="filter-count">5 个 Skill / 3 已安装</span>
+        </div>
+        <div class="filter-row secondary">
+          <span class="filter-label">快捷筛选</span>
+          <div class="filter-chips"><span class="chip active">全部</span><span class="chip">INFRA</span><span class="chip">APP</span><span class="chip">OBS</span><span class="chip">已签名</span></div>
+        </div>
       </div>
 
       <div class="card registry-table">
         <h2>内置 Skill</h2>
         <table>
-          <thead><tr><th>Skill ID</th><th>显示名</th><th>分类</th><th>版本</th><th>风险</th><th>必要角色</th><th>状态</th></tr></thead>
+          <thead><tr><th>Skill</th><th>分类</th><th>版本</th><th>风险</th><th>状态</th><th>操作</th></tr></thead>
           <tbody>
-            <tr><td>node-health-read</td><td>节点健康检查</td><td>INFRA</td><td>1.1.0</td><td style="color: var(--green)">READ_ONLY</td><td>ops-reader</td><td>已签名</td></tr>
-            <tr><td>application-log-summary-read</td><td>应用日志错误摘要</td><td>APP</td><td>1.0.0</td><td style="color: var(--green)">READ_ONLY</td><td>ops-reader</td><td>已签名</td></tr>
-            <tr><td>certificate-expiry-read</td><td>证书到期检查</td><td>INFRA</td><td>1.0.0</td><td style="color: var(--green)">READ_ONLY</td><td>ops-reader</td><td>已签名</td></tr>
-            <tr><td>platform-alert-summary-read</td><td>平台告警摘要</td><td>OBS</td><td>1.0.0</td><td style="color: var(--green)">READ_ONLY</td><td>ops-reader</td><td>已签名</td></tr>
-            <tr><td>service-dependency-health-read</td><td>服务依赖健康检查</td><td>APP</td><td>1.0.0</td><td style="color: var(--green)">READ_ONLY</td><td>ops-reader</td><td>已签名</td></tr>
+            <tr><td><strong class="skill-id">node-health-read</strong><span class="skill-desc">节点健康检查</span></td><td>INFRA</td><td>1.1.0</td><td style="color: var(--green)">READ_ONLY</td><td><span class="status-pill">已安装</span></td><td><div class="table-actions"><span class="action-btn">升级</span><span class="action-btn danger">卸载</span></div></td></tr>
+            <tr><td><strong class="skill-id">application-log-summary-read</strong><span class="skill-desc">应用日志错误摘要</span></td><td>APP</td><td>1.0.0</td><td style="color: var(--green)">READ_ONLY</td><td><span class="status-pill">已安装</span></td><td><div class="table-actions"><span class="action-btn">升级</span><span class="action-btn danger">卸载</span></div></td></tr>
+            <tr><td><strong class="skill-id">certificate-expiry-read</strong><span class="skill-desc">证书到期检查</span></td><td>INFRA</td><td>1.0.0</td><td style="color: var(--green)">READ_ONLY</td><td><span class="status-pill pending">可安装</span></td><td><div class="table-actions"><span class="action-btn">安装</span></div></td></tr>
+            <tr><td><strong class="skill-id">platform-alert-summary-read</strong><span class="skill-desc">平台告警摘要</span></td><td>OBS</td><td>1.0.0</td><td style="color: var(--green)">READ_ONLY</td><td><span class="status-pill">已安装</span></td><td><div class="table-actions"><span class="action-btn">升级</span><span class="action-btn danger">卸载</span></div></td></tr>
+            <tr><td><strong class="skill-id">service-dependency-health-read</strong><span class="skill-desc">服务依赖健康检查</span></td><td>APP</td><td>1.0.0</td><td style="color: var(--green)">READ_ONLY</td><td><span class="status-pill pending">可安装</span></td><td><div class="table-actions"><span class="action-btn">安装</span></div></td></tr>
           </tbody>
         </table>
+        <div class="registry-pagination">
+          <span>显示 1-5 / 共 24 个 Skill</span>
+          <span class="page-size">每页 5</span>
+          <div class="page-controls">
+            <span class="page-btn disabled">?</span>
+            <span class="page-btn active">1</span>
+            <span class="page-btn">2</span>
+            <span class="page-btn">3</span>
+            <span class="page-btn">…</span>
+            <span class="page-btn">5</span>
+            <span class="page-btn">?</span>
+          </div>
+        </div>
       </div>
 
       <div class="card detail">
-        <h2>节点健康检查</h2>
+        <h2>Skill 概要</h2>
         <div class="detail-stack">
+          <div class="detail-chip skill-name" style="--chip: var(--green)"><strong>Skill 名称</strong><span>node-health-read / 节点健康检查</span></div>
           <div class="detail-chip" style="--chip: var(--green)"><strong>Owner</strong><span>platform-observability</span></div>
           <div class="detail-chip" style="--chip: var(--blue)"><strong>Executor</strong><span>受限 Worker / 只读执行</span></div>
           <div class="detail-chip" style="--chip: var(--red)"><strong>Interceptors</strong><span>AUTHORIZATION / AUDIT</span></div>
@@ -4879,7 +7249,180 @@
         <div class="footer-status"><span>版本治理</span><span>只读风险</span><span>注册可用</span></div>
       </div>
     </section>
+
+    <section class="screen">
+      <nav class="nav">
+        <div class="logo">EA</div><div class="brand">企业智能 Agent</div>
+        <a>总览</a><a>Agent 工作区</a><a>RAG 问答</a><a>SQL 工作台</a><a>诊断工作台</a><a>Skill 注册中心</a><a class="active">工作流事件</a><a>审计记录</a>
+        <div class="nav-spacer" aria-hidden="true"><span></span><span></span><span></span></div>
+        <div class="nav-tools"><div class="search">搜索 workflow / sequence / event</div><div class="nav-actions"><span class="badge" style="background: var(--green)">SSE 接收</span><span class="button">回放事件</span></div></div>
+      </nav>
+
+      <div class="app-capsule">
+        <div class="logo">EA</div>
+        <div class="brand-lockup">
+          <span>企业智能 Agent</span>
+        </div>
+        <div class="capsule-current">
+          <strong>工作流事件</strong>
+          <i aria-hidden="true"></i>
+          <small>事件流</small>
+          <span>可恢复</span>
+        </div>
+        <div class="brand-signal" aria-hidden="true">
+          <i class="signal-node"></i>
+          <i class="signal-node"></i>
+          <i class="signal-node"></i>
+        </div>
+      </div>
+
+      <div class="title">
+        <h1>工作流事件</h1>
+        <p>按 workflowId、sequence 和语义事件追踪任务状态。</p>
+      </div>
+
+      <div class="workflow-hero">
+        <div class="workflow-orb" aria-hidden="true"></div>
+        <div>
+          <h2>语义事件流</h2>
+          <p>从启动、路由、Worker 接收到结果写入，按 sequence 连续展示。</p>
+        </div>
+      </div>
+
+      <div class="workflow-state">
+        <h2>恢复检查</h2>
+        <p>事件已持久化，SSE 可重连，缺口可用 sequence 回放补齐。</p>
+        <div class="workflow-pulse-grid" aria-hidden="true">
+          <span></span><span></span><span></span><span></span><span></span><span></span>
+          <span></span><span></span><span></span><span></span><span></span><span></span>
+          <span></span><span></span><span></span><span></span><span></span><span></span>
+        </div>
+      </div>
+
+      <div class="workflow-filter">
+        <div class="filter-search">搜索 workflowId / sequence / eventType</div>
+        <div class="filter-select"><b>类型</b><span>全部</span></div>
+        <div class="filter-select"><b>状态</b><span>连续</span></div>
+        <div class="filter-select"><b>环境</b><span>dev</span></div>
+        <span class="workflow-counter">13 条事件 / 0 gap</span>
+      </div>
+
+      <div class="workflow-layout">
+        <div class="workflow-stream">
+          <h2>事件流主轴</h2>
+          <div class="event-stream">
+            <div class="workflow-event" style="--event: var(--blue)"><div class="event-seq">seq 001<br>10:42:11</div><div class="event-main"><strong>WORKFLOW_STARTED</strong><span>commandId 与 operatorId 已写入执行事实源</span></div><span class="event-badge">persisted</span></div>
+            <div class="workflow-event" style="--event: var(--red)"><div class="event-seq">seq 002<br>10:42:13</div><div class="event-main"><strong>POLICY_EVALUATED</strong><span>策略版本 policy-v1 返回 READ_ONLY 执行边界</span></div><span class="event-badge">authorized</span></div>
+            <div class="workflow-event" style="--event: var(--green)"><div class="event-seq">seq 003<br>10:42:15</div><div class="event-main"><strong>SKILL_ROUTED</strong><span>node-health-read@1.1.0 已匹配并完成 schema 校验</span></div><span class="event-badge">routed</span></div>
+            <div class="workflow-event" style="--event: var(--yellow)"><div class="event-seq">seq 004<br>10:42:18</div><div class="event-main"><strong>WORKER_ACCEPTED</strong><span>受限 Worker 接收请求，幂等键已锁定</span></div><span class="event-badge">accepted</span></div>
+            <div class="workflow-event" style="--event: var(--dark)"><div class="event-seq">seq 005<br>10:42:26</div><div class="event-main"><strong>WORKFLOW_COMPLETED</strong><span>只读诊断摘要写入事件流，等待审计封存</span></div><span class="event-badge">completed</span></div>
+          </div>
+        </div>
+
+        <aside class="workflow-side">
+          <h2>状态快照</h2>
+          <div class="workflow-side-stack">
+            <div class="workflow-cardlet" style="--state: var(--green)"><strong>SSE</strong><span>connected / lastEventId=005</span></div>
+            <div class="workflow-cardlet" style="--state: var(--blue)"><strong>Workflow</strong><span>wf-ops-20260611-042</span></div>
+            <div class="workflow-cardlet" style="--state: var(--red)"><strong>Policy</strong><span>policy-v1 / READ_ONLY</span></div>
+            <div class="workflow-cardlet" style="--state: var(--yellow)"><strong>Checkpoint</strong><span>sequence 连续，0 gap</span></div>
+            <div class="workflow-cardlet" style="--state: var(--dark)"><strong>Recovery</strong><span>支持从 seq 005 继续回放</span></div>
+          </div>
+        </aside>
+      </div>
+
+      <div class="overview-footer workflow-footer">
+        <div class="footer-lock"><i aria-hidden="true"></i><strong>事件流已接收</strong><small>SSE connected / sequence continuous</small></div>
+        <div class="footer-status"><span>事实源</span><span>可回放</span><span>幂等键</span><span>审计衔接</span></div>
+      </div>
+    </section>
+
+    <section class="screen">
+      <nav class="nav">
+        <div class="logo">EA</div><div class="brand">企业智能 Agent</div>
+        <a>总览</a><a>Agent 工作区</a><a>RAG 问答</a><a>SQL 工作台</a><a>诊断工作台</a><a>Skill 注册中心</a><a>工作流事件</a><a class="active">审计记录</a>
+        <div class="nav-spacer" aria-hidden="true"><span></span><span></span><span></span></div>
+        <div class="nav-tools"><div class="search">搜索审计 / traceId / operator</div><div class="nav-actions"><span class="badge" style="background: var(--dark)">证据链</span><span class="button">导出记录</span></div></div>
+      </nav>
+
+      <div class="app-capsule">
+        <div class="logo">EA</div>
+        <div class="brand-lockup">
+          <span>企业智能 Agent</span>
+        </div>
+        <div class="capsule-current">
+          <strong>审计记录</strong>
+          <i aria-hidden="true"></i>
+          <small>证据链</small>
+          <span>不可篡改</span>
+        </div>
+        <div class="brand-signal" aria-hidden="true">
+          <i class="signal-node"></i>
+          <i class="signal-node"></i>
+          <i class="signal-node"></i>
+        </div>
+      </div>
+
+      <div class="title">
+        <h1>审计记录</h1>
+        <p>查看身份、策略、Skill、Worker 和结果的不可篡改证据链。</p>
+      </div>
+
+      <div class="audit-hero">
+        <div class="audit-seal" aria-hidden="true"></div>
+        <div>
+          <h2>审计证据链</h2>
+          <p>串联 operator、policy、skill、worker、result 与 hash 摘要。</p>
+        </div>
+      </div>
+
+      <div class="audit-integrity">
+        <h2>链路完整性</h2>
+        <p>7 条关键事件已封存，策略版本与参数哈希一致。</p>
+        <div class="audit-hash-grid" aria-hidden="true">
+          <span></span><span></span><span></span><span></span><span></span>
+          <span></span><span></span><span></span><span></span><span></span>
+          <span></span><span></span><span></span><span></span><span></span>
+        </div>
+      </div>
+
+      <div class="audit-filter">
+        <div class="filter-search">搜索 workflow / operator / traceId</div>
+        <div class="filter-select"><b>事件</b><span>全部</span></div>
+        <div class="filter-select"><b>结果</b><span>全部</span></div>
+        <div class="filter-select wide"><b>时间</b><span>近 24h</span></div>
+        <span class="audit-filter-count">7 条记录 / 0 缺失</span>
+      </div>
+
+      <div class="audit-layout">
+        <div class="audit-ledger">
+          <h2>审计账本</h2>
+          <div class="audit-chain">
+            <div class="audit-entry" style="--audit: var(--blue)"><div class="audit-time">10:42:11<br>sequence 1</div><div class="audit-main"><strong>SESSION_AUTHORIZED</strong><span>operator=ops.reader@company.internal / role=agent-reader</span></div><span class="audit-hash">sha256:a18c</span></div>
+            <div class="audit-entry" style="--audit: var(--red)"><div class="audit-time">10:42:13<br>sequence 2</div><div class="audit-main"><strong>POLICY_EVALUATED</strong><span>policy-v1 返回 READ_ONLY，禁止写操作和脚本执行</span></div><span class="audit-hash">sha256:bc72</span></div>
+            <div class="audit-entry" style="--audit: var(--green)"><div class="audit-time">10:42:15<br>sequence 3</div><div class="audit-main"><strong>SKILL_SELECTED</strong><span>node-health-read@1.1.0 / schema 与签名校验通过</span></div><span class="audit-hash">sha256:73df</span></div>
+            <div class="audit-entry" style="--audit: var(--yellow)"><div class="audit-time">10:42:18<br>sequence 4</div><div class="audit-main"><strong>WORKER_ACCEPTED</strong><span>受限 Worker 接收只读执行请求，幂等键已锁定</span></div><span class="audit-hash">sha256:98aa</span></div>
+            <div class="audit-entry" style="--audit: var(--dark)"><div class="audit-time">10:42:26<br>sequence 5</div><div class="audit-main"><strong>AUDIT_SEALED</strong><span>结果摘要、traceId 与参数哈希写入审计账本</span></div><span class="audit-hash">sha256:e91b</span></div>
+          </div>
+        </div>
+
+        <aside class="audit-detail">
+          <h2>证据详情</h2>
+          <div class="audit-proof">
+            <div class="audit-proof-item" style="--proof: var(--blue)"><strong>Operator</strong><span>ops.reader@company.internal</span></div>
+            <div class="audit-proof-item" style="--proof: var(--red)"><strong>Policy Version</strong><span>policy-v1 / READ_ONLY</span></div>
+            <div class="audit-proof-item" style="--proof: var(--green)"><strong>Skill Version</strong><span>node-health-read@1.1.0</span></div>
+            <div class="audit-proof-item" style="--proof: var(--yellow)"><strong>Parameter Hash</strong><span>node-a / development / sha256:73df</span></div>
+            <div class="audit-proof-item" style="--proof: var(--dark)"><strong>Retention</strong><span>保留 180 天，支持导出与复核</span></div>
+          </div>
+        </aside>
+      </div>
+
+      <div class="overview-footer audit-footer">
+        <div class="footer-lock"><i aria-hidden="true"></i><strong>审计链已封存</strong><small>hash 链完整 / 保留 180 天</small></div>
+        <div class="footer-status"><span>身份</span><span>策略</span><span>Skill</span><span>Worker</span></div>
+      </div>
+    </section>
   </main>
 </body>
 </html>
-
