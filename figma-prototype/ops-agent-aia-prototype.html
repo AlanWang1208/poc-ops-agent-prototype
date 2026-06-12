@@ -50,7 +50,8 @@
       min-height: 1060px;
       overflow: hidden;
       background: var(--bg);
-      box-shadow: 0 22px 60px rgba(31, 41, 51, 0.22);
+      border-bottom: 1px solid rgba(31, 41, 51, 0.08);
+      box-shadow: 0 12px 30px rgba(31, 41, 51, 0.12);
     }
 
     .screen::before {
@@ -3014,7 +3015,8 @@
       left: 835px;
       top: 408px;
       width: 535px;
-      height: 564px;
+      bottom: 24px;
+      height: auto;
     }
 
     .board > .screen:nth-child(2) .skill-grid {
@@ -3038,8 +3040,8 @@
       left: 300px;
       width: 511px;
       top: 586px;
-      bottom: auto;
-      height: 386px;
+      bottom: 24px;
+      height: auto;
     }
 
     .overview-footer {
@@ -3159,7 +3161,7 @@
 
     .board > .screen:nth-child(3) .agent-layout {
       top: 144px;
-      bottom: 88px;
+      bottom: 24px;
       grid-template-columns: minmax(0, 1fr) 320px;
       gap: 24px;
     }
@@ -3353,15 +3355,14 @@
     .board > .screen:nth-child(3) .exchange-body {
       min-height: 0;
       overflow: hidden;
-      gap: 10px;
-      padding: 18px 12px 12px;
+      gap: 14px;
+      padding: 12px 12px 10px;
     }
 
     .board > .screen:nth-child(3) .message {
       max-width: 88%;
       position: relative;
-      padding-top: 14px;
-      padding-bottom: 14px;
+      padding: 8px 14px 10px;
       border-radius: 14px;
       box-shadow: 0 8px 18px rgba(31, 41, 51, 0.04);
     }
@@ -3372,16 +3373,16 @@
       align-items: center;
       justify-content: space-between;
       gap: 12px;
-      margin: -2px -2px 10px;
-      padding-bottom: 8px;
+      margin: -1px -1px 6px;
+      padding-bottom: 4px;
       border-bottom: 1px solid rgba(34, 126, 166, 0.12);
     }
 
     .message-role-icon {
       position: relative;
-      width: 24px;
-      height: 24px;
-      flex: 0 0 24px;
+      width: 18px;
+      height: 18px;
+      flex: 0 0 18px;
       border-radius: 999px;
       border: 1px solid rgba(211, 17, 69, 0.18);
       background:
@@ -3404,9 +3405,9 @@
     .message.agent .message-role-icon::after {
       content: "";
       position: absolute;
-      left: 8px;
-      right: 8px;
-      bottom: 6px;
+      left: 6px;
+      right: 6px;
+      bottom: 4px;
       height: 2px;
       border-radius: 999px;
       background: rgba(34, 126, 166, 0.34);
@@ -3458,14 +3459,20 @@
 
     .board > .screen:nth-child(3) .message.short {
       min-width: 150px;
-      min-height: 72px;
-      padding-bottom: 16px;
+      min-height: 56px;
+      padding-bottom: 10px;
       margin-top: -4px;
     }
 
     .board > .screen:nth-child(3) .plan-step {
+      padding: 7px;
       border-radius: 10px;
       background: rgba(255, 255, 255, 0.88);
+    }
+
+    .board > .screen:nth-child(3) .plan-strip {
+      gap: 8px;
+      margin-top: 8px;
     }
 
     .board > .screen:nth-child(3) .exchange-composer {
@@ -3969,8 +3976,8 @@
       position: absolute;
       left: 300px;
       right: 70px;
-      top: 264px;
-      bottom: 88px;
+      top: 144px;
+      bottom: 24px;
       display: grid;
       grid-template-columns: minmax(0, 1fr) 324px;
       gap: 24px;
@@ -3991,23 +3998,29 @@
 
     .rag-window {
       display: grid;
-      grid-template-rows: 76px minmax(0, 1fr) 112px;
+      grid-template-rows: 76px minmax(0, 1fr) 168px;
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.93), rgba(248, 252, 253, 0.88)),
+        linear-gradient(rgba(34, 126, 166, 0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(34, 126, 166, 0.025) 1px, transparent 1px);
+      background-size: auto, 36px 36px, 36px 36px;
+      box-shadow: 0 14px 34px rgba(31, 41, 51, 0.06);
     }
 
     .rag-head {
       display: flex;
       align-items: center;
-      justify-content: space-between;
-      gap: 20px;
-      padding: 18px 22px;
+      justify-content: flex-start;
+      gap: 16px;
+      padding: 16px 22px;
       border-bottom: 1px solid rgba(34, 126, 166, 0.1);
-      background: radial-gradient(circle at 12% 0%, rgba(34, 126, 166, 0.09), transparent 8rem), linear-gradient(90deg, rgba(255, 255, 255, 0.72), rgba(248, 252, 253, 0.64));
+      background: linear-gradient(90deg, rgba(211, 17, 69, 0.055), rgba(34, 126, 166, 0.045), rgba(25, 145, 97, 0.035));
     }
 
     .rag-head h2 {
       margin: 0;
       color: var(--ink);
-      font-size: 22px;
+      font-size: 20px;
       line-height: 1.1;
     }
 
@@ -4020,34 +4033,115 @@
       white-space: nowrap;
     }
 
+    .rag-head .badge {
+      margin-left: auto;
+      white-space: nowrap;
+    }
+
     .rag-body {
-      padding: 22px;
+      display: grid;
+      align-content: start;
+      gap: 14px;
+      padding: 12px 12px 10px;
       overflow: hidden;
     }
 
     .rag-question {
-      max-width: 610px;
+      position: relative;
+      max-width: 88%;
       margin-left: auto;
-      padding: 18px 20px;
+      padding: 8px 14px 10px;
       border: 1px solid rgba(211, 17, 69, 0.15);
-      border-radius: 18px;
-      background: rgba(255, 248, 250, 0.82);
+      border-radius: 14px;
+      background: #fff7fa;
       color: var(--ink);
       font-size: 15px;
-      line-height: 1.65;
-      box-shadow: 0 12px 26px rgba(211, 17, 69, 0.045);
+      line-height: 1.55;
+      box-shadow: 0 8px 18px rgba(31, 41, 51, 0.04);
     }
 
     .rag-answer {
-      margin-top: 20px;
-      max-width: 720px;
-      padding: 18px 20px 20px;
+      position: relative;
+      margin-top: 0;
+      max-width: 88%;
+      padding: 8px 14px 10px;
       border: 1px solid rgba(34, 126, 166, 0.14);
-      border-radius: 18px;
-      background: rgba(248, 252, 253, 0.8);
+      border-radius: 14px;
+      background: #f8fcfd;
+      box-shadow: 0 8px 18px rgba(31, 41, 51, 0.04);
     }
 
-    .rag-answer strong,
+    .rag-message-head {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin: -1px -1px 6px;
+      padding-bottom: 4px;
+      border-bottom: 1px solid rgba(34, 126, 166, 0.12);
+    }
+
+    .rag-question .rag-message-head {
+      border-bottom-color: rgba(211, 17, 69, 0.14);
+    }
+
+    .rag-message-head::after {
+      content: "";
+      width: 32px;
+      height: 12px;
+      flex: 0 0 32px;
+      border-radius: 999px;
+      background:
+        radial-gradient(circle at 6px 50%, rgba(34, 126, 166, 0.36) 0 2px, transparent 2.5px),
+        radial-gradient(circle at 16px 50%, rgba(34, 126, 166, 0.22) 0 2px, transparent 2.5px),
+        radial-gradient(circle at 26px 50%, rgba(34, 126, 166, 0.14) 0 2px, transparent 2.5px);
+    }
+
+    .rag-question .rag-message-head::after {
+      background:
+        radial-gradient(circle at 6px 50%, rgba(211, 17, 69, 0.38) 0 2px, transparent 2.5px),
+        radial-gradient(circle at 16px 50%, rgba(211, 17, 69, 0.22) 0 2px, transparent 2.5px),
+        radial-gradient(circle at 26px 50%, rgba(211, 17, 69, 0.14) 0 2px, transparent 2.5px);
+    }
+
+    .rag-message-role {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--ink);
+      font-size: 0;
+      font-weight: 900;
+    }
+
+    .rag-message-role .message-role-icon {
+      width: 18px;
+      height: 18px;
+      flex-basis: 18px;
+    }
+
+    .rag-answer .message-role-icon {
+      border-radius: 8px;
+      border-color: rgba(34, 126, 166, 0.18);
+      background:
+        radial-gradient(circle at 36% 42%, rgba(211, 17, 69, 0.9) 0 3px, transparent 4px),
+        radial-gradient(circle at 64% 42%, rgba(34, 126, 166, 0.9) 0 3px, transparent 4px),
+        linear-gradient(180deg, rgba(255, 255, 255, 0.95), rgba(248, 252, 253, 0.9));
+      box-shadow: 0 6px 14px rgba(34, 126, 166, 0.08);
+    }
+
+    .rag-answer .message-role-icon::after {
+      content: "";
+      position: absolute;
+      left: 6px;
+      right: 6px;
+      bottom: 4px;
+      height: 2px;
+      border-radius: 999px;
+      background: rgba(34, 126, 166, 0.34);
+    }
+
+    .rag-answer > strong,
     .rag-citation strong {
       display: block;
       color: var(--ink);
@@ -4056,17 +4150,17 @@
     }
 
     .rag-answer p {
-      margin: 12px 0 0;
+      margin: 8px 0 0;
       color: #36414e;
-      font-size: 14px;
-      line-height: 1.7;
+      font-size: 13px;
+      line-height: 1.55;
     }
 
     .rag-evidence {
       display: grid;
       grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 10px;
-      margin-top: 16px;
+      gap: 8px;
+      margin-top: 10px;
     }
 
     .rag-evidence span {
@@ -4089,41 +4183,45 @@
     }
 
     .rag-composer {
-      padding: 16px 20px;
+      padding: 12px 22px 16px;
       border-top: 1px solid rgba(34, 126, 166, 0.1);
-      background: rgba(255, 255, 255, 0.62);
+      background: rgba(255, 255, 255, 0.8);
     }
 
     .rag-input {
-      height: 78px;
-      display: flex;
-      align-items: flex-start;
-      justify-content: space-between;
-      gap: 16px;
-      padding: 14px 14px 14px 16px;
+      position: relative;
+      height: 134px;
+      padding: 14px 76px 14px 18px;
       border: 1px solid rgba(34, 126, 166, 0.16);
       border-radius: 16px;
-      background: rgba(255, 255, 255, 0.84);
-      color: var(--muted);
-      font-size: 13px;
-      line-height: 1.5;
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(248, 252, 253, 0.96)),
+        linear-gradient(rgba(34, 126, 166, 0.028) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(34, 126, 166, 0.028) 1px, transparent 1px);
+      background-size: auto, 30px 30px, 30px 30px;
+      color: #536171;
+      font-size: 14px;
+      line-height: 1.55;
     }
 
     .rag-send {
-      width: 42px;
-      height: 42px;
-      flex: 0 0 auto;
+      position: absolute;
+      right: 14px;
+      bottom: 14px;
+      width: 44px;
+      height: 38px;
       display: grid;
       place-items: center;
-      border-radius: 14px;
-      background: var(--blue);
+      border-radius: 12px;
+      background: var(--red);
       color: #fff;
-      box-shadow: 0 12px 24px rgba(34, 126, 166, 0.14);
+      box-shadow: 0 12px 24px rgba(211, 17, 69, 0.14);
     }
 
     .rag-send svg {
-      width: 20px;
-      height: 20px;
+      width: 19px;
+      height: 19px;
+      transform: translateX(1px) rotate(-4deg);
     }
 
     .rag-side {
@@ -4382,7 +4480,7 @@
       left: 300px;
       right: 70px;
       top: 250px;
-      bottom: 88px;
+      bottom: 24px;
       display: grid;
       grid-template-columns: 1.05fr 0.9fr 0.86fr;
       gap: 24px;
@@ -4578,8 +4676,8 @@
     }
 
     .sql-layout {
-      grid-template-columns: 262px minmax(0, 1fr);
-      gap: 18px;
+      grid-template-columns: minmax(0, 1fr);
+      gap: 0;
     }
 
     .sql-card.compact,
@@ -4989,7 +5087,7 @@
     .board > .screen:nth-child(6) .timeline.compact,
     .board > .screen:nth-child(6) .result {
       top: 276px;
-      bottom: 88px;
+      bottom: 24px;
       height: auto;
       padding: 22px;
       border-radius: 18px;
@@ -5475,7 +5573,7 @@
     .board > .screen:nth-child(7) .registry-table,
     .board > .screen:nth-child(7) .detail {
       top: 288px;
-      bottom: 88px;
+      bottom: 24px;
       height: auto;
       border-radius: 18px;
       border-color: rgba(34, 126, 166, 0.16);
@@ -6016,7 +6114,7 @@
       left: 300px;
       right: 70px;
       top: 374px;
-      bottom: 88px;
+      bottom: 24px;
       display: grid;
       grid-template-columns: minmax(0, 1fr) 324px;
       gap: 24px;
@@ -6375,7 +6473,7 @@
       left: 300px;
       right: 70px;
       top: 374px;
-      bottom: 88px;
+      bottom: 24px;
       display: grid;
       grid-template-columns: minmax(0, 1fr) 324px;
       gap: 24px;
@@ -6550,6 +6648,211 @@
     .audit-footer .footer-lock i {
       background: var(--dark);
     }
+
+    /* Login access gate */
+    .login-copy {
+      padding-top: 104px;
+    }
+
+    .login-copy h1 {
+      max-width: 620px;
+      font-size: 38px;
+      font-weight: 760;
+      line-height: 1.2;
+      letter-spacing: 0.01em;
+    }
+
+    .login-copy > p {
+      max-width: 600px;
+      font-size: 17px;
+    }
+
+    .login-mode-strip {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 24px;
+    }
+
+    .login-mode-strip span {
+      display: inline-flex;
+      align-items: center;
+      min-height: 34px;
+      padding: 0 13px;
+      border: 1px solid rgba(34, 126, 166, 0.16);
+      border-radius: 999px;
+      color: var(--text);
+      background: rgba(255, 255, 255, 0.76);
+      font-size: 12px;
+      font-weight: 800;
+      box-shadow: 0 8px 20px rgba(31, 41, 51, 0.05);
+    }
+
+    .login-mode-strip span:first-child {
+      border-color: rgba(34, 126, 166, 0.3);
+      color: var(--blue);
+    }
+
+    .login-mode-strip span:last-child {
+      border-color: rgba(22, 135, 90, 0.24);
+      color: var(--green);
+    }
+
+    .login-hero-effect {
+      opacity: 0.48;
+      filter: saturate(0.8);
+    }
+
+    .ops-visual {
+      margin-top: 34px;
+      height: 300px;
+      opacity: 0.9;
+    }
+
+    .login-card {
+      position: relative;
+      align-self: center;
+      height: auto;
+      min-height: 430px;
+      margin-bottom: 0;
+      padding: 30px 32px;
+      border-color: rgba(34, 126, 166, 0.2);
+      background: rgba(255, 255, 255, 0.94);
+    }
+
+    .login-card::before {
+      content: "P1 / READ_ONLY";
+      position: absolute;
+      top: 30px;
+      right: 32px;
+      padding: 6px 10px;
+      border: 1px solid rgba(34, 126, 166, 0.22);
+      border-radius: 999px;
+      color: var(--blue);
+      background: #f7fbfd;
+      font-size: 10px;
+      font-weight: 900;
+      letter-spacing: 0.06em;
+    }
+
+    .login-card h2 {
+      padding-right: 120px;
+      font-size: 28px;
+    }
+
+    .login-card > p {
+      max-width: 420px;
+      margin: 10px 0 24px;
+      font-size: 14px;
+      line-height: 1.55;
+      white-space: normal;
+    }
+
+    .login-field label {
+      color: var(--text);
+    }
+
+    .login-input {
+      width: 100%;
+      height: 46px;
+      color: var(--text);
+      font-family: inherit;
+      font-weight: 700;
+      outline: none;
+    }
+
+    .login-input[readonly] {
+      cursor: default;
+    }
+
+    .login-input-note {
+      display: block;
+      margin-top: 7px;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.4;
+    }
+
+    .login-options {
+      margin: 18px 0 14px;
+    }
+
+    .login-option {
+      gap: 14px;
+      justify-content: flex-start;
+      padding: 13px 14px;
+      border-color: rgba(34, 126, 166, 0.18);
+      background: #f8fbfc;
+    }
+
+    .login-option-icon {
+      width: 34px;
+      height: 34px;
+      display: grid;
+      place-items: center;
+      flex: 0 0 auto;
+      border-radius: 9px;
+      color: #fff;
+      background: var(--blue);
+      font-size: 11px;
+      font-weight: 900;
+      letter-spacing: 0.04em;
+    }
+
+    .login-option-copy {
+      display: grid;
+      gap: 3px;
+    }
+
+    .login-option-copy span {
+      line-height: 1.4;
+    }
+
+    .login-button {
+      height: 48px;
+      margin-top: 4px;
+      border-radius: 10px;
+      font-family: inherit;
+      cursor: pointer;
+    }
+
+    .login-button .entry-pulse {
+      animation: none;
+    }
+
+    .login-trust {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-top: 18px;
+    }
+
+    .login-trust span {
+      padding: 9px 8px;
+      border-top: 1px solid var(--border);
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 700;
+      line-height: 1.4;
+      text-align: center;
+    }
+
+    .login-button:focus-visible,
+    .login-input:focus-visible {
+      outline: 3px solid rgba(34, 126, 166, 0.32);
+      outline-offset: 3px;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        scroll-behavior: auto !important;
+        animation-duration: 0.001ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.001ms !important;
+      }
+    }
   </style>
 </head>
 <body>
@@ -6595,10 +6898,15 @@
       <div class="login-shell">
         <div class="login-copy">
           <span class="login-kicker">SECURE OPERATOR ENTRY</span>
-          <h1>企业智能 <span class="title-robot" role="img" aria-label="Agent"></span> 平台</h1>
+          <h1>企业智能运维工作台</h1>
           <p>
-            面向研发、DBA 与运维团队，进入 Agent 工作区、平台总览、语义事件追踪与审计视图。
+            面向研发、DBA 与运维团队，通过受控的只读诊断链路定位服务、数据库与基础设施问题。
           </p>
+          <div class="login-mode-strip" aria-label="平台安全能力">
+            <span>P1 只读模式</span>
+            <span>服务端策略授权</span>
+            <span>全程审计留痕</span>
+          </div>
           <div class="ops-visual">
             <div class="ops-line" style="left: 146px; top: 112px; width: 120px; transform: rotate(-16deg);"></div>
             <div class="ops-line" style="left: 382px; top: 112px; width: 120px; transform: rotate(16deg);"></div>
@@ -6616,21 +6924,30 @@
           </div>
         </div>
 
-        <div class="login-card">
+        <form class="login-card">
           <h2>操作员登录</h2>
-          <p>登录后发起任务、执行授权 Skill、查看执行记录。</p>
+          <p>使用企业身份进入平台。登录后可发起只读诊断、查看语义事件与审计记录。</p>
           <div class="login-field">
-            <label>账号</label>
-            <div class="login-input">ops.reader@company.internal</div>
+            <label for="operator-account">识别到的企业账号</label>
+            <input id="operator-account" class="login-input" value="ops.reader@company.internal" readonly aria-describedby="operator-account-note">
+            <small id="operator-account-note" class="login-input-note">账号由企业身份提供方确认，平台不在此页面收集密码。</small>
           </div>
           <div class="login-options">
-            <div class="login-option"><strong>企业 SSO 登录</strong><span>推荐</span></div>
+            <div class="login-option">
+              <span class="login-option-icon" aria-hidden="true">SSO</span>
+              <span class="login-option-copy"><strong>企业单点登录</strong><span>身份确认后，权限仍由服务端策略独立判定。</span></span>
+            </div>
           </div>
-          <span class="button login-button primary-entry">
-            <span class="entry-text">进入智能体工作区</span>
-            <span class="entry-pulse"></span>
-          </span>
-        </div>
+          <button type="button" class="button login-button primary-entry">
+            <span class="entry-text">使用企业 SSO 登录</span>
+            <span class="entry-pulse" aria-hidden="true"></span>
+          </button>
+          <div class="login-trust" aria-label="登录安全说明">
+            <span>当前环境：内部平台</span>
+            <span>授权边界：READ_ONLY</span>
+            <span>登录与操作均可追溯</span>
+          </div>
+        </form>
       </div>
     </section>
 
@@ -6735,10 +7052,6 @@
         <div class="event" style="--event: var(--yellow)"><strong>WORKER_ACCEPTED</strong><span>受限 Worker 已接收</span></div>
       </div>
 
-      <div class="overview-footer">
-        <div class="footer-lock"><i aria-hidden="true"></i><strong>P1 只读控制面</strong><small>策略 v1.0 / 事件契约 v1.0</small></div>
-        <div class="footer-status"><span>审计留痕</span><span>授权只读</span><span>Worker 隔离</span></div>
-      </div>
     </section>
 
     <section class="screen">
@@ -6867,10 +7180,6 @@
         </aside>
       </div>
 
-      <div class="overview-footer workspace-footer">
-        <div class="footer-lock"><i aria-hidden="true"></i><strong>会话已确权</strong><small>策略 v1.0 / Skill 只读候选</small></div>
-        <div class="footer-status"><span>计划摘要</span><span>事件回放</span><span>审计记录</span></div>
-      </div>
     </section>
 
     <section class="screen">
@@ -6904,24 +7213,6 @@
         <p>围绕内部文档、故障案例、运维手册和变更记录进行带引用问答。</p>
       </div>
 
-      <div class="rag-hero">
-        <div class="rag-orb" aria-hidden="true"></div>
-        <div>
-          <h2>知识问答入口</h2>
-          <p>只回答可检索到的内容，输出引用来源、可信度和缺口提示。</p>
-        </div>
-      </div>
-
-      <div class="rag-health">
-        <h2>检索状态</h2>
-        <p>4 个知识源在线，向量索引最近 12 分钟更新。</p>
-        <div class="rag-health-grid" aria-hidden="true">
-          <span></span><span></span><span></span><span></span>
-          <span></span><span></span><span></span><span></span>
-          <span></span><span></span><span></span><span></span>
-        </div>
-      </div>
-
       <div class="rag-layout">
         <div class="rag-window">
           <div class="rag-head">
@@ -6933,10 +7224,15 @@
           </div>
           <div class="rag-body">
             <div class="rag-question">
+              <div class="rag-message-head">
+                <span class="rag-message-role"><span class="message-role-icon" aria-hidden="true"></span>操作员</span>
+              </div>
               payment-api 最近 7 天错误率升高时，应该先查哪些 Runbook 和历史工单？
             </div>
             <div class="rag-answer">
-              <strong>Agent 回答</strong>
+              <div class="rag-message-head">
+                <span class="rag-message-role"><span class="message-role-icon" aria-hidden="true"></span>Agent</span>
+              </div>
               <p>建议先从服务依赖、发布窗口和数据库慢查询三个方向排查。当前知识库中可直接引用的材料包括 payment-api 故障 Runbook、订单库慢查询复盘和 6 月发布检查记录。未检索到生产写操作授权文档，因此回答只给出排查路径。</p>
               <div class="rag-evidence">
                 <span><b>Runbook</b>payment-api 错误率排查，第 3 节</span>
@@ -6981,10 +7277,6 @@
         </aside>
       </div>
 
-      <div class="overview-footer rag-footer">
-        <div class="footer-lock"><i aria-hidden="true"></i><strong>RAG 引用模式</strong><small>知识源在线 / 无引用不回答</small></div>
-        <div class="footer-status"><span>Runbook</span><span>工单复盘</span><span>发布记录</span></div>
-      </div>
     </section>
 
     <section class="screen">
@@ -7023,34 +7315,12 @@
         <div class="filter-select"><b>连接</b><span>orders-dev</span></div>
         <div class="filter-select"><b>模式</b><span>读写</span></div>
         <div class="filter-select"><b>事务</b><span>手动提交</span></div>
-        <span class="sql-run-state">AI Copilot 已接入 / 策略已加载</span>
       </div>
 
       <div class="sql-layout">
-        <div class="sql-card compact">
-          <span class="sql-card-kicker" style="--dot: var(--green)">连接管理</span>
-          <h2>连接与库表</h2>
-          <div class="sql-connection-list">
-            <div class="sql-connection" style="--dot: var(--green)"><strong>orders-dev</strong><span>PostgreSQL / 读写 / 23ms</span></div>
-            <div class="sql-connection" style="--dot: var(--blue)"><strong>inventory-dev</strong><span>MySQL / 只读 / 31ms</span></div>
-            <div class="sql-connection" style="--dot: var(--yellow)"><strong>reporting</strong><span>ClickHouse / 分析 / 18ms</span></div>
-          </div>
-          <div class="sql-tree">
-            <div class="sql-tree-item" style="--dot: #256f86"><strong>orders</strong><span>order_id, user_id, status, amount</span></div>
-            <div class="sql-tree-item" style="--dot: var(--green)"><strong>order_items</strong><span>sku_id, quantity, price</span></div>
-            <div class="sql-tree-item" style="--dot: var(--red)"><strong>payments</strong><span>payment_id, channel, state</span></div>
-          </div>
-          <div class="sql-config-list">
-            <div class="sql-config-item" style="--dot: var(--dark)"><strong>连接配置</strong><span>超时 30s / 返回 500 行 / 自动提交关闭</span></div>
-            <div class="sql-config-item" style="--dot: var(--red)"><strong>写入策略</strong><span>DML 需预览影响行，生产需审批</span></div>
-          </div>
-        </div>
-
         <div class="sql-card main">
-          <span class="sql-card-kicker" style="--dot: var(--red)">读 / 写 / 查 / 配置</span>
           <h2>查询编辑器</h2>
           <div class="sql-console-tabs"><span class="active">Query 1</span><span>DML 变更</span><span>Explain</span><span>配置</span><span>历史</span></div>
-          <div class="sql-console-meta"><span>连接<b>orders-dev</b></span><span>事务<b>manual</b></span><span>返回上限<b>500 行</b></span><span>AI 辅助<b>解释 / 优化 / 预检</b></span></div>
           <div class="sql-editor-box console"><code>UPDATE orders
 SET status = 'REVIEW_REQUIRED'
 WHERE user_id = :userId
@@ -7074,12 +7344,9 @@ RETURNING order_id, status, updated_at;</code></div>
 
       </div>
 
-      <div class="overview-footer sql-footer">
-        <div class="footer-lock"><i aria-hidden="true"></i><strong>SQL 控制台在线</strong><small>读 / 写 / 查 / 配置 / AI 辅助</small></div>
-        <div class="footer-status"><span>连接管理</span><span>查询执行</span><span>结果集</span><span>模型助手</span></div>
-      </div>
     </section>
-<section class="screen">
+
+    <section class="screen">
       <nav class="nav">
         <div class="logo">EA</div><div class="brand">企业智能 Agent</div>
         <a>总览</a><a>Agent 工作区</a><a>RAG 问答</a><a>SQL 工作台</a><a class="active">诊断工作台</a><a>Skill 注册中心</a><a>工作流事件</a><a>审计记录</a>
@@ -7155,10 +7422,6 @@ RETURNING order_id, status, updated_at;</code></div>
           <div class="result-chip" style="--chip: var(--green)"><strong>心跳状态</strong><span>正常响应</span></div>
           <div class="result-chip" style="--chip: var(--yellow)"><strong>结果去向</strong><span>事件流与审计记录</span></div>
         </div>
-      </div>
-      <div class="overview-footer diagnostic-footer">
-        <div class="footer-lock"><i aria-hidden="true"></i><strong>诊断请求就绪</strong><small>参数已锁定 / 审计会记录</small></div>
-        <div class="footer-status"><span>只读 Skill</span><span>事件回放</span><span>结果摘要</span></div>
       </div>
     </section>
 
@@ -7244,10 +7507,6 @@ RETURNING order_id, status, updated_at;</code></div>
           <div class="detail-chip" style="--chip: var(--yellow)"><strong>Input / Output</strong><span>nodeName / JSON 结果摘要</span></div>
         </div>
       </div>
-      <div class="overview-footer registry-footer">
-        <div class="footer-lock"><i aria-hidden="true"></i><strong>Skill 已纳管</strong><small>Schema / 签名 / 审计拦截</small></div>
-        <div class="footer-status"><span>版本治理</span><span>只读风险</span><span>注册可用</span></div>
-      </div>
     </section>
 
     <section class="screen">
@@ -7331,10 +7590,6 @@ RETURNING order_id, status, updated_at;</code></div>
         </aside>
       </div>
 
-      <div class="overview-footer workflow-footer">
-        <div class="footer-lock"><i aria-hidden="true"></i><strong>事件流已接收</strong><small>SSE connected / sequence continuous</small></div>
-        <div class="footer-status"><span>事实源</span><span>可回放</span><span>幂等键</span><span>审计衔接</span></div>
-      </div>
     </section>
 
     <section class="screen">
@@ -7418,10 +7673,6 @@ RETURNING order_id, status, updated_at;</code></div>
         </aside>
       </div>
 
-      <div class="overview-footer audit-footer">
-        <div class="footer-lock"><i aria-hidden="true"></i><strong>审计链已封存</strong><small>hash 链完整 / 保留 180 天</small></div>
-        <div class="footer-status"><span>身份</span><span>策略</span><span>Skill</span><span>Worker</span></div>
-      </div>
     </section>
   </main>
 </body>
