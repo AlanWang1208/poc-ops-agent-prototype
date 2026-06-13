@@ -119,3 +119,17 @@
   - 会话登录联调；
   - 浏览器端到端验收沉淀；
   - 如未来需要，再评估执行中的增量事件推送。
+
+## 2026-06-13 AgentScope Java 主运行时 POC 计划
+
+- 新增 P1 技术验证方向：将 AgentScope Java 作为 M04 主 Agent Runtime 候选接入，而不是辅助路由建议器。
+- 接入目标：
+  - 由 AgentScope Java 主导只读诊断意图理解、计划生成、多步 Tool 调用和最终诊断摘要；
+  - 由平台继续强制执行 M01 身份、M02 授权、M03 Skill 契约、M05 工作流事实源、M07 Worker 隔离、M09 强类型事件和 M10 审计观测；
+  - P1 阶段仅允许已发布、已授权、工作空间可见的 `READ_ONLY` Skill。
+- 验收证据必须覆盖：
+  - 单 Tool 只读诊断成功；
+  - 多 Tool 只读诊断成功；
+  - 写操作、Prompt 注入、跨 Workspace Skill、未发布 Skill 和 Tool 输出注入被拒绝；
+  - 每个 Tool Call 都有工作流 step、参数哈希、策略引用、语义事件和审计 trace；
+  - 关闭 `ops-agent.agent-runtime.enabled` 后，现有单 Skill 只读诊断闭环仍可运行。
