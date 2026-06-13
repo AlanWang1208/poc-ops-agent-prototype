@@ -593,7 +593,7 @@
 
     .login-brand {
       position: absolute;
-      left: 80px;
+      left: 100px;
       top: 76px;
       display: flex;
       align-items: center;
@@ -1850,11 +1850,11 @@
       0%,
       100% {
         box-shadow: 0 18px 42px rgba(31, 41, 51, 0.08);
-        transform: translateY(0);
+        transform: translateY(-50%);
       }
       50% {
         box-shadow: 0 20px 48px rgba(211, 17, 69, 0.11);
-        transform: translateY(-2px);
+        transform: translateY(calc(-50% - 2px));
       }
     }
 
@@ -7840,67 +7840,194 @@
       margin-top: 34px;
       height: 300px;
       opacity: 1;
+      border-color: rgba(34, 126, 166, 0.12);
+      border-radius: 18px;
       background:
-        linear-gradient(rgba(34, 126, 166, 0.035) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(34, 126, 166, 0.035) 1px, transparent 1px),
-        #fff;
+        linear-gradient(rgba(34, 126, 166, 0.045) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(34, 126, 166, 0.045) 1px, transparent 1px),
+        rgba(255, 255, 255, 0.66);
+      background-size: 34px 34px, 34px 34px, auto;
+      box-shadow: 0 22px 56px rgba(31, 41, 51, 0.055);
     }
 
     .ops-visual::before {
-      left: 92px;
-      right: 92px;
-      top: 50%;
-      background: linear-gradient(90deg, rgba(211, 17, 69, 0.32), rgba(34, 126, 166, 0.34), rgba(22, 135, 90, 0.32));
+      display: none;
     }
 
     .ops-visual::after,
     .ops-visual .ops-line,
-    .ops-visual .ops-packet,
     .ops-visual .ops-caption {
       display: none;
     }
 
     .ops-visual .agent-core {
-      left: 250px;
-      top: 87px;
-      width: 150px;
-      height: 126px;
+      left: 218px;
+      top: 48px;
+      width: 214px;
+      height: 130px;
+      border-color: rgba(211, 17, 69, 0.12);
+      border-radius: 16px;
+      background:
+        radial-gradient(circle at 50% 28%, rgba(34, 126, 166, 0.07), transparent 4.8rem),
+        linear-gradient(rgba(34, 126, 166, 0.08) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(34, 126, 166, 0.08) 1px, transparent 1px),
+        rgba(255, 255, 255, 0.56);
+      background-size: auto, 17px 17px, 17px 17px, auto;
+      box-shadow: 0 18px 44px rgba(34, 126, 166, 0.08);
+      animation: none;
+      transform: none;
+    }
+
+    .ops-visual .agent-core::before {
+      left: 58px;
+      top: 20px;
+      width: 94px;
+      height: 62px;
+      border-color: rgba(34, 126, 166, 0.14);
+      border-radius: 20px;
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(244, 250, 252, 0.92)),
+        radial-gradient(circle at 50% 0%, rgba(211, 17, 69, 0.08), transparent 60%);
     }
 
     .ops-visual .agent-core::after {
-      content: "POLICY GATE";
-      left: 31px;
+      content: "READ_ONLY SKILL ROUTER";
+      left: 50%;
+      right: auto;
       bottom: 18px;
+      display: block;
+      width: max-content;
+      color: var(--blue);
+      font-size: 12px;
+      letter-spacing: 0.08em;
+      white-space: nowrap;
+      transform: translateX(-50%);
+    }
+
+    .ops-visual .agent-core span {
+      left: 76px;
+      top: 50px;
+      width: 12px;
+      height: 12px;
+      background: color-mix(in srgb, var(--red), #7dbce4 18%);
+      box-shadow:
+        38px 0 0 var(--blue),
+        0 0 0 7px rgba(211, 17, 69, 0.08),
+        38px 0 0 7px rgba(34, 126, 166, 0.08);
+    }
+
+    .ops-visual .agent-core span::before {
+      left: 17px;
+      top: -34px;
+      width: 16px;
+      height: 22px;
+      border-color: rgba(34, 126, 166, 0.32);
+    }
+
+    .ops-visual .agent-core span::after {
+      left: 7px;
+      top: 30px;
+      width: 48px;
+      background: linear-gradient(90deg, rgba(211, 17, 69, 0.38), rgba(34, 126, 166, 0.48));
     }
 
     .ops-visual .ops-node {
-      width: 128px;
-      padding: 15px 10px;
-      background: #fff;
+      display: grid;
+      justify-items: center;
+      align-content: start;
+      width: 112px;
+      height: 90px;
+      min-height: 0;
+      padding: 12px 10px 8px;
+      border-color: rgba(34, 126, 166, 0.14);
+      border-radius: 12px;
+      color: rgba(51, 61, 71, 0.78);
+      background: rgba(255, 255, 255, 0.74);
+      box-shadow: 0 16px 34px rgba(34, 126, 166, 0.08);
+      font-size: 12px;
+      line-height: 1.35;
+      text-align: center;
+    }
+
+    .ops-visual .ops-node strong {
+      margin-bottom: 8px;
+      color: rgba(51, 61, 71, 0.92);
+      font-size: 14px;
+    }
+
+    .ops-visual .ops-node::before {
+      width: 26px;
+      height: 26px;
+      margin-bottom: 7px;
+      border-radius: 9px;
+      box-shadow: 0 0 0 8px color-mix(in srgb, var(--node), transparent 84%);
     }
 
     .ops-visual .ops-node:nth-of-type(5) {
-      left: 58px !important;
-      top: 96px !important;
+      left: 74px !important;
+      top: 48px !important;
     }
 
     .ops-visual .ops-node:nth-of-type(6) {
-      left: 246px !important;
-      top: 30px !important;
+      left: 464px !important;
+      top: 48px !important;
     }
 
     .ops-visual .ops-node:nth-of-type(7) {
-      left: 416px !important;
-      top: 30px !important;
+      left: 74px !important;
+      top: 168px !important;
     }
 
     .ops-visual .ops-node:nth-of-type(8) {
       left: 464px !important;
-      top: 174px !important;
+      top: 168px !important;
     }
 
     .ops-visual .ops-node::after {
-      display: none;
+      content: "";
+      position: absolute;
+      top: 50%;
+      width: 34px;
+      height: 1px;
+      background: rgba(34, 126, 166, 0.18);
+    }
+
+    .ops-visual .ops-node:nth-of-type(5)::after,
+    .ops-visual .ops-node:nth-of-type(7)::after {
+      left: 112px;
+    }
+
+    .ops-visual .ops-node:nth-of-type(6)::after,
+    .ops-visual .ops-node:nth-of-type(8)::after {
+      right: 112px;
+    }
+
+    .ops-visual .ops-node:nth-of-type(7)::after,
+    .ops-visual .ops-node:nth-of-type(8)::after {
+      top: -7px;
+      width: 42px;
+      height: 24px;
+      background:
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='42' height='24' viewBox='0 0 42 24'%3E%3Cpath d='M0 19 C13 19 25 8 42 8' fill='none' stroke='%23227ea6' stroke-opacity='.2' stroke-width='1.2'/%3E%3C/svg%3E")
+        center / 42px 24px no-repeat;
+    }
+
+    .ops-visual .ops-node:nth-of-type(8)::after {
+      transform: scaleX(-1);
+    }
+
+    .ops-visual .ops-packet {
+      display: block;
+      left: 102px;
+      top: 121px;
+      width: 10px;
+      height: 10px;
+      opacity: 0;
+      background: var(--red);
+      box-shadow:
+        0 0 0 7px rgba(211, 17, 69, 0.08),
+        0 0 20px rgba(211, 17, 69, 0.28);
+      animation: ops-packet-calm 5.6s linear infinite;
     }
 
     .login-card {
