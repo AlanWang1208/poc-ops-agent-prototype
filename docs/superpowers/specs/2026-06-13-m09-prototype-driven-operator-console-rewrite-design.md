@@ -98,7 +98,7 @@
 - React 19：页面和交互组件。
 - JavaScript 与 JSX：业务和组件实现语言。
 - JSDoc 与 `checkJs`：为 JavaScript 提供静态类型检查。
-- Vite 6：开发和生产构建，延续已接受的前端工具链决策。
+- Vite 8：开发和生产构建；因 Vite 6 依赖链存在无兼容修复版本的高危安全漏洞，经批准升级并同步更新 ADR 0003。
 - React Router：四页路由、受保护页面跳转和登录后导航。
 - TanStack Query：管理会话、Skill 列表、SQL 连接等服务端状态。
 - Zod：校验 API、SSE 和其他外部边界数据。

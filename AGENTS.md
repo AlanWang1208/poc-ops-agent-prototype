@@ -96,7 +96,7 @@ V1.0 使用单一仓库，包含四个主要交付单元：
 
 - 后端：Java 21、Spring Boot 3.2+、Spring AI 1.0+、WebFlux。
 - 后端构建：Maven 多模块构建。后端开发开始前必须添加并提交 Maven Wrapper。
-- 前端：TypeScript 和 React 技术栈的单页应用。应用脚手架创建前必须通过 ADR 确定具体工具。
+- 前端：JavaScript/JSX、React、JSDoc 和 TypeScript `checkJs` 技术栈的单页应用。应用脚手架创建前必须通过 ADR 确定具体工具。
 - 数据：关系型数据库作为执行事实源；Redis 用于缓存、锁、限流和短期会话；受控对象存储用于大型制品。
 - 契约：按场景使用 JSON Schema 和 OpenAPI。
 - 可观测性：结构化日志、指标、链路追踪和集中审计事件。
@@ -156,10 +156,10 @@ Java 规则：
 - 未经 ADR 批准，不得在生产代码中使用 Java 预览特性。
 - 基础设施错误必须转换为稳定的领域或应用错误契约。
 
-TypeScript 规则：
+JavaScript/JSX 规则：
 
-- 开启严格类型检查。
-- 外部边界禁止使用 `any`，必须解析和校验外部数据。
+- 使用 JSDoc 声明数据与组件契约，并开启严格 `checkJs` 静态检查。
+- API、SSE 和其他外部边界数据必须使用 Zod 解析和校验，不得仅依赖 JSDoc 声明。
 - 浏览器中不得包含授权逻辑。
 - 前端必须渲染强类型语义事件，不得从展示文本推断安全状态。
 

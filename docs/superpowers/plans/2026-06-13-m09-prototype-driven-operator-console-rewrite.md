@@ -6,7 +6,7 @@
 
 **Architecture:** 操作台继续作为 React/Vite 单页应用部署，但业务代码改用 JavaScript、JSX、JSDoc 和 `checkJs`。应用按 `app`、`api`、`schemas`、共享组件和四个功能切片组织；所有外部数据先通过 Zod 校验，再进入 TanStack Query 和页面。路由仅管理页面可见性，授权、安全和执行状态始终来自控制面。
 
-**Tech Stack:** React 19、JavaScript/JSX、JSDoc、TypeScript `checkJs`、Vite 6、React Router、TanStack Query、Zod、Lucide React、Monaco Editor、CSS Modules、Vitest、React Testing Library、Mock Service Worker、Playwright
+**Tech Stack:** React 19、JavaScript/JSX、JSDoc、TypeScript `checkJs`、Vite 8、React Router、TanStack Query、Zod、Lucide React、Monaco Editor、CSS Modules、Vitest、React Testing Library、Mock Service Worker、Playwright
 
 ---
 
