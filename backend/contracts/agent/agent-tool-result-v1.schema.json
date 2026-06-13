@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://company.example/ops-agent/contracts/agent/agent-tool-result-v1.schema.json",
+  "title": "Agent tool result v1",
+  "description": "平台守护 Tool Executor 返回给主 Agent Runtime 的工具调用结果。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "toolCallId",
+    "taskId",
+    "workflowId",
+    "status",
+    "outputSchemaId",
+    "completedAt"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "1.0" },
+    "toolCallId": { "type": "string", "minLength": 1 },
+    "taskId": { "type": "string", "minLength": 1 },
+    "workflowId": { "type": "string", "minLength": 1 },
+    "status": {
+      "type": "string",
+      "enum": ["SUCCEEDED", "FAILED", "REJECTED", "TIMEOUT"]
+    },
+    "outputSchemaId": { "type": "string", "minLength": 1 },
+    "output": { "type": "object" },
+    "errorCode": { "type": ["string", "null"] },
+    "errorMessage": { "type": ["string", "null"] },
+    "completedAt": { "type": "string", "format": "date-time" }
+  }
+}
