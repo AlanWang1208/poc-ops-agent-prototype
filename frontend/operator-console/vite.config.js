@@ -1,4 +1,4 @@
-import { defineConfig } from "vite";
+import { defineConfig } from "vitest/config";
 import react from "@vitejs/plugin-react";
 
 const backendProxy = {
@@ -8,6 +8,10 @@ const backendProxy = {
 
 export default defineConfig({
   plugins: [react()],
+  test: {
+    environment: "jsdom",
+    setupFiles: "./src/test/setup.js",
+  },
   server: {
     proxy: {
       "/internal": backendProxy,
