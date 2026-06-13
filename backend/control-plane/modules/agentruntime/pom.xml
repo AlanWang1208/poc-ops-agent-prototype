@@ -32,6 +32,17 @@
       <version>${project.version}</version>
     </dependency>
     <dependency>
+      <groupId>io.agentscope</groupId>
+      <artifactId>agentscope</artifactId>
+      <version>1.0.12</version>
+      <exclusions>
+        <exclusion>
+          <groupId>io.modelcontextprotocol.sdk</groupId>
+          <artifactId>mcp</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
       <groupId>io.projectreactor</groupId>
       <artifactId>reactor-core</artifactId>
     </dependency>
