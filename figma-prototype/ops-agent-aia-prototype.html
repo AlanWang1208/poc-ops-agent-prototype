@@ -3270,6 +3270,13 @@
       justify-content: flex-end;
     }
 
+    .conversation-toolbar-actions .workspace-expand {
+      height: 38px;
+      padding: 0 12px;
+      border-radius: 11px;
+      font-size: 11px;
+    }
+
     .conversation-action.primary {
       border-color: transparent;
       background: var(--red);
@@ -7984,50 +7991,87 @@
     }
 
     .ops-visual .ops-node::after {
-      content: "";
-      position: absolute;
-      top: 50%;
-      width: 34px;
-      height: 1px;
-      background: rgba(34, 126, 166, 0.18);
-    }
-
-    .ops-visual .ops-node:nth-of-type(5)::after,
-    .ops-visual .ops-node:nth-of-type(7)::after {
-      left: 112px;
-    }
-
-    .ops-visual .ops-node:nth-of-type(6)::after,
-    .ops-visual .ops-node:nth-of-type(8)::after {
-      right: 112px;
-    }
-
-    .ops-visual .ops-node:nth-of-type(7)::after,
-    .ops-visual .ops-node:nth-of-type(8)::after {
-      top: -7px;
-      width: 42px;
-      height: 24px;
-      background:
-        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='42' height='24' viewBox='0 0 42 24'%3E%3Cpath d='M0 19 C13 19 25 8 42 8' fill='none' stroke='%23227ea6' stroke-opacity='.2' stroke-width='1.2'/%3E%3C/svg%3E")
-        center / 42px 24px no-repeat;
-    }
-
-    .ops-visual .ops-node:nth-of-type(8)::after {
-      transform: scaleX(-1);
+      display: none;
     }
 
     .ops-visual .ops-packet {
-      display: block;
-      left: 102px;
-      top: 121px;
-      width: 10px;
-      height: 10px;
+      display: none;
+    }
+
+    .ops-orbit-dot {
+      position: absolute;
+      z-index: 4;
+      width: 9px;
+      height: 9px;
+      border: 2px solid #fff;
+      border-radius: 999px;
+      background: var(--dot);
       opacity: 0;
-      background: var(--red);
       box-shadow:
-        0 0 0 7px rgba(211, 17, 69, 0.08),
-        0 0 20px rgba(211, 17, 69, 0.28);
-      animation: ops-packet-calm 5.6s linear infinite;
+        0 0 0 6px color-mix(in srgb, var(--dot), transparent 88%),
+        0 0 16px color-mix(in srgb, var(--dot), transparent 58%);
+      animation-duration: 5.6s;
+      animation-timing-function: ease-in-out;
+      animation-iteration-count: infinite;
+    }
+
+    .ops-orbit-dot.identity {
+      left: 186px;
+      top: 92px;
+      --dot: var(--red);
+      animation-name: orbit-identity;
+    }
+
+    .ops-orbit-dot.policy {
+      left: 454px;
+      top: 92px;
+      --dot: var(--blue);
+      animation-name: orbit-policy;
+      animation-delay: -1.4s;
+    }
+
+    .ops-orbit-dot.skill {
+      left: 186px;
+      top: 212px;
+      --dot: var(--yellow);
+      animation-name: orbit-skill;
+      animation-delay: -2.8s;
+    }
+
+    .ops-orbit-dot.worker {
+      left: 454px;
+      top: 212px;
+      --dot: var(--green);
+      animation-name: orbit-worker;
+      animation-delay: -4.2s;
+    }
+
+    @keyframes orbit-identity {
+      0%, 12%, 100% { transform: translate(0, 0) scale(0.7); opacity: 0; }
+      22% { opacity: 0.9; }
+      68% { transform: translate(72px, 38px) scale(1); opacity: 0.9; }
+      82% { transform: translate(104px, 48px) scale(0.55); opacity: 0; }
+    }
+
+    @keyframes orbit-policy {
+      0%, 12%, 100% { transform: translate(0, 0) scale(0.7); opacity: 0; }
+      22% { opacity: 0.9; }
+      68% { transform: translate(-72px, 38px) scale(1); opacity: 0.9; }
+      82% { transform: translate(-104px, 48px) scale(0.55); opacity: 0; }
+    }
+
+    @keyframes orbit-skill {
+      0%, 12%, 100% { transform: translate(0, 0) scale(0.7); opacity: 0; }
+      22% { opacity: 0.9; }
+      68% { transform: translate(72px, -32px) scale(1); opacity: 0.9; }
+      82% { transform: translate(104px, -50px) scale(0.55); opacity: 0; }
+    }
+
+    @keyframes orbit-worker {
+      0%, 12%, 100% { transform: translate(0, 0) scale(0.7); opacity: 0; }
+      22% { opacity: 0.9; }
+      68% { transform: translate(-72px, -32px) scale(1); opacity: 0.9; }
+      82% { transform: translate(-104px, -50px) scale(0.55); opacity: 0; }
     }
 
     .login-card {
@@ -8237,6 +8281,10 @@
             <div class="ops-node" style="left: 474px; top: 62px; --node: var(--blue);"><strong>Policy</strong>服务端授权</div>
             <div class="ops-node" style="left: 122px; top: 214px; --node: var(--yellow);"><strong>Skill</strong>只读候选</div>
             <div class="ops-node" style="left: 414px; top: 214px; --node: var(--green);"><strong>Worker</strong>受限执行</div>
+            <i class="ops-orbit-dot identity" aria-hidden="true"></i>
+            <i class="ops-orbit-dot policy" aria-hidden="true"></i>
+            <i class="ops-orbit-dot skill" aria-hidden="true"></i>
+            <i class="ops-orbit-dot worker" aria-hidden="true"></i>
             <div class="ops-packet"></div>
             <div class="ops-caption">
               <strong>受控诊断链路</strong>
