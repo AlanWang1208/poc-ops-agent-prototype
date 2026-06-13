@@ -33,6 +33,7 @@ class R2dbcReadOnlyWorkflowStoreTest {
     var store = testStore();
     var created = store.createWorkflow(
         "workflow-1",
+        "workspace-default",
         "idempotency-1",
         "operator-1",
         "development",
@@ -48,6 +49,7 @@ class R2dbcReadOnlyWorkflowStoreTest {
         OffsetDateTime.parse("2026-06-07T01:00:00Z"));
 
     StepVerifier.create(created.then(store.findByIdempotency(
+            "workspace-default",
             "idempotency-1",
             "operator-1",
             "development",
@@ -67,6 +69,7 @@ class R2dbcReadOnlyWorkflowStoreTest {
 
     StepVerifier.create(store.createWorkflow(
             "workflow-3",
+            "workspace-default",
             "idempotency-3",
             "operator-1",
             "development",
@@ -88,6 +91,7 @@ class R2dbcReadOnlyWorkflowStoreTest {
             now,
             now.plusSeconds(30)))
         .then(store.findByIdempotency(
+            "workspace-default",
             "idempotency-3",
             "operator-1",
             "development",
@@ -108,6 +112,7 @@ class R2dbcReadOnlyWorkflowStoreTest {
     OffsetDateTime now = OffsetDateTime.parse("2026-06-07T01:00:00Z");
     StepVerifier.create(store.createWorkflow(
             "workflow-2",
+            "workspace-default",
             "idempotency-2",
             "operator-1",
             "development",
@@ -128,7 +133,7 @@ class R2dbcReadOnlyWorkflowStoreTest {
             StoredWorkflowAttemptKind.INITIAL,
             now,
             now.plusSeconds(30)))
-        .then(store.appendEvent("workflow-2", 1, new SemanticEvent(
+        .then(store.appendEvent("workspace-default", "workflow-2", 1, new SemanticEvent(
             "1.0",
             "event-1",
             "workflow-2",
@@ -136,7 +141,7 @@ class R2dbcReadOnlyWorkflowStoreTest {
             now,
             SemanticEventType.WORKFLOW_STARTED,
             new WorkflowStartedPayload(SemanticEventType.WORKFLOW_STARTED, "command-2", "operator-1"))))
-        .then(store.appendEvent("workflow-2", 2, new SemanticEvent(
+        .then(store.appendEvent("workspace-default", "workflow-2", 2, new SemanticEvent(
             "1.0",
             "event-2",
             "workflow-2",
@@ -165,6 +170,7 @@ class R2dbcReadOnlyWorkflowStoreTest {
             false,
             now.plusSeconds(1)))
         .then(store.findByIdempotency(
+            "workspace-default",
             "idempotency-2",
             "operator-1",
             "development",
@@ -186,6 +192,7 @@ class R2dbcReadOnlyWorkflowStoreTest {
 
     StepVerifier.create(store.createWorkflow(
             "workflow-4",
+            "workspace-default",
             "idempotency-4",
             "operator-1",
             "development",
@@ -199,7 +206,7 @@ class R2dbcReadOnlyWorkflowStoreTest {
             "command-4",
             command("workflow-4", "command-4", "idempotency-4"),
             now)
-        .then(store.appendEvent("workflow-4", 1, new SemanticEvent(
+        .then(store.appendEvent("workspace-default", "workflow-4", 1, new SemanticEvent(
             "1.0",
             "event-4-1",
             "workflow-4",
@@ -207,7 +214,7 @@ class R2dbcReadOnlyWorkflowStoreTest {
             now,
             SemanticEventType.WORKFLOW_STARTED,
             new WorkflowStartedPayload(SemanticEventType.WORKFLOW_STARTED, "command-4", "operator-1"))))
-        .then(store.appendEvent("workflow-4", 2, new SemanticEvent(
+        .then(store.appendEvent("workspace-default", "workflow-4", 2, new SemanticEvent(
             "1.0",
             "event-4-2",
             "workflow-4",
@@ -215,7 +222,7 @@ class R2dbcReadOnlyWorkflowStoreTest {
             now.plusSeconds(1),
             SemanticEventType.SKILL_ROUTED,
             new SkillRoutedPayload(SemanticEventType.SKILL_ROUTED, "node-health-read", "1.1.0"))))
-        .then(store.appendEvent("workflow-4", 3, new SemanticEvent(
+        .then(store.appendEvent("workspace-default", "workflow-4", 3, new SemanticEvent(
             "1.0",
             "event-4-3",
             "workflow-4",
@@ -223,7 +230,7 @@ class R2dbcReadOnlyWorkflowStoreTest {
             now.plusSeconds(2),
             SemanticEventType.WORKER_ACCEPTED,
             new WorkerAcceptedPayload(SemanticEventType.WORKER_ACCEPTED, "execution-4"))))
-        .thenMany(store.loadEventsAfter("workflow-4", 1)))
+        .thenMany(store.loadEventsAfter("workspace-default", "workflow-4", 1)))
         .assertNext(event -> assertEquals(2, event.sequence()))
         .assertNext(event -> assertEquals(3, event.sequence()))
         .verifyComplete();

@@ -29,6 +29,7 @@ class InMemoryReadOnlyWorkflowStoreFixture implements ReadOnlyWorkflowStore {
   @Override
   public Mono<Void> createWorkflow(
       String workflowId,
+      String workspaceId,
       String idempotencyKey,
       String operatorId,
       String targetEnvironment,
@@ -44,6 +45,7 @@ class InMemoryReadOnlyWorkflowStoreFixture implements ReadOnlyWorkflowStore {
       OffsetDateTime createdAt) {
     workflowsById.put(workflowId, new StoredReadOnlyWorkflow(
         workflowId,
+        workspaceId,
         idempotencyKey,
         operatorId,
         targetEnvironment,
@@ -68,7 +70,7 @@ class InMemoryReadOnlyWorkflowStoreFixture implements ReadOnlyWorkflowStore {
         createdAt,
         createdAt,
         null));
-    workflowIdsByIdempotency.put(idempotencyKey, workflowId);
+    workflowIdsByIdempotency.put(idempotencyKey(workspaceId, idempotencyKey), workflowId);
     eventsByWorkflowId.put(workflowId, new ArrayList<>());
     attemptsByWorkflowId.put(workflowId, new ArrayList<>());
     commandsByWorkflowId.put(workflowId, command);
@@ -77,12 +79,13 @@ class InMemoryReadOnlyWorkflowStoreFixture implements ReadOnlyWorkflowStore {
 
   @Override
   public Mono<PersistedReadOnlyWorkflowView> findByIdempotency(
+      String workspaceId,
       String idempotencyKey,
       String operatorId,
       String targetEnvironment,
       String skillId,
       String parametersHash) {
-    String workflowId = workflowIdsByIdempotency.get(idempotencyKey);
+    String workflowId = workflowIdsByIdempotency.get(idempotencyKey(workspaceId, idempotencyKey));
     if (workflowId == null) {
       return Mono.empty();
     }
@@ -95,7 +98,7 @@ class InMemoryReadOnlyWorkflowStoreFixture implements ReadOnlyWorkflowStore {
   }
 
   @Override
-  public Flux<SemanticEvent> loadEventsAfter(String workflowId, long afterSequence) {
+  public Flux<SemanticEvent> loadEventsAfter(String workspaceId, String workflowId, long afterSequence) {
     return Flux.fromIterable(eventsByWorkflowId(workflowId).stream()
         .filter(event -> event.sequence() > afterSequence)
         .sorted(Comparator.comparingLong(SemanticEvent::sequence))
@@ -103,9 +106,13 @@ class InMemoryReadOnlyWorkflowStoreFixture implements ReadOnlyWorkflowStore {
   }
 
   @Override
-  public Mono<Void> appendEvent(String workflowId, long sequence, SemanticEvent event) {
+  public Mono<Void> appendEvent(String workspaceId, String workflowId, long sequence, SemanticEvent event) {
     eventsByWorkflowId.computeIfAbsent(workflowId, key -> new ArrayList<>()).add(event);
     return Mono.empty();
+  }
+
+  private String idempotencyKey(String workspaceId, String idempotencyKey) {
+    return workspaceId + ":" + idempotencyKey;
   }
 
   @Override
@@ -152,6 +159,7 @@ class InMemoryReadOnlyWorkflowStoreFixture implements ReadOnlyWorkflowStore {
     StoredReadOnlyWorkflow workflow = workflowsById.get(workflowId);
     workflowsById.put(workflowId, new StoredReadOnlyWorkflow(
         workflow.workflowId(),
+        workflow.workspaceId(),
         workflow.idempotencyKey(),
         workflow.operatorId(),
         workflow.targetEnvironment(),
@@ -209,6 +217,7 @@ class InMemoryReadOnlyWorkflowStoreFixture implements ReadOnlyWorkflowStore {
     OffsetDateTime now = result.completedAt();
     workflowsById.put(workflowId, new StoredReadOnlyWorkflow(
         workflowId,
+        "workspace-default",
         idempotencyKey,
         "operator-1",
         "development",
@@ -233,7 +242,7 @@ class InMemoryReadOnlyWorkflowStoreFixture implements ReadOnlyWorkflowStore {
         now.minusMinutes(1),
         now,
         now));
-    workflowIdsByIdempotency.put(idempotencyKey, workflowId);
+    workflowIdsByIdempotency.put(idempotencyKey("workspace-default", idempotencyKey), workflowId);
     commandsByWorkflowId.put(workflowId, defaultCommand(workflowId, idempotencyKey));
     resultsByWorkflowId.put(workflowId, result);
     eventsByWorkflowId.put(workflowId, new ArrayList<>(events));
@@ -264,6 +273,7 @@ class InMemoryReadOnlyWorkflowStoreFixture implements ReadOnlyWorkflowStore {
     OffsetDateTime now = result.completedAt();
     workflowsById.put(workflowId, new StoredReadOnlyWorkflow(
         workflowId,
+        "workspace-default",
         idempotencyKey,
         "operator-1",
         "development",
@@ -288,7 +298,7 @@ class InMemoryReadOnlyWorkflowStoreFixture implements ReadOnlyWorkflowStore {
         now.minusMinutes(2),
         now.minusMinutes(2),
         now));
-    workflowIdsByIdempotency.put(idempotencyKey, workflowId);
+    workflowIdsByIdempotency.put(idempotencyKey("workspace-default", idempotencyKey), workflowId);
     commandsByWorkflowId.put(workflowId, command);
     resultsByWorkflowId.put(workflowId, result);
     eventsByWorkflowId.put(workflowId, new ArrayList<>());
@@ -318,6 +328,7 @@ class InMemoryReadOnlyWorkflowStoreFixture implements ReadOnlyWorkflowStore {
       OffsetDateTime expiresAt) {
     workflowsById.put(workflowId, new StoredReadOnlyWorkflow(
         workflowId,
+        "workspace-default",
         idempotencyKey,
         "operator-1",
         "development",
@@ -342,7 +353,7 @@ class InMemoryReadOnlyWorkflowStoreFixture implements ReadOnlyWorkflowStore {
         startedAt.minusSeconds(1),
         startedAt,
         null));
-    workflowIdsByIdempotency.put(idempotencyKey, workflowId);
+    workflowIdsByIdempotency.put(idempotencyKey("workspace-default", idempotencyKey), workflowId);
     commandsByWorkflowId.put(workflowId, command);
     resultsByWorkflowId.remove(workflowId);
     eventsByWorkflowId.put(workflowId, new ArrayList<>());
@@ -361,7 +372,7 @@ class InMemoryReadOnlyWorkflowStoreFixture implements ReadOnlyWorkflowStore {
   }
 
   StoredReadOnlyWorkflow workflowByIdempotency(String idempotencyKey) {
-    return workflowsById.get(workflowIdsByIdempotency.get(idempotencyKey));
+    return workflowsById.get(workflowIdsByIdempotency.get(idempotencyKey("workspace-default", idempotencyKey)));
   }
 
   StoredReadOnlyWorkflow workflowById(String workflowId) {
@@ -369,7 +380,7 @@ class InMemoryReadOnlyWorkflowStoreFixture implements ReadOnlyWorkflowStore {
   }
 
   List<SemanticEvent> eventsByIdempotency(String idempotencyKey) {
-    return List.copyOf(eventsByWorkflowId.get(workflowIdsByIdempotency.get(idempotencyKey)));
+    return List.copyOf(eventsByWorkflowId.get(workflowIdsByIdempotency.get(idempotencyKey("workspace-default", idempotencyKey))));
   }
 
   List<SemanticEvent> eventsByWorkflowId(String workflowId) {
@@ -447,6 +458,7 @@ class InMemoryReadOnlyWorkflowStoreFixture implements ReadOnlyWorkflowStore {
     StoredReadOnlyWorkflow workflow = workflowsById.get(workflowId);
     workflowsById.put(workflowId, new StoredReadOnlyWorkflow(
         workflow.workflowId(),
+        workflow.workspaceId(),
         workflow.idempotencyKey(),
         workflow.operatorId(),
         workflow.targetEnvironment(),

@@ -13,7 +13,8 @@ export type SemanticEventPayload =
   | { payloadType: "WORKFLOW_FAILED"; errorCode: string; message: string };
 
 export interface SemanticEvent {
-  contractVersion: "1.0";
+  contractVersion: "1.0" | "2.0";
+  workspaceId: string;
   eventId: string;
   workflowId: string;
   sequence: number;
@@ -23,6 +24,7 @@ export interface SemanticEvent {
 }
 
 export interface DiagnosticRequest {
+  workspaceId: string;
   skillId: string;
   targetEnvironment: string;
   idempotencyKey: string;
@@ -34,7 +36,16 @@ export interface BrowserSession {
   subject: string | null;
   username: string | null;
   roles: string[];
+  workspaces: WorkspaceSummary[];
+  currentWorkspaceId: string | null;
   authenticationType: string;
+}
+
+export interface WorkspaceSummary {
+  workspaceId: string;
+  workspaceCode: string;
+  displayName: string;
+  roles: string[];
 }
 
 export type SessionPhase = "loading" | "authenticated" | "anonymous" | "error";
