@@ -20,7 +20,8 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 function parseSemanticEvent(value: unknown): SemanticEvent {
   if (
     !isRecord(value) ||
-    value.contractVersion !== "1.0" ||
+    (value.contractVersion !== "1.0" && value.contractVersion !== "2.0") ||
+    typeof value.workspaceId !== "string" ||
     typeof value.eventId !== "string" ||
     typeof value.workflowId !== "string" ||
     typeof value.sequence !== "number" ||
@@ -40,6 +41,7 @@ function parseBrowserSession(value: unknown): BrowserSession {
     !isRecord(value) ||
     typeof value.authenticated !== "boolean" ||
     !Array.isArray(value.roles) ||
+    !Array.isArray(value.workspaces) ||
     typeof value.authenticationType !== "string"
   ) {
     throw new Error("控制面返回了不符合会话契约的数据");
@@ -47,20 +49,48 @@ function parseBrowserSession(value: unknown): BrowserSession {
   if (
     (value.subject !== null && typeof value.subject !== "string") ||
     (value.username !== null && typeof value.username !== "string") ||
+    (value.currentWorkspaceId !== null && typeof value.currentWorkspaceId !== "string") ||
     value.roles.some((role) => typeof role !== "string")
   ) {
     throw new Error("控制面返回了不符合会话契约的数据");
   }
+  for (const workspace of value.workspaces) {
+    if (
+      !isRecord(workspace) ||
+      typeof workspace.workspaceId !== "string" ||
+      typeof workspace.workspaceCode !== "string" ||
+      typeof workspace.displayName !== "string" ||
+      !Array.isArray(workspace.roles) ||
+      workspace.roles.some((role) => typeof role !== "string")
+    ) {
+      throw new Error("控制面返回了不符合会话契约的数据");
+    }
+  }
   return value as unknown as BrowserSession;
 }
 
-function buildHeaders(authorizationToken: string | null, includeJsonBody: boolean): Headers {
+function buildHeaders(
+  authorizationToken: string | null,
+  includeJsonBody: boolean,
+  workspaceId?: string,
+  skillId?: string,
+  targetEnvironment?: string,
+): Headers {
   const headers = new Headers({ Accept: "text/event-stream" });
   if (includeJsonBody) {
     headers.set("Content-Type", "application/json");
   }
   if (authorizationToken) {
     headers.set("Authorization", `Bearer ${authorizationToken}`);
+  }
+  if (workspaceId) {
+    headers.set("X-Team-Workspace-Id", workspaceId);
+  }
+  if (skillId) {
+    headers.set("X-Ops-Agent-Skill-Id", skillId);
+  }
+  if (targetEnvironment) {
+    headers.set("X-Ops-Agent-Target-Environment", targetEnvironment);
   }
   return headers;
 }
@@ -115,6 +145,8 @@ export async function fetchBrowserSession(): Promise<BrowserSession> {
       subject: null,
       username: null,
       roles: [],
+      workspaces: [],
+      currentWorkspaceId: null,
       authenticationType: "anonymous",
     };
   }
@@ -146,7 +178,13 @@ export async function streamDiagnosticEvents(
 ): Promise<void> {
   const response = await fetch("/internal/diagnostics/read-only/events", {
     method: "POST",
-    headers: buildHeaders(normalizeAuthorizationToken(token), true),
+    headers: buildHeaders(
+      normalizeAuthorizationToken(token),
+      true,
+      request.workspaceId,
+      request.skillId,
+      request.targetEnvironment,
+    ),
     credentials: "include",
     body: JSON.stringify(request),
   });
@@ -154,16 +192,17 @@ export async function streamDiagnosticEvents(
 }
 
 export async function resumeDiagnosticEvents(
+  workspaceId: string,
   workflowId: string,
   afterSequence: number,
   token: string,
   onEvent: (event: SemanticEvent) => void,
 ): Promise<void> {
   const response = await fetch(
-    `/internal/diagnostics/read-only/workflows/${encodeURIComponent(workflowId)}/events?afterSequence=${afterSequence}`,
+    `/internal/diagnostics/read-only/workflows/${encodeURIComponent(workflowId)}/events?workspaceId=${encodeURIComponent(workspaceId)}&afterSequence=${afterSequence}`,
     {
       method: "GET",
-      headers: buildHeaders(normalizeAuthorizationToken(token), false),
+      headers: buildHeaders(normalizeAuthorizationToken(token), false, workspaceId),
       credentials: "include",
     },
   );

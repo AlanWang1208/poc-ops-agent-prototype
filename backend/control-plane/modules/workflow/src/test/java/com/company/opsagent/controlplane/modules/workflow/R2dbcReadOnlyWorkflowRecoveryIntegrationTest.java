@@ -57,6 +57,7 @@ class R2dbcReadOnlyWorkflowRecoveryIntegrationTest {
 
     StepVerifier.create(store.createWorkflow(
             "workflow-1",
+            "workspace-default",
             "idempotency-1",
             "operator-1",
             "development",
@@ -97,6 +98,7 @@ class R2dbcReadOnlyWorkflowRecoveryIntegrationTest {
 
     StepVerifier.create(recoveryService.recoverStaleWorkflows()
             .then(store.findByIdempotency(
+                "workspace-default",
                 "idempotency-1",
                 "operator-1",
                 "development",

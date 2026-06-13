@@ -24,7 +24,7 @@
 - 审批工作流
 - DAG 调度
 - 补偿逻辑
-- 多租户能力
+- 外部 SaaS 多租户、外部客户接入或商业化租户管理能力；内部 Team Workspace 作用域按 `docs/superpowers/specs/2026-06-13-team-workspace-customization-design.md` 处理
 - 通用工作流引擎
 - 前端直接触发的操作员重放
 - 生产数据库上线
@@ -81,6 +81,7 @@
 
 将以下组合视为同一个逻辑请求：
 
+- `workspaceId`
 - `idempotencyKey`
 - `operatorId`
 - `targetEnvironment`
@@ -128,6 +129,7 @@
 `workflow_instance`
 
 - `workflow_id` 主键
+- `workspace_id`
 - `idempotency_key`
 - `operator_id`
 - `target_environment`
@@ -154,6 +156,7 @@
 
 `workflow_idempotency`
 
+- `workspace_id`
 - `idempotency_key`
 - `operator_id`
 - `target_environment`
@@ -179,6 +182,7 @@
 
 `workflow_event`
 
+- `workspace_id`
 - `workflow_id`
 - `sequence`
 - `event_id`
@@ -186,7 +190,7 @@
 - `event_payload_json`
 - `created_at`
 
-主键：`workflow_id + sequence`
+主键：`workspace_id + workflow_id + sequence`
 
 ### 模块边界
 

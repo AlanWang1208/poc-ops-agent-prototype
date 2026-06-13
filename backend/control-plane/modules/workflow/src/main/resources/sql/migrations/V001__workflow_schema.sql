@@ -1,5 +1,6 @@
 create table if not exists workflow_instance (
   workflow_id varchar(64) primary key,
+  workspace_id varchar(128) not null,
   idempotency_key varchar(128) not null,
   operator_id varchar(128) not null,
   target_environment varchar(64) not null,
@@ -27,13 +28,14 @@ create table if not exists workflow_instance (
 );
 
 create table if not exists workflow_idempotency (
+  workspace_id varchar(128) not null,
   idempotency_key varchar(128) not null,
   operator_id varchar(128) not null,
   target_environment varchar(64) not null,
   skill_id varchar(128) not null,
   parameters_hash varchar(128) not null,
   workflow_id varchar(64) not null,
-  primary key (idempotency_key, operator_id, target_environment, skill_id, parameters_hash)
+  primary key (workspace_id, idempotency_key, operator_id, target_environment, skill_id, parameters_hash)
 );
 
 create table if not exists workflow_attempt (
@@ -52,6 +54,7 @@ create table if not exists workflow_attempt (
 );
 
 create table if not exists workflow_event (
+  workspace_id varchar(128) not null,
   workflow_id varchar(64) not null,
   sequence bigint not null,
   event_id varchar(64) not null,

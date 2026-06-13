@@ -65,6 +65,7 @@ class ReadOnlyDiagnosticWorkflowServiceTest {
         store,
         new RetryableFailureClassifier());
     var request = new ReadOnlyWorkflowRequest(
+        "workspace-default",
         "node-health-read",
         "development",
         "idempotency-1",
@@ -190,6 +191,7 @@ class ReadOnlyDiagnosticWorkflowServiceTest {
 
   private ReadOnlyWorkflowRequest request(ObjectMapper objectMapper, String idempotencyKey) {
     return new ReadOnlyWorkflowRequest(
+        "workspace-default",
         "node-health-read",
         "development",
         idempotencyKey,

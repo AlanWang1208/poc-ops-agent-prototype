@@ -40,6 +40,7 @@ public class R2dbcReadOnlyWorkflowStore implements ReadOnlyWorkflowStore {
   @Override
   public Mono<Void> createWorkflow(
       String workflowId,
+      String workspaceId,
       String idempotencyKey,
       String operatorId,
       String targetEnvironment,
@@ -62,6 +63,7 @@ public class R2dbcReadOnlyWorkflowStore implements ReadOnlyWorkflowStore {
     return databaseClient.sql("""
             insert into workflow_instance (
               workflow_id,
+              workspace_id,
               idempotency_key,
               operator_id,
               target_environment,
@@ -82,6 +84,7 @@ public class R2dbcReadOnlyWorkflowStore implements ReadOnlyWorkflowStore {
               updated_at
             ) values (
               :workflowId,
+              :workspaceId,
               :idempotencyKey,
               :operatorId,
               :targetEnvironment,
@@ -103,6 +106,7 @@ public class R2dbcReadOnlyWorkflowStore implements ReadOnlyWorkflowStore {
             )
             """)
         .bind("workflowId", workflowId)
+        .bind("workspaceId", workspaceId)
         .bind("idempotencyKey", idempotencyKey)
         .bind("operatorId", operatorId)
         .bind("targetEnvironment", targetEnvironment)
@@ -125,6 +129,7 @@ public class R2dbcReadOnlyWorkflowStore implements ReadOnlyWorkflowStore {
         .rowsUpdated()
         .then(databaseClient.sql("""
                 insert into workflow_idempotency (
+                  workspace_id,
                   idempotency_key,
                   operator_id,
                   target_environment,
@@ -132,6 +137,7 @@ public class R2dbcReadOnlyWorkflowStore implements ReadOnlyWorkflowStore {
                   parameters_hash,
                   workflow_id
                 ) values (
+                  :workspaceId,
                   :idempotencyKey,
                   :operatorId,
                   :targetEnvironment,
@@ -140,6 +146,7 @@ public class R2dbcReadOnlyWorkflowStore implements ReadOnlyWorkflowStore {
                   :workflowId
                 )
                 """)
+            .bind("workspaceId", workspaceId)
             .bind("idempotencyKey", idempotencyKey)
             .bind("operatorId", operatorId)
             .bind("targetEnvironment", targetEnvironment)
@@ -153,6 +160,7 @@ public class R2dbcReadOnlyWorkflowStore implements ReadOnlyWorkflowStore {
 
   @Override
   public Mono<PersistedReadOnlyWorkflowView> findByIdempotency(
+      String workspaceId,
       String idempotencyKey,
       String operatorId,
       String targetEnvironment,
@@ -162,12 +170,15 @@ public class R2dbcReadOnlyWorkflowStore implements ReadOnlyWorkflowStore {
             select wi.*
             from workflow_idempotency idx
             join workflow_instance wi on wi.workflow_id = idx.workflow_id
+             and wi.workspace_id = idx.workspace_id
             where idx.idempotency_key = :idempotencyKey
+              and idx.workspace_id = :workspaceId
               and idx.operator_id = :operatorId
               and idx.target_environment = :targetEnvironment
               and idx.skill_id = :skillId
               and idx.parameters_hash = :parametersHash
             """)
+        .bind("workspaceId", workspaceId)
         .bind("idempotencyKey", idempotencyKey)
         .bind("operatorId", operatorId)
         .bind("targetEnvironment", targetEnvironment)
@@ -175,6 +186,7 @@ public class R2dbcReadOnlyWorkflowStore implements ReadOnlyWorkflowStore {
         .bind("parametersHash", parametersHash)
         .map((row, metadata) -> new StoredReadOnlyWorkflow(
             row.get("workflow_id", String.class),
+            row.get("workspace_id", String.class),
             row.get("idempotency_key", String.class),
             row.get("operator_id", String.class),
             row.get("target_environment", String.class),
@@ -204,14 +216,16 @@ public class R2dbcReadOnlyWorkflowStore implements ReadOnlyWorkflowStore {
   }
 
   @Override
-  public Flux<SemanticEvent> loadEventsAfter(String workflowId, long afterSequence) {
+  public Flux<SemanticEvent> loadEventsAfter(String workspaceId, String workflowId, long afterSequence) {
     RowsFetchSpec<StoredWorkflowEvent> fetchSpec = databaseClient.sql("""
             select workflow_id, sequence, event_id, event_type, event_payload_json, created_at
             from workflow_event
             where workflow_id = :workflowId
+              and workspace_id = :workspaceId
               and sequence > :afterSequence
             order by sequence asc
             """)
+        .bind("workspaceId", workspaceId)
         .bind("workflowId", workflowId)
         .bind("afterSequence", afterSequence)
         .map((row, metadata) -> new StoredWorkflowEvent(
@@ -225,10 +239,11 @@ public class R2dbcReadOnlyWorkflowStore implements ReadOnlyWorkflowStore {
   }
 
   @Override
-  public Mono<Void> appendEvent(String workflowId, long sequence, SemanticEvent event) {
+  public Mono<Void> appendEvent(String workspaceId, String workflowId, long sequence, SemanticEvent event) {
     return Mono.fromCallable(() -> serialize(event))
         .flatMap(payload -> databaseClient.sql("""
                 insert into workflow_event (
+                  workspace_id,
                   workflow_id,
                   sequence,
                   event_id,
@@ -236,6 +251,7 @@ public class R2dbcReadOnlyWorkflowStore implements ReadOnlyWorkflowStore {
                   event_payload_json,
                   created_at
                 ) values (
+                  :workspaceId,
                   :workflowId,
                   :sequence,
                   :eventId,
@@ -244,6 +260,7 @@ public class R2dbcReadOnlyWorkflowStore implements ReadOnlyWorkflowStore {
                   :createdAt
                 )
                 """)
+            .bind("workspaceId", workspaceId)
             .bind("workflowId", workflowId)
             .bind("sequence", sequence)
             .bind("eventId", event.eventId())
@@ -385,6 +402,7 @@ public class R2dbcReadOnlyWorkflowStore implements ReadOnlyWorkflowStore {
         .bind("updatedBefore", updatedBefore)
         .map((row, metadata) -> new StoredReadOnlyWorkflow(
             row.get("workflow_id", String.class),
+            row.get("workspace_id", String.class),
             row.get("idempotency_key", String.class),
             row.get("operator_id", String.class),
             row.get("target_environment", String.class),
@@ -483,7 +501,7 @@ public class R2dbcReadOnlyWorkflowStore implements ReadOnlyWorkflowStore {
   private Mono<PersistedReadOnlyWorkflowView> loadWorkflowView(StoredReadOnlyWorkflow workflow) {
     return Mono.zip(
             loadAttempts(workflow.workflowId()).collectList(),
-            loadEvents(workflow.workflowId()).collectList())
+            loadEvents(workflow.workspaceId(), workflow.workflowId()).collectList())
         .map(tuple -> new PersistedReadOnlyWorkflowView(
             workflow,
             deserializeCommand(workflow),
@@ -525,13 +543,15 @@ public class R2dbcReadOnlyWorkflowStore implements ReadOnlyWorkflowStore {
     return fetchSpec.all();
   }
 
-  private reactor.core.publisher.Flux<com.company.opsagent.contracts.events.SemanticEvent> loadEvents(String workflowId) {
+  private reactor.core.publisher.Flux<com.company.opsagent.contracts.events.SemanticEvent> loadEvents(String workspaceId, String workflowId) {
     RowsFetchSpec<StoredWorkflowEvent> fetchSpec = databaseClient.sql("""
             select workflow_id, sequence, event_id, event_type, event_payload_json, created_at
             from workflow_event
             where workflow_id = :workflowId
+              and workspace_id = :workspaceId
             order by sequence asc
             """)
+        .bind("workspaceId", workspaceId)
         .bind("workflowId", workflowId)
         .map((row, metadata) -> new StoredWorkflowEvent(
             row.get("workflow_id", String.class),
@@ -599,8 +619,12 @@ public class R2dbcReadOnlyWorkflowStore implements ReadOnlyWorkflowStore {
             payloadNode.get("errorCode").asText(),
             payloadNode.get("message").asText());
       };
+      String workspaceId = serializedEvent.has("workspaceId")
+          ? serializedEvent.get("workspaceId").asText()
+          : "workspace-default";
       return new SemanticEvent(
-          "1.0",
+          serializedEvent.has("contractVersion") ? serializedEvent.get("contractVersion").asText() : "1.0",
+          workspaceId,
           storedEvent.eventId(),
           storedEvent.workflowId(),
           storedEvent.sequence(),

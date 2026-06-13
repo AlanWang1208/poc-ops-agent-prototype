@@ -347,6 +347,7 @@ class ControlPlaneApplicationTest {
 
     reactor.test.StepVerifier.create(readOnlyWorkflowStore.createWorkflow(
             "workflow-bootstrap-1",
+            "workspace-default",
             "idempotency-bootstrap-1",
             "operator-1",
             "development",
@@ -361,6 +362,7 @@ class ControlPlaneApplicationTest {
             command,
             now)
         .then(readOnlyWorkflowStore.findByIdempotency(
+            "workspace-default",
             "idempotency-bootstrap-1",
             "operator-1",
             "development",
@@ -393,6 +395,7 @@ class ControlPlaneApplicationTest {
 
     reactor.test.StepVerifier.create(readOnlyWorkflowStore.createWorkflow(
             "workflow-stream-1",
+            "workspace-default",
             "idempotency-stream-1",
             "operator-1",
             "development",
@@ -406,7 +409,7 @@ class ControlPlaneApplicationTest {
             "command-stream-1",
             command,
             now)
-        .then(readOnlyWorkflowStore.appendEvent("workflow-stream-1", 1, new SemanticEvent(
+        .then(readOnlyWorkflowStore.appendEvent("workspace-default", "workflow-stream-1", 1, new SemanticEvent(
             "1.0",
             "stream-event-1",
             "workflow-stream-1",
@@ -414,7 +417,7 @@ class ControlPlaneApplicationTest {
             now,
             SemanticEventType.WORKFLOW_STARTED,
             new WorkflowStartedPayload(SemanticEventType.WORKFLOW_STARTED, "command-stream-1", "operator-1"))))
-        .then(readOnlyWorkflowStore.appendEvent("workflow-stream-1", 2, new SemanticEvent(
+        .then(readOnlyWorkflowStore.appendEvent("workspace-default", "workflow-stream-1", 2, new SemanticEvent(
             "1.0",
             "stream-event-2",
             "workflow-stream-1",
@@ -425,7 +428,7 @@ class ControlPlaneApplicationTest {
         .verifyComplete();
 
     webTestClient.get()
-        .uri("/internal/diagnostics/read-only/workflows/workflow-stream-1/events?afterSequence=1")
+        .uri("/internal/diagnostics/read-only/workflows/workflow-stream-1/events?workspaceId=workspace-default&afterSequence=1")
         .headers(headers -> headers.setBearerAuth(token("alice", List.of("ops-reader"), "ops-agent-internal")))
         .exchange()
         .expectStatus().isOk()

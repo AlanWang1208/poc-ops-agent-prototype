@@ -4,6 +4,7 @@ import java.time.OffsetDateTime;
 
 public record StoredReadOnlyWorkflow(
     String workflowId,
+    String workspaceId,
     String idempotencyKey,
     String operatorId,
     String targetEnvironment,
