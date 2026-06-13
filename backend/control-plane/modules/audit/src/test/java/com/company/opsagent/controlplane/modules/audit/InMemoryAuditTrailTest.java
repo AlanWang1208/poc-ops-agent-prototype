@@ -17,8 +17,8 @@ class InMemoryAuditTrailTest {
   void keepsLatestEvent() {
     // 连续记录两条事件后，latest 应返回最后追加的那一条。
     InMemoryAuditTrail auditTrail = new InMemoryAuditTrail();
-    AuditEvent first = new AuditEvent("e-1", "r-1", "t-1", "alice", "workspace-default", "a1", "/one", "rbac-v1", "ALLOW", "ok", OffsetDateTime.now());
-    AuditEvent second = new AuditEvent("e-2", "r-2", "t-2", "bob", "workspace-default", "a2", "/two", "rbac-v1", "DENY", "no", OffsetDateTime.now());
+    AuditEvent first = new AuditEvent("e-1", "r-1", "t-1", "alice", "a1", "/one", "rbac-v1", "ALLOW", "ok", OffsetDateTime.now());
+    AuditEvent second = new AuditEvent("e-2", "r-2", "t-2", "bob", "a2", "/two", "rbac-v1", "DENY", "no", OffsetDateTime.now());
 
     auditTrail.record(first);
     auditTrail.record(second);

@@ -16,7 +16,6 @@ public interface ReadOnlyWorkflowStore {
 
   Mono<Void> createWorkflow(
       String workflowId,
-      String workspaceId,
       String idempotencyKey,
       String operatorId,
       String targetEnvironment,
@@ -32,16 +31,15 @@ public interface ReadOnlyWorkflowStore {
       OffsetDateTime createdAt);
 
   Mono<PersistedReadOnlyWorkflowView> findByIdempotency(
-      String workspaceId,
       String idempotencyKey,
       String operatorId,
       String targetEnvironment,
       String skillId,
       String parametersHash);
 
-  Flux<SemanticEvent> loadEventsAfter(String workspaceId, String workflowId, long afterSequence);
+  Flux<SemanticEvent> loadEventsAfter(String workflowId, long afterSequence);
 
-  Mono<Void> appendEvent(String workspaceId, String workflowId, long sequence, SemanticEvent event);
+  Mono<Void> appendEvent(String workflowId, long sequence, SemanticEvent event);
 
   /**
    * 记录一次新的执行尝试，并把工作流推进到运行中状态。

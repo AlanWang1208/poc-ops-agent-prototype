@@ -6,11 +6,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.company.opsagent.contracts.identity.AdminResetPasswordRequest;
 import com.company.opsagent.contracts.identity.IdentityErrorResponse;
 import com.company.opsagent.contracts.identity.IdentitySessionStatusResponse;
-import com.company.opsagent.contracts.identity.IdentitySessionStatusResponseV2;
 import com.company.opsagent.contracts.identity.PasswordChangeRequest;
 import com.company.opsagent.contracts.identity.PasswordLoginRequest;
 import com.company.opsagent.contracts.identity.PasswordLoginResponse;
-import com.company.opsagent.contracts.identity.WorkspaceSessionView;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.OffsetDateTime;
@@ -39,24 +37,6 @@ class IdentityContractsTest {
         null,
         "alice",
         List.of("ROLE_ops-reader"),
-        "PASSWORD",
-        OffsetDateTime.now().plusMinutes(30),
-        false));
-  }
-
-  @Test
-  void rejectsWorkspaceAwareSessionWhenCurrentWorkspaceIsNotVisible() {
-    assertThrows(IllegalArgumentException.class, () -> new IdentitySessionStatusResponseV2(
-        true,
-        "account-1",
-        "alice",
-        List.of("ROLE_ops-reader"),
-        List.of(new WorkspaceSessionView(
-            "workspace-a",
-            "team-a",
-            "团队 A",
-            List.of("ROLE_ops-reader"))),
-        "workspace-b",
         "PASSWORD",
         OffsetDateTime.now().plusMinutes(30),
         false));
@@ -92,7 +72,6 @@ class IdentityContractsTest {
     assertTrue(Files.exists(Path.of("api", "identity", "password-login-request-v1.schema.json")));
     assertTrue(Files.exists(Path.of("api", "identity", "password-login-response-v1.schema.json")));
     assertTrue(Files.exists(Path.of("api", "identity", "identity-session-status-response-v1.schema.json")));
-    assertTrue(Files.exists(Path.of("api", "identity", "identity-session-status-response-v2.schema.json")));
     assertTrue(Files.exists(Path.of("api", "identity", "password-change-request-v1.schema.json")));
     assertTrue(Files.exists(Path.of("api", "identity", "admin-reset-password-request-v1.schema.json")));
     assertTrue(Files.exists(Path.of("api", "identity", "identity-error-response-v1.schema.json")));

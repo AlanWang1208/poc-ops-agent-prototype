@@ -56,15 +56,6 @@ public class RuleBasedSkillRoutingService implements SkillRoutingService {
       return null;
     }
 
-    if (!criteria.workspaceEnabledSkillIds().isEmpty()
-        && !criteria.workspaceEnabledSkillIds().contains(skill.descriptor().skillId())) {
-      return null;
-    }
-    if (!criteria.workspaceEnabledSkillIds().isEmpty()) {
-      score += 25;
-      matchedRules.add("命中 Team Workspace 启用清单");
-    }
-
     if (releaseSnapshot.stage() == SkillReleaseStage.CANARY) {
       Set<String> requestContextTags = criteria.requestContextTags().stream()
           .map(this::normalize)

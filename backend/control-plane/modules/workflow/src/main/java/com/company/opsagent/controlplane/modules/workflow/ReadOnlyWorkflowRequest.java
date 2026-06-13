@@ -12,7 +12,6 @@ import com.fasterxml.jackson.databind.JsonNode;
  * 启动只读诊断工作流所需的可信输入。
  */
 public record ReadOnlyWorkflowRequest(
-    String workspaceId,
     String skillId,
     String targetEnvironment,
     String idempotencyKey,
@@ -22,7 +21,6 @@ public record ReadOnlyWorkflowRequest(
     TraceContext trace) {
 
   public ReadOnlyWorkflowRequest {
-    workspaceId = requiredText(workspaceId, "workspaceId");
     skillId = requiredText(skillId, "skillId");
     targetEnvironment = requiredText(targetEnvironment, "targetEnvironment");
     idempotencyKey = requiredText(idempotencyKey, "idempotencyKey");

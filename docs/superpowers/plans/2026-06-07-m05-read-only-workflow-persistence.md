@@ -10,8 +10,6 @@
 
 ---
 
-> **2026-06-13 修订说明：** Team Workspace 已纳入内部团队级逻辑隔离边界。本计划中旧的工作流、幂等和事件仓储签名若未携带 `workspaceId`，以 `docs/superpowers/plans/2026-06-13-team-workspace-customization.md` 的修订任务为准；外部 SaaS 多租户、外部客户接入和商业化租户管理仍不在范围内。
-
 ## 文件地图
 
 **新增**

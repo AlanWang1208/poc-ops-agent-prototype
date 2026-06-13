@@ -4,7 +4,6 @@ import static com.company.opsagent.contracts.ContractValues.required;
 import static com.company.opsagent.contracts.ContractValues.requiredText;
 import static com.company.opsagent.contracts.ContractValues.requiredTime;
 
-import com.company.opsagent.contracts.workflow.WorkspaceContext;
 import java.time.OffsetDateTime;
 
 /**
@@ -12,7 +11,6 @@ import java.time.OffsetDateTime;
  */
 public record SemanticEvent(
     String contractVersion,
-    String workspaceId,
     String eventId,
     String workflowId,
     long sequence,
@@ -20,50 +18,10 @@ public record SemanticEvent(
     SemanticEventType type,
     SemanticEventPayload payload) {
 
-  public SemanticEvent(
-      String contractVersion,
-      String eventId,
-      String workflowId,
-      long sequence,
-      OffsetDateTime timestamp,
-      SemanticEventType type,
-      SemanticEventPayload payload) {
-    this(
-        contractVersion,
-        "workspace-default",
-        eventId,
-        workflowId,
-        sequence,
-        timestamp,
-        type,
-        payload);
-  }
-
-  public SemanticEvent(
-      String contractVersion,
-      WorkspaceContext workspace,
-      String eventId,
-      String workflowId,
-      long sequence,
-      OffsetDateTime timestamp,
-      SemanticEventType type,
-      SemanticEventPayload payload) {
-    this(
-        contractVersion,
-        workspace.workspaceId(),
-        eventId,
-        workflowId,
-        sequence,
-        timestamp,
-        type,
-        payload);
-  }
-
   public SemanticEvent {
-    if (!"1.0".equals(contractVersion) && !"2.0".equals(contractVersion)) {
+    if (!"1.0".equals(contractVersion)) {
       throw new IllegalArgumentException("unsupported semantic event contract version");
     }
-    workspaceId = requiredText(workspaceId, "workspaceId");
     eventId = requiredText(eventId, "eventId");
     workflowId = requiredText(workflowId, "workflowId");
     if (sequence < 1) {

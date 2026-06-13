@@ -9,7 +9,6 @@ import java.time.OffsetDateTime;
  * @param requestId 请求标识
  * @param traceId 追踪标识
  * @param subject 触发动作的主体
- * @param workspaceId Team Workspace 标识
  * @param action 审计动作标识
  * @param resource 资源路径或资源标识
  * @param policyVersion 产生结果时使用的策略版本
@@ -22,7 +21,6 @@ public record AuditEvent(
     String requestId,
     String traceId,
     String subject,
-    String workspaceId,
     String action,
     String resource,
     String policyVersion,

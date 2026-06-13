@@ -4,7 +4,7 @@
 
 V1.0 使用单一仓库，包含模块化控制面、独立部署的执行 Worker、独立操作台，以及版本化 Skill 区域。  
 以下模块编号描述职责归属和契约边界，不表示每个模块都必须成为独立部署服务。  
-系统为公司内部自研自用、共享底座部署。模块设计允许内部 `Team Workspace` 作为团队级逻辑租户边界，但不包含外部 SaaS 租户、商业化计费或外部客户接入。
+系统为公司内部自研自用、单组织部署。模块设计不包含租户标识、租户隔离、租户路由或租户管理。
 
 ## 模块清单
 
@@ -12,9 +12,9 @@ V1.0 使用单一仓库，包含模块化控制面、独立部署的执行 Worke
 |---|---|---|---|
 | M00 | 项目治理与工程基础 | `docs`、`tools`、根目录配置 | 范围、ADR、威胁模型、CI 和规范 |
 | M01 | 接入网关与身份认证 | `backend/control-plane` | API 入口、OIDC / SSO、JWT 和可信身份上下文 |
-| M02 | 策略授权与审计 | `backend/control-plane` | 策略决策、Team Workspace 作用域 RBAC、风险控制和审计 |
+| M02 | 策略授权与审计 | `backend/control-plane` | 策略决策、RBAC、风险控制和审计 |
 | M03 | Skill 契约与注册中心 | `backend/control-plane`、`backend/contracts`、`backend/skills` | Skill Schema、版本、签名、注册和发布校验 |
-| M04 | Agent 路由与模型交互 | `backend/control-plane` | 候选 Skill 选择、Team Workspace 启用约束、约束筛选和后续路由决策 |
+| M04 | Agent 路由与模型交互 | `backend/control-plane` | 候选 Skill 选择、约束筛选和后续路由决策 |
 | M05 | 工作流、审批与状态恢复 | `backend/control-plane` | 持久化工作流、审批、幂等和补偿 |
 | M06 | DAG 编排与制品黑板 | `backend/control-plane` | DAG 校验、调度、制品和容错 |
 | M07 | 执行器与安全隔离 | `backend/execution-worker` | 受限执行、网络、凭据和隔离 |

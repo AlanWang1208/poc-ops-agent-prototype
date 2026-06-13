@@ -69,15 +69,8 @@ public class ReadOnlyDiagnosticController {
   @GetMapping(value = "/read-only/workflows/{workflowId}/events", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
   public Flux<ServerSentEvent<SemanticEvent>> resumeEvents(
       @PathVariable("workflowId") String workflowId,
-      @RequestParam(name = "workspaceId") String workspaceId,
-      @RequestParam(name = "afterSequence", defaultValue = "0") long afterSequence,
-      ServerWebExchange exchange) {
-    ExecutionContext context = exchange.getRequiredAttribute(
-        PolicyEnforcementWebFilter.EXECUTION_CONTEXT_ATTRIBUTE);
-    if (!context.workspaceId().equals(workspaceId)) {
-      return Flux.error(new IllegalArgumentException("workspaceId does not match authorized context"));
-    }
-    return workflowStore.loadEventsAfter(workspaceId, workflowId, afterSequence)
+      @RequestParam(name = "afterSequence", defaultValue = "0") long afterSequence) {
+    return workflowStore.loadEventsAfter(workflowId, afterSequence)
         .map(event -> ServerSentEvent.<SemanticEvent>builder()
             .id(event.eventId())
             .event(event.type().name())
@@ -90,14 +83,7 @@ public class ReadOnlyDiagnosticController {
       ServerWebExchange exchange) {
     ExecutionContext context = exchange.getRequiredAttribute(
         PolicyEnforcementWebFilter.EXECUTION_CONTEXT_ATTRIBUTE);
-    if (request.workspaceId() == null || request.workspaceId().isBlank()) {
-      throw new IllegalArgumentException("workspaceId is required");
-    }
-    if (!context.workspaceId().equals(request.workspaceId())) {
-      throw new IllegalArgumentException("workspaceId does not match authorized context");
-    }
     return new ReadOnlyWorkflowRequest(
-        request.workspaceId(),
         request.skillId(),
         request.targetEnvironment(),
         request.idempotencyKey(),

@@ -7,7 +7,6 @@ import com.company.opsagent.controlplane.bootstrap.config.BuiltInIdentityPropert
 import com.company.opsagent.controlplane.bootstrap.config.SecurityProperties;
 import com.company.opsagent.controlplane.bootstrap.security.AuthenticatedPrincipalOperatorIdentityResolver;
 import com.company.opsagent.controlplane.modules.identity.OperatorIdentity;
-import com.company.opsagent.controlplane.modules.identity.WorkspaceMembership;
 import com.company.opsagent.controlplane.modules.identity.api.IdentityAuthenticationService;
 import com.company.opsagent.controlplane.modules.identity.api.IdentityPasswordManagementService;
 import com.company.opsagent.controlplane.modules.identity.api.IdentitySessionManagementService;
@@ -108,8 +107,6 @@ public class BrowserAuthenticationController {
               status.identity().subject(),
               status.identity().username(),
               status.identity().roles(),
-              toWorkspaceSummaries(status.identity().workspaces()),
-              status.identity().currentWorkspaceId(),
               status.authenticationType())))
           .defaultIfEmpty(ResponseEntity.status(HttpStatus.UNAUTHORIZED)
               .body(new BrowserSessionResponse(false, null, null, List.of(), "anonymous")));
@@ -172,20 +169,7 @@ public class BrowserAuthenticationController {
         identity.subject(),
         identity.username(),
         identity.roles(),
-        toWorkspaceSummaries(identity.workspaces()),
-        identity.currentWorkspaceId(),
         principal.getClass().getSimpleName());
-  }
-
-  private List<BrowserSessionResponse.WorkspaceSummary> toWorkspaceSummaries(
-      List<WorkspaceMembership> workspaces) {
-    return workspaces.stream()
-        .map(workspace -> new BrowserSessionResponse.WorkspaceSummary(
-            workspace.workspaceId(),
-            workspace.workspaceCode(),
-            workspace.displayName(),
-            workspace.roles()))
-        .toList();
   }
 
   private String registrationId() {

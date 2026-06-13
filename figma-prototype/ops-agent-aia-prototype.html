@@ -50,8 +50,7 @@
       min-height: 1060px;
       overflow: hidden;
       background: var(--bg);
-      border-bottom: 1px solid rgba(31, 41, 51, 0.08);
-      box-shadow: 0 12px 30px rgba(31, 41, 51, 0.12);
+      box-shadow: 0 22px 60px rgba(31, 41, 51, 0.22);
     }
 
     .screen::before {
@@ -593,7 +592,7 @@
 
     .login-brand {
       position: absolute;
-      left: 100px;
+      left: 80px;
       top: 76px;
       display: flex;
       align-items: center;
@@ -949,6 +948,12 @@
       margin: 0;
       font-size: 30px;
       color: var(--ink);
+    }
+
+    .login-card > p {
+      margin: 12px 0 28px;
+      color: var(--muted);
+      line-height: 1.55;
     }
 
     .login-field {
@@ -1618,7 +1623,7 @@
 
     /* Quiet refinement pass: reduce decorative noise and keep one calm product visual. */
     body {
-      background: #fff;
+      background: #e4e9ef;
     }
 
     .screen::before {
@@ -1766,6 +1771,13 @@
       font-size: 24px;
     }
 
+    .login-card > p {
+      margin: 8px 0 14px;
+      font-size: 13px;
+      line-height: 1.42;
+      white-space: nowrap;
+    }
+
     .login-field {
       margin-top: 10px;
     }
@@ -1850,11 +1862,11 @@
       0%,
       100% {
         box-shadow: 0 18px 42px rgba(31, 41, 51, 0.08);
-        transform: translateY(-50%);
+        transform: translateY(0);
       }
       50% {
         box-shadow: 0 20px 48px rgba(211, 17, 69, 0.11);
-        transform: translateY(calc(-50% - 2px));
+        transform: translateY(-2px);
       }
     }
 
@@ -3002,8 +3014,7 @@
       left: 835px;
       top: 408px;
       width: 535px;
-      bottom: 24px;
-      height: auto;
+      height: 564px;
     }
 
     .board > .screen:nth-child(2) .skill-grid {
@@ -3027,8 +3038,8 @@
       left: 300px;
       width: 511px;
       top: 586px;
-      bottom: 24px;
-      height: auto;
+      bottom: auto;
+      height: 386px;
     }
 
     .overview-footer {
@@ -3147,140 +3158,10 @@
     }
 
     .board > .screen:nth-child(3) .agent-layout {
-      top: 202px;
-      bottom: 24px;
+      top: 144px;
+      bottom: 88px;
       grid-template-columns: minmax(0, 1fr) 320px;
-      gap: 18px;
-    }
-
-    .conversation-toolbar {
-      position: absolute;
-      left: 300px;
-      right: 70px;
-      top: 128px;
-      height: 60px;
-      z-index: 2;
-      display: grid;
-      grid-template-columns: auto minmax(0, 1fr) auto;
-      gap: 16px;
-      align-items: center;
-      padding: 10px 16px;
-      border: 1px solid rgba(34, 126, 166, 0.18);
-      border-radius: 18px;
-      background:
-        linear-gradient(90deg, rgba(255, 255, 255, 0.94), rgba(248, 252, 253, 0.82)),
-        linear-gradient(rgba(34, 126, 166, 0.03) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(34, 126, 166, 0.03) 1px, transparent 1px);
-      background-size: auto, 34px 34px, 34px 34px;
-      box-shadow: 0 14px 34px rgba(31, 41, 51, 0.055);
-    }
-
-    .conversation-toolbar-button,
-    .conversation-action {
-      height: 38px;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      padding: 0 12px;
-      border: 1px solid rgba(34, 126, 166, 0.16);
-      border-radius: 11px;
-      background: rgba(255, 255, 255, 0.86);
-      color: var(--blue);
-      font-size: 11px;
-      font-weight: 950;
-      white-space: nowrap;
-    }
-
-    .conversation-toolbar-button {
-      min-width: 104px;
-      gap: 8px;
-    }
-
-    .conversation-toolbar-button i {
-      width: 9px;
-      height: 9px;
-      border-radius: 999px;
-      background: var(--red);
-      box-shadow: 0 0 0 6px rgba(211, 17, 69, 0.08);
-    }
-
-    .conversation-toolbar-main {
-      min-width: 0;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      white-space: nowrap;
-    }
-
-    .conversation-toolbar-main strong {
-      flex: 0 0 auto;
-      color: var(--ink);
-      font-size: 14px;
-      line-height: 1.1;
-      letter-spacing: 0.01em;
-    }
-
-    .conversation-toolbar-main small {
-      min-width: 0;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      padding-left: 12px;
-      border-left: 1px solid rgba(34, 126, 166, 0.18);
-      color: var(--muted);
-      font-size: 10px;
-      font-weight: 750;
-      line-height: 1;
-    }
-
-    .conversation-title-icon {
-      display: none;
-    }
-
-    .conversation-title-icon::after {
-      content: "";
-      position: absolute;
-      left: 9px;
-      right: 9px;
-      bottom: 7px;
-      height: 2px;
-      border-radius: 999px;
-      background: linear-gradient(90deg, var(--red), var(--blue));
-    }
-
-    .conversation-toolbar-actions,
-    .workflow-task-tags,
-    .workflow-task-actions {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 7px;
-    }
-
-    .workflow-task-tags span {
-      padding: 5px 8px;
-      border: 1px solid rgba(34, 126, 166, 0.14);
-      border-radius: 999px;
-      background: rgba(255, 255, 255, 0.82);
-      color: var(--muted);
-      font-size: 10px;
-      font-weight: 900;
-      white-space: nowrap;
-    }
-
-    .conversation-toolbar-actions {
-      justify-content: flex-end;
-    }
-
-    .conversation-toolbar-actions .workspace-expand {
-      height: 38px;
-      padding: 0 12px;
-      border-radius: 11px;
-      font-size: 11px;
-    }
-
-    .conversation-action.primary {
-      border-color: transparent;
-      background: var(--red);
-      color: #fff;
+      gap: 24px;
     }
 
     .workspace-context,
@@ -3439,34 +3320,27 @@
     .board > .screen:nth-child(3) .exchange-head {
       justify-content: flex-start;
       gap: 16px;
-      padding: 10px 18px;
+      padding: 16px 22px;
       background: linear-gradient(90deg, rgba(211, 17, 69, 0.055), rgba(34, 126, 166, 0.045), rgba(25, 145, 97, 0.035));
     }
 
     .board > .screen:nth-child(3) .exchange-head > div {
-      flex: 1 1 auto;
-      min-width: 0;
+      flex: 0 0 auto;
       max-width: calc(100% - 126px);
-      display: flex;
-      align-items: center;
-      gap: 12px;
     }
 
     .board > .screen:nth-child(3) .exchange-head h2 {
-      flex: 0 0 auto;
-      font-size: 18px;
+      font-size: 20px;
       line-height: 1.1;
     }
 
     .board > .screen:nth-child(3) .exchange-head span:not(.badge) {
       display: block;
-      margin-top: 0;
-      min-width: 0;
-      transform: translateY(2px);
+      margin-top: 6px;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
-      font-size: 11px !important;
+      font-size: 12px !important;
       line-height: 1.15;
     }
 
@@ -3479,92 +3353,17 @@
     .board > .screen:nth-child(3) .exchange-body {
       min-height: 0;
       overflow: hidden;
-      gap: 14px;
-      padding: 12px 12px 10px;
+      gap: 10px;
+      padding: 18px 12px 12px;
     }
 
     .board > .screen:nth-child(3) .message {
       max-width: 88%;
       position: relative;
-      padding: 8px 14px 10px;
+      padding-top: 14px;
+      padding-bottom: 14px;
       border-radius: 14px;
       box-shadow: 0 8px 18px rgba(31, 41, 51, 0.04);
-    }
-
-    .workflow-task-card {
-      position: relative;
-      max-width: 94%;
-      padding: 11px 13px;
-      border: 1px solid rgba(34, 126, 166, 0.18);
-      border-left: 4px solid var(--task-state, var(--blue));
-      border-radius: 14px;
-      background:
-        linear-gradient(90deg, color-mix(in srgb, var(--task-state, var(--blue)), transparent 94%), rgba(255, 255, 255, 0.9)),
-        rgba(255, 255, 255, 0.88);
-      box-shadow: 0 9px 22px rgba(31, 41, 51, 0.045);
-    }
-
-    .workflow-task-head {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) auto;
-      gap: 12px;
-      align-items: start;
-    }
-
-    .workflow-task-head strong {
-      display: block;
-      color: var(--ink);
-      font-size: 13px;
-      line-height: 1.15;
-    }
-
-    .workflow-task-head small {
-      display: block;
-      margin-top: 5px;
-      color: var(--muted);
-      font-size: 10px;
-      font-weight: 800;
-    }
-
-    .workflow-task-state {
-      padding: 5px 8px;
-      border-radius: 999px;
-      background: color-mix(in srgb, var(--task-state, var(--blue)), transparent 88%);
-      color: var(--task-state, var(--blue));
-      font-size: 10px;
-      font-weight: 950;
-      white-space: nowrap;
-    }
-
-    .workflow-task-tags {
-      margin-top: 9px;
-    }
-
-    .workflow-task-progress {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 6px;
-      margin-top: 10px;
-    }
-
-    .workflow-task-progress span {
-      height: 4px;
-      border-radius: 999px;
-      background: rgba(34, 126, 166, 0.12);
-    }
-
-    .workflow-task-progress span.done {
-      background: var(--task-state, var(--blue));
-    }
-
-    .workflow-task-actions {
-      margin-top: 9px;
-    }
-
-    .workflow-task-actions span {
-      color: var(--blue);
-      font-size: 10px;
-      font-weight: 950;
     }
 
     .board > .screen:nth-child(3) .message strong {
@@ -3573,16 +3372,16 @@
       align-items: center;
       justify-content: space-between;
       gap: 12px;
-      margin: -1px -1px 6px;
-      padding-bottom: 4px;
+      margin: -2px -2px 10px;
+      padding-bottom: 8px;
       border-bottom: 1px solid rgba(34, 126, 166, 0.12);
     }
 
     .message-role-icon {
       position: relative;
-      width: 18px;
-      height: 18px;
-      flex: 0 0 18px;
+      width: 24px;
+      height: 24px;
+      flex: 0 0 24px;
       border-radius: 999px;
       border: 1px solid rgba(211, 17, 69, 0.18);
       background:
@@ -3605,9 +3404,9 @@
     .message.agent .message-role-icon::after {
       content: "";
       position: absolute;
-      left: 6px;
-      right: 6px;
-      bottom: 4px;
+      left: 8px;
+      right: 8px;
+      bottom: 6px;
       height: 2px;
       border-radius: 999px;
       background: rgba(34, 126, 166, 0.34);
@@ -3659,20 +3458,14 @@
 
     .board > .screen:nth-child(3) .message.short {
       min-width: 150px;
-      min-height: 56px;
-      padding-bottom: 10px;
+      min-height: 72px;
+      padding-bottom: 16px;
       margin-top: -4px;
     }
 
     .board > .screen:nth-child(3) .plan-step {
-      padding: 7px;
       border-radius: 10px;
       background: rgba(255, 255, 255, 0.88);
-    }
-
-    .board > .screen:nth-child(3) .plan-strip {
-      gap: 8px;
-      margin-top: 8px;
     }
 
     .board > .screen:nth-child(3) .exchange-composer {
@@ -3733,8 +3526,8 @@
     }
 
     .board > .screen:nth-child(3) .agent-side {
-      gap: 12px;
-      padding-top: 0;
+      gap: 16px;
+      padding-top: 120px;
       box-sizing: border-box;
     }
 
@@ -4176,8 +3969,8 @@
       position: absolute;
       left: 300px;
       right: 70px;
-      top: 144px;
-      bottom: 24px;
+      top: 264px;
+      bottom: 88px;
       display: grid;
       grid-template-columns: minmax(0, 1fr) 324px;
       gap: 24px;
@@ -4198,33 +3991,27 @@
 
     .rag-window {
       display: grid;
-      grid-template-rows: 76px minmax(0, 1fr) 168px;
-      background:
-        linear-gradient(180deg, rgba(255, 255, 255, 0.93), rgba(248, 252, 253, 0.88)),
-        linear-gradient(rgba(34, 126, 166, 0.025) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(34, 126, 166, 0.025) 1px, transparent 1px);
-      background-size: auto, 36px 36px, 36px 36px;
-      box-shadow: 0 14px 34px rgba(31, 41, 51, 0.06);
+      grid-template-rows: 76px minmax(0, 1fr) 112px;
     }
 
     .rag-head {
       display: flex;
       align-items: center;
-      justify-content: flex-start;
-      gap: 16px;
-      padding: 16px 22px;
+      justify-content: space-between;
+      gap: 20px;
+      padding: 18px 22px;
       border-bottom: 1px solid rgba(34, 126, 166, 0.1);
-      background: linear-gradient(90deg, rgba(211, 17, 69, 0.055), rgba(34, 126, 166, 0.045), rgba(25, 145, 97, 0.035));
+      background: radial-gradient(circle at 12% 0%, rgba(34, 126, 166, 0.09), transparent 8rem), linear-gradient(90deg, rgba(255, 255, 255, 0.72), rgba(248, 252, 253, 0.64));
     }
 
     .rag-head h2 {
       margin: 0;
       color: var(--ink);
-      font-size: 20px;
+      font-size: 22px;
       line-height: 1.1;
     }
 
-    .rag-head span:not(.badge):not(.workspace-expand) {
+    .rag-head span:not(.badge) {
       display: block;
       margin-top: 6px;
       color: var(--muted);
@@ -4233,115 +4020,34 @@
       white-space: nowrap;
     }
 
-    .rag-head .badge {
-      margin-left: auto;
-      white-space: nowrap;
-    }
-
     .rag-body {
-      display: grid;
-      align-content: start;
-      gap: 14px;
-      padding: 12px 12px 10px;
+      padding: 22px;
       overflow: hidden;
     }
 
     .rag-question {
-      position: relative;
-      max-width: 88%;
+      max-width: 610px;
       margin-left: auto;
-      padding: 8px 14px 10px;
+      padding: 18px 20px;
       border: 1px solid rgba(211, 17, 69, 0.15);
-      border-radius: 14px;
-      background: #fff7fa;
+      border-radius: 18px;
+      background: rgba(255, 248, 250, 0.82);
       color: var(--ink);
       font-size: 15px;
-      line-height: 1.55;
-      box-shadow: 0 8px 18px rgba(31, 41, 51, 0.04);
+      line-height: 1.65;
+      box-shadow: 0 12px 26px rgba(211, 17, 69, 0.045);
     }
 
     .rag-answer {
-      position: relative;
-      margin-top: 0;
-      max-width: 88%;
-      padding: 8px 14px 10px;
+      margin-top: 20px;
+      max-width: 720px;
+      padding: 18px 20px 20px;
       border: 1px solid rgba(34, 126, 166, 0.14);
-      border-radius: 14px;
-      background: #f8fcfd;
-      box-shadow: 0 8px 18px rgba(31, 41, 51, 0.04);
+      border-radius: 18px;
+      background: rgba(248, 252, 253, 0.8);
     }
 
-    .rag-message-head {
-      position: relative;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      margin: -1px -1px 6px;
-      padding-bottom: 4px;
-      border-bottom: 1px solid rgba(34, 126, 166, 0.12);
-    }
-
-    .rag-question .rag-message-head {
-      border-bottom-color: rgba(211, 17, 69, 0.14);
-    }
-
-    .rag-message-head::after {
-      content: "";
-      width: 32px;
-      height: 12px;
-      flex: 0 0 32px;
-      border-radius: 999px;
-      background:
-        radial-gradient(circle at 6px 50%, rgba(34, 126, 166, 0.36) 0 2px, transparent 2.5px),
-        radial-gradient(circle at 16px 50%, rgba(34, 126, 166, 0.22) 0 2px, transparent 2.5px),
-        radial-gradient(circle at 26px 50%, rgba(34, 126, 166, 0.14) 0 2px, transparent 2.5px);
-    }
-
-    .rag-question .rag-message-head::after {
-      background:
-        radial-gradient(circle at 6px 50%, rgba(211, 17, 69, 0.38) 0 2px, transparent 2.5px),
-        radial-gradient(circle at 16px 50%, rgba(211, 17, 69, 0.22) 0 2px, transparent 2.5px),
-        radial-gradient(circle at 26px 50%, rgba(211, 17, 69, 0.14) 0 2px, transparent 2.5px);
-    }
-
-    .rag-message-role {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      color: var(--ink);
-      font-size: 0;
-      font-weight: 900;
-    }
-
-    .rag-message-role .message-role-icon {
-      width: 18px;
-      height: 18px;
-      flex-basis: 18px;
-    }
-
-    .rag-answer .message-role-icon {
-      border-radius: 8px;
-      border-color: rgba(34, 126, 166, 0.18);
-      background:
-        radial-gradient(circle at 36% 42%, rgba(211, 17, 69, 0.9) 0 3px, transparent 4px),
-        radial-gradient(circle at 64% 42%, rgba(34, 126, 166, 0.9) 0 3px, transparent 4px),
-        linear-gradient(180deg, rgba(255, 255, 255, 0.95), rgba(248, 252, 253, 0.9));
-      box-shadow: 0 6px 14px rgba(34, 126, 166, 0.08);
-    }
-
-    .rag-answer .message-role-icon::after {
-      content: "";
-      position: absolute;
-      left: 6px;
-      right: 6px;
-      bottom: 4px;
-      height: 2px;
-      border-radius: 999px;
-      background: rgba(34, 126, 166, 0.34);
-    }
-
-    .rag-answer > strong,
+    .rag-answer strong,
     .rag-citation strong {
       display: block;
       color: var(--ink);
@@ -4350,17 +4056,17 @@
     }
 
     .rag-answer p {
-      margin: 8px 0 0;
+      margin: 12px 0 0;
       color: #36414e;
-      font-size: 13px;
-      line-height: 1.55;
+      font-size: 14px;
+      line-height: 1.7;
     }
 
     .rag-evidence {
       display: grid;
       grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 8px;
-      margin-top: 10px;
+      gap: 10px;
+      margin-top: 16px;
     }
 
     .rag-evidence span {
@@ -4383,45 +4089,41 @@
     }
 
     .rag-composer {
-      padding: 12px 22px 16px;
+      padding: 16px 20px;
       border-top: 1px solid rgba(34, 126, 166, 0.1);
-      background: rgba(255, 255, 255, 0.8);
+      background: rgba(255, 255, 255, 0.62);
     }
 
     .rag-input {
-      position: relative;
-      height: 134px;
-      padding: 14px 76px 14px 18px;
+      height: 78px;
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 14px 14px 14px 16px;
       border: 1px solid rgba(34, 126, 166, 0.16);
       border-radius: 16px;
-      background:
-        linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(248, 252, 253, 0.96)),
-        linear-gradient(rgba(34, 126, 166, 0.028) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(34, 126, 166, 0.028) 1px, transparent 1px);
-      background-size: auto, 30px 30px, 30px 30px;
-      color: #536171;
-      font-size: 14px;
-      line-height: 1.55;
+      background: rgba(255, 255, 255, 0.84);
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.5;
     }
 
     .rag-send {
-      position: absolute;
-      right: 14px;
-      bottom: 14px;
-      width: 44px;
-      height: 38px;
+      width: 42px;
+      height: 42px;
+      flex: 0 0 auto;
       display: grid;
       place-items: center;
-      border-radius: 12px;
-      background: var(--red);
+      border-radius: 14px;
+      background: var(--blue);
       color: #fff;
-      box-shadow: 0 12px 24px rgba(211, 17, 69, 0.14);
+      box-shadow: 0 12px 24px rgba(34, 126, 166, 0.14);
     }
 
     .rag-send svg {
-      width: 19px;
-      height: 19px;
-      transform: translateX(1px) rotate(-4deg);
+      width: 20px;
+      height: 20px;
     }
 
     .rag-side {
@@ -4680,7 +4382,7 @@
       left: 300px;
       right: 70px;
       top: 250px;
-      bottom: 24px;
+      bottom: 88px;
       display: grid;
       grid-template-columns: 1.05fr 0.9fr 0.86fr;
       gap: 24px;
@@ -4876,19 +4578,13 @@
     }
 
     .sql-layout {
-      grid-template-columns: minmax(0, 1fr);
-      gap: 0;
+      grid-template-columns: 262px minmax(0, 1fr);
+      gap: 18px;
     }
 
     .sql-card.compact,
     .sql-card.main {
       padding: 16px;
-    }
-
-    .sql-card.main {
-      position: relative;
-      display: flex;
-      flex-direction: column;
     }
 
     .sql-card.compact h2,
@@ -5047,7 +4743,7 @@
     }
 
     .sql-editor-box.console {
-      min-height: 190px;
+      min-height: 86px;
       margin-top: 10px;
       padding: 11px 14px;
       font-size: 11px;
@@ -5079,10 +4775,6 @@
     }
 
     .sql-result-grid {
-      min-height: 0;
-      flex: 1;
-      display: flex;
-      flex-direction: column;
       margin-top: 10px;
       border: 1px solid rgba(34, 126, 166, 0.14);
       border-radius: 12px;
@@ -5112,50 +4804,14 @@
       background: rgba(37, 111, 134, 0.04);
     }
 
-    .sql-result-pagination {
-      margin-top: auto;
-      min-height: 36px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 6px 9px;
-      border-top: 1px solid rgba(34, 126, 166, 0.12);
-      color: var(--muted);
-      font-size: 10px;
-      font-weight: 900;
-      background: rgba(37, 111, 134, 0.025);
-    }
-
-    .sql-result-pagination .page-size {
-      height: 24px;
-      padding: 0 8px;
-      font-size: 10px;
-    }
-
-    .sql-result-pagination .page-btn {
-      min-width: 24px;
-      height: 24px;
-      padding: 0 7px;
-      font-size: 10px;
-    }
-
     .sql-explain-mini {
-      position: absolute;
-      left: 16px;
-      right: 16px;
-      bottom: 28px;
-      z-index: 2;
       display: grid;
-      grid-template-columns: repeat(6, minmax(0, 1fr));
+      grid-template-columns: repeat(3, 1fr);
       gap: 8px;
-      margin: 0;
+      margin-top: 10px;
     }
 
     .sql-explain-mini span {
-      min-width: 0;
-      display: flex;
-      align-items: center;
-      gap: 6px;
       padding: 7px 8px;
       border: 1px solid rgba(34, 126, 166, 0.14);
       border-radius: 12px;
@@ -5163,859 +4819,13 @@
       color: var(--muted);
       font-size: 10px;
       font-weight: 900;
-      white-space: nowrap;
-      overflow: hidden;
     }
 
     .sql-explain-mini b {
-      display: inline;
-      min-width: 0;
-      margin: 0;
-      color: var(--ink);
-      font-size: 11px;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    .sql-workbench-grid {
-      min-height: 0;
-      flex: 1;
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) 250px;
-      gap: 14px;
-      margin-top: 12px;
-    }
-
-    .sql-pane {
-      min-height: 0;
-      padding: 12px;
-      border: 1px solid rgba(34, 126, 166, 0.14);
-      border-radius: 14px;
-      background: rgba(255, 255, 255, 0.7);
-      overflow: hidden;
-    }
-
-    .sql-pane-head {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 8px;
-      margin-bottom: 10px;
-    }
-
-    .sql-pane-head strong {
-      color: var(--ink);
-      font-size: 12px;
-    }
-
-    .sql-pane-head span {
-      color: var(--muted);
-      font-size: 9px;
-      font-weight: 900;
-    }
-
-    .sql-resource-group {
-      margin-bottom: 12px;
-    }
-
-    .sql-resource-group > strong {
-      display: block;
-      margin-bottom: 7px;
-      color: var(--muted);
-      font-size: 9px;
-      letter-spacing: 0.08em;
-    }
-
-    .sql-resource-item {
-      position: relative;
-      margin-bottom: 6px;
-      padding: 8px 8px 8px 26px;
-      border: 1px solid rgba(34, 126, 166, 0.1);
-      border-radius: 9px;
-      color: var(--ink);
-      background: rgba(255, 255, 255, 0.8);
-      font-size: 10px;
-      font-weight: 900;
-    }
-
-    .sql-resource-item::before {
-      content: "";
-      position: absolute;
-      left: 10px;
-      top: 11px;
-      width: 7px;
-      height: 7px;
-      border-radius: 999px;
-      background: var(--resource, #256f86);
-      box-shadow: 0 0 0 4px color-mix(in srgb, var(--resource, #256f86), transparent 88%);
-    }
-
-    .sql-resource-item.active {
-      border-color: rgba(25, 145, 97, 0.24);
-      background: rgba(25, 145, 97, 0.06);
-    }
-
-    .sql-resource-item small {
-      display: block;
-      margin-top: 3px;
-      color: var(--muted);
-      font-size: 8px;
-    }
-
-    .sql-session-tabs {
-      display: flex;
-      gap: 6px;
-      margin-bottom: 10px;
-    }
-
-    .sql-session-tabs span {
-      padding: 6px 9px;
-      border: 1px solid rgba(34, 126, 166, 0.13);
-      border-radius: 8px;
-      color: var(--muted);
-      background: #fff;
-      font-size: 9px;
-      font-weight: 900;
-    }
-
-    .sql-session-tabs span.active {
-      color: #256f86;
-      border-color: rgba(37, 111, 134, 0.26);
-      background: rgba(37, 111, 134, 0.07);
-    }
-
-    .sql-notebook {
-      min-height: 0;
-      display: grid;
-      gap: 9px;
-      overflow: hidden;
-    }
-
-    .sql-cell {
-      position: relative;
-      display: grid;
-      grid-template-columns: 58px minmax(0, 1fr);
-      border: 1px solid rgba(34, 126, 166, 0.14);
-      border-radius: 12px;
-      background: rgba(255, 255, 255, 0.86);
-      overflow: hidden;
-    }
-
-    .sql-cell-rail {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 8px;
-      padding: 10px 6px;
-      border-right: 1px solid rgba(34, 126, 166, 0.1);
-      background: rgba(37, 111, 134, 0.035);
-    }
-
-    .semantic-run {
-      width: 34px;
-      height: 34px;
-      display: grid;
-      place-items: center;
-      border: 1px solid color-mix(in srgb, var(--semantic, #199161), transparent 68%);
-      border-radius: 10px;
-      color: var(--semantic, #199161);
-      background: color-mix(in srgb, var(--semantic, #199161), transparent 93%);
-      font-size: 12px;
-      font-weight: 950;
-    }
-
-    .sql-cell-rail span {
-      color: var(--semantic, #199161);
-      font-size: 8px;
-      font-weight: 950;
-      writing-mode: vertical-rl;
-      letter-spacing: 0.08em;
-    }
-
-    .sql-cell-main {
-      min-width: 0;
-      padding: 9px 11px;
-    }
-
-    .sql-cell-head {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 8px;
-    }
-
-    .sql-cell-head strong {
-      color: var(--ink);
-      font-size: 10px;
-    }
-
-    .sql-cell-status {
-      padding: 4px 7px;
-      border-radius: 999px;
-      color: var(--status, #199161);
-      background: color-mix(in srgb, var(--status, #199161), transparent 91%);
-      font-size: 8px;
-      font-weight: 950;
-    }
-
-    .sql-cell-code {
-      margin-top: 7px;
-      padding: 7px 9px;
-      border-radius: 8px;
-      color: #21313d;
-      background: rgba(37, 111, 134, 0.045);
-      font-family: Consolas, monospace;
-      font-size: 9px;
-      font-weight: 800;
-      line-height: 1.42;
-      white-space: pre-wrap;
-    }
-
-    .sql-inline-result {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 6px;
-      margin-top: 7px;
-    }
-
-    .sql-inline-result span {
-      min-width: 0;
-      padding: 6px 7px;
-      border: 1px solid rgba(34, 126, 166, 0.1);
-      border-radius: 8px;
-      color: var(--muted);
-      background: #fff;
-      font-size: 8px;
-      font-weight: 900;
-    }
-
-    .sql-inline-result b {
       display: block;
       margin-top: 3px;
       color: var(--ink);
-      font-size: 10px;
-    }
-
-    .sql-ai-stack {
-      display: grid;
-      gap: 8px;
-    }
-
-    .sql-ai-block {
-      padding: 9px;
-      border: 1px solid rgba(34, 126, 166, 0.11);
-      border-radius: 10px;
-      background: rgba(255, 255, 255, 0.82);
-    }
-
-    .sql-ai-block strong {
-      display: block;
-      color: var(--ink);
-      font-size: 10px;
-    }
-
-    .sql-ai-block span {
-      display: block;
-      margin-top: 5px;
-      color: var(--muted);
-      font-size: 8px;
-      font-weight: 850;
-      line-height: 1.4;
-    }
-
-    .sql-phase-note {
-      margin-top: 9px;
-      padding: 9px;
-      border: 1px solid rgba(183, 121, 31, 0.18);
-      border-radius: 10px;
-      color: #815718;
-      background: rgba(183, 121, 31, 0.06);
-      font-size: 8px;
-      font-weight: 900;
-      line-height: 1.45;
-    }
-
-    .sql-cell-results {
-      min-height: 0;
-      margin-top: 10px;
-      border: 1px solid rgba(34, 126, 166, 0.14);
-      border-radius: 12px;
-      background: rgba(255, 255, 255, 0.82);
-      overflow: hidden;
-    }
-
-    .sql-cell-results-head {
-      display: flex;
-      align-items: center;
-      gap: 7px;
-      padding: 8px 10px;
-      border-bottom: 1px solid rgba(34, 126, 166, 0.1);
-      background: rgba(37, 111, 134, 0.035);
-    }
-
-    .sql-cell-results-head strong {
-      margin-right: auto;
-      color: var(--ink);
-      font-size: 10px;
-    }
-
-    .sql-cell-results-head span {
-      padding: 4px 7px;
-      border: 1px solid rgba(34, 126, 166, 0.12);
-      border-radius: 999px;
-      color: var(--muted);
-      background: #fff;
-      font-size: 8px;
-      font-weight: 900;
-    }
-
-    .sql-cell-results table {
-      width: 100%;
-      border-collapse: collapse;
-      color: var(--ink);
-      font-size: 9px;
-    }
-
-    .sql-cell-results th,
-    .sql-cell-results td {
-      padding: 7px 10px;
-      border-bottom: 1px solid rgba(34, 126, 166, 0.08);
-      text-align: left;
-      white-space: nowrap;
-    }
-
-    .sql-cell-results th {
-      color: var(--muted);
-      background: rgba(37, 111, 134, 0.025);
-      font-size: 8px;
-      font-weight: 950;
-    }
-
-    .sql-cell-results-foot {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 7px 10px;
-      color: var(--muted);
-      background: rgba(37, 111, 134, 0.02);
-      font-size: 8px;
-      font-weight: 900;
-    }
-
-    .sql-cell-results-foot span:last-child {
-      margin-left: auto;
-    }
-
-    .db-workbench {
-      min-height: 0;
-      flex: 1;
-      display: grid;
-      grid-template-columns: 210px minmax(0, 1fr) 250px;
-      grid-template-rows: minmax(0, 1fr);
-      gap: 10px;
-      margin-top: 10px;
-    }
-
-    .db-panel {
-      min-height: 0;
-      border: 1px solid rgba(34, 126, 166, 0.14);
-      border-radius: 12px;
-      background: rgba(255, 255, 255, 0.82);
-      overflow: hidden;
-    }
-
-    .db-panel-title {
-      height: 34px;
-      display: flex;
-      align-items: center;
-      gap: 7px;
-      padding: 0 10px;
-      border-bottom: 1px solid rgba(34, 126, 166, 0.11);
-      color: var(--ink);
-      background: rgba(37, 111, 134, 0.035);
-      font-size: 10px;
-      font-weight: 950;
-    }
-
-    .db-panel-title small {
-      margin-left: auto;
-      color: var(--muted);
-      font-size: 8px;
-    }
-
-    .db-tree-search {
-      margin: 9px;
-      padding: 7px 9px;
-      border: 1px solid rgba(34, 126, 166, 0.12);
-      border-radius: 8px;
-      color: var(--muted);
-      font-size: 9px;
-      background: #fff;
-    }
-
-    .db-tree {
-      padding: 0 9px 9px;
-      color: var(--ink);
-      font-size: 9px;
-      font-weight: 850;
-      line-height: 1.7;
-    }
-
-    .db-tree div {
-      padding-left: var(--indent, 0);
-      white-space: nowrap;
-    }
-
-    .db-tree div::before {
-      content: var(--tree-icon, "›");
-      display: inline-block;
-      width: 15px;
-      color: var(--tree-color, #256f86);
-      font-weight: 950;
-    }
-
-    .db-tree .selected {
-      margin: 1px -4px;
-      padding-left: calc(var(--indent, 0) + 4px);
-      border-radius: 6px;
-      color: #256f86;
-      background: rgba(37, 111, 134, 0.08);
-    }
-
-    .db-main {
-      min-width: 0;
-      min-height: 0;
-      display: grid;
-      grid-template-rows: 34px 34px 250px minmax(0, 1fr);
-      border: 1px solid rgba(34, 126, 166, 0.14);
-      border-radius: 12px;
-      background: rgba(255, 255, 255, 0.86);
-      overflow: hidden;
-    }
-
-    .db-file-tabs,
-    .db-editor-toolbar,
-    .db-result-tabs {
-      display: flex;
-      align-items: center;
-      gap: 5px;
-      padding: 0 8px;
-      border-bottom: 1px solid rgba(34, 126, 166, 0.1);
-      background: rgba(37, 111, 134, 0.025);
-    }
-
-    .db-file-tabs span,
-    .db-result-tabs span {
-      height: 25px;
-      display: inline-flex;
-      align-items: center;
-      padding: 0 9px;
-      border: 1px solid transparent;
-      border-radius: 7px;
-      color: var(--muted);
-      font-size: 8px;
-      font-weight: 900;
-    }
-
-    .db-file-tabs span.active,
-    .db-result-tabs span.active {
-      color: #256f86;
-      border-color: rgba(37, 111, 134, 0.14);
-      background: #fff;
-    }
-
-    .db-file-tabs i {
-      margin-left: auto;
-      color: var(--muted);
-      font-size: 9px;
-      font-style: normal;
-      font-weight: 900;
-    }
-
-    .db-editor-toolbar span {
-      height: 23px;
-      display: inline-flex;
-      align-items: center;
-      padding: 0 7px;
-      border: 1px solid rgba(34, 126, 166, 0.11);
-      border-radius: 6px;
-      color: var(--ink);
-      background: #fff;
-      font-size: 8px;
-      font-weight: 900;
-    }
-
-    .db-editor-toolbar span.run {
-      color: var(--green);
-      border-color: rgba(25, 145, 97, 0.18);
-      background: rgba(25, 145, 97, 0.05);
-    }
-
-    .db-editor-toolbar span.stop {
-      color: var(--red);
-    }
-
-    .db-editor-toolbar em {
-      margin-left: auto;
-      color: var(--muted);
-      font-size: 8px;
-      font-style: normal;
-      font-weight: 900;
-    }
-
-    .db-editor {
-      position: relative;
-      display: grid;
-      grid-template-columns: 42px minmax(0, 1fr);
-      color: #23323d;
-      background:
-        linear-gradient(rgba(37, 111, 134, 0.025) 1px, transparent 1px),
-        #fbfcfd;
-      background-size: 100% 22px;
-      font-family: Consolas, monospace;
-      font-size: 9px;
-      font-weight: 800;
-      line-height: 22px;
-      overflow: hidden;
-    }
-
-    .db-gutter {
-      padding: 9px 7px;
-      border-right: 1px solid rgba(34, 126, 166, 0.1);
-      color: #9aa8b4;
-      text-align: right;
-      white-space: pre-line;
-      background: rgba(37, 111, 134, 0.025);
-    }
-
-    .db-code {
-      padding: 9px 12px;
-      white-space: pre-wrap;
-    }
-
-    .db-code .keyword { color: #256f86; }
-    .db-code .string { color: #199161; }
-    .db-code .warning-line {
-      display: inline-block;
-      width: 100%;
-      margin-left: -12px;
-      padding-left: 12px;
-      background: rgba(183, 121, 31, 0.07);
-      box-shadow: inset 3px 0 0 rgba(183, 121, 31, 0.55);
-    }
-
-    .db-run-marker {
-      position: absolute;
-      left: 8px;
-      top: 31px;
-      width: 20px;
-      height: 20px;
-      display: grid;
-      place-items: center;
-      border: 1px solid rgba(25, 145, 97, 0.22);
-      border-radius: 6px;
-      color: var(--green);
-      background: #fff;
-      font-size: 9px;
-      font-weight: 950;
-    }
-
-    .db-results {
-      min-height: 0;
-      display: grid;
-      grid-template-rows: 31px minmax(0, 1fr) 27px;
-      border-top: 1px solid rgba(34, 126, 166, 0.12);
-      overflow: hidden;
-    }
-
-    .db-results table {
-      width: 100%;
-      align-self: start;
-      border-collapse: collapse;
-      color: var(--ink);
-      font-size: 8px;
-    }
-
-    .db-results th,
-    .db-results td {
-      padding: 6px 8px;
-      border-right: 1px solid rgba(34, 126, 166, 0.07);
-      border-bottom: 1px solid rgba(34, 126, 166, 0.07);
-      text-align: left;
-      white-space: nowrap;
-    }
-
-    .db-results th {
-      color: var(--muted);
-      font-weight: 950;
-      background: rgba(37, 111, 134, 0.035);
-    }
-
-    .db-results tbody td {
-      height: 20px;
-      padding-top: 3px;
-      padding-bottom: 3px;
-    }
-
-    .db-result-status {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 0 8px;
-      color: var(--muted);
-      background: rgba(37, 111, 134, 0.025);
-      font-size: 8px;
-      font-weight: 900;
-    }
-
-    .db-result-status span:last-child { margin-left: auto; }
-
-    .ai-copilot {
-      position: relative;
-      min-height: 0;
-      display: flex;
-      flex-direction: column;
-      transition: width 180ms ease, transform 180ms ease;
-    }
-
-    .ai-collapse-handle {
-      width: 22px;
-      height: 22px;
-      display: grid;
-      place-items: center;
-      margin-left: auto;
-      border: 1px solid rgba(37, 111, 134, 0.14);
-      border-radius: 6px;
-      color: #256f86;
-      background: #fff;
-      font-size: 10px;
-      font-weight: 950;
-    }
-
-    .db-object-collapse,
-    .db-object-restore {
-      width: 22px;
-      height: 22px;
-      display: grid;
-      place-items: center;
-      border: 1px solid rgba(37, 111, 134, 0.14);
-      border-radius: 6px;
-      color: #256f86;
-      background: #fff;
-      font-size: 10px;
-      font-weight: 950;
-      cursor: pointer;
-    }
-
-    .db-object-collapse {
-      margin-left: auto;
-    }
-
-    .db-panel-title .db-object-collapse + small {
-      margin-left: 0;
-    }
-
-    .db-object-restore {
-      display: none;
-      flex: 0 0 auto;
-    }
-
-    .db-workbench.db-objects-collapsed {
-      grid-template-columns: minmax(0, 1fr) 250px;
-    }
-
-    .db-workbench.db-objects-collapsed > .db-panel:first-child {
-      display: none;
-    }
-
-    .db-workbench.db-objects-collapsed .db-object-restore {
-      display: grid;
-    }
-
-    .workspace-expand {
-      height: 30px;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      padding: 0 11px;
-      border: 1px solid rgba(37, 111, 134, 0.18);
-      border-radius: 8px;
-      color: #256f86;
-      background: rgba(255, 255, 255, 0.92);
-      font-size: 10px;
-      font-weight: 950;
-      white-space: nowrap;
-      cursor: pointer;
-      transition: border-color 180ms ease, color 180ms ease, background 180ms ease;
-    }
-
-    .workspace-expand:hover,
-    .workspace-expand.active {
-      border-color: rgba(37, 111, 134, 0.34);
-      color: #fff;
-      background: #256f86;
-    }
-
-    .rag-head .workspace-expand {
-      margin-left: auto;
-      margin-top: 0;
-    }
-
-    .rag-head .workspace-expand + .badge {
-      margin-left: 0;
-    }
-
-    .sql-toolbar .workspace-expand {
-      margin-left: auto;
-    }
-
-    .sql-toolbar .workspace-expand + .sql-run-state {
-      margin-left: 0;
-    }
-
-    .nav,
-    .app-capsule,
-    .conversation-toolbar,
-    .agent-layout,
-    .rag-layout,
-    .sql-toolbar,
-    .sql-layout,
-    .agent-side,
-    .rag-side,
-    .ai-copilot {
-      transition:
-        left 220ms ease,
-        right 220ms ease,
-        opacity 180ms ease,
-        transform 220ms ease,
-        grid-template-columns 220ms ease;
-    }
-
-    .screen.workspace-focus .nav {
-      opacity: 0;
-      transform: translateX(-290px);
-      pointer-events: none;
-    }
-
-    .board > .screen.workspace-focus .app-capsule,
-    .board > .screen.workspace-focus .conversation-toolbar,
-    .board > .screen.workspace-focus .agent-layout,
-    .board > .screen.workspace-focus .rag-layout,
-    .board > .screen.workspace-focus .sql-toolbar,
-    .board > .screen.workspace-focus .sql-layout {
-      left: 32px;
-      right: 32px;
-    }
-
-    .board > .screen.workspace-focus .agent-layout,
-    .board > .screen.workspace-focus .rag-layout {
-      grid-template-columns: minmax(0, 1fr);
-    }
-
-    .screen.workspace-focus .agent-side,
-    .screen.workspace-focus .rag-side,
-    .screen.workspace-focus .db-workbench > .db-panel:first-child,
-    .screen.workspace-focus .ai-copilot {
-      display: none;
-    }
-
-    .screen.workspace-focus .db-workbench {
-      grid-template-columns: minmax(0, 1fr);
-    }
-
-    .ai-mode-tabs {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 5px;
-      padding: 8px;
-      border-bottom: 1px solid rgba(34, 126, 166, 0.1);
-    }
-
-    .ai-mode-tabs span {
-      padding: 6px 4px;
-      border: 1px solid rgba(34, 126, 166, 0.11);
-      border-radius: 7px;
-      color: var(--muted);
-      background: #fff;
-      text-align: center;
-      font-size: 8px;
-      font-weight: 900;
-    }
-
-    .ai-mode-tabs span.active {
-      color: #256f86;
-      border-color: rgba(37, 111, 134, 0.22);
-      background: rgba(37, 111, 134, 0.06);
-    }
-
-    .ai-findings {
-      min-height: 0;
-      display: grid;
-      gap: 7px;
-      padding: 8px;
-      overflow: hidden;
-    }
-
-    .ai-finding {
-      position: relative;
-      padding: 8px 8px 8px 25px;
-      border: 1px solid rgba(34, 126, 166, 0.11);
-      border-radius: 8px;
-      background: #fff;
-    }
-
-    .ai-finding::before {
-      content: "";
-      position: absolute;
-      left: 9px;
-      top: 11px;
-      width: 7px;
-      height: 7px;
-      border-radius: 999px;
-      background: var(--finding, #256f86);
-      box-shadow: 0 0 0 4px color-mix(in srgb, var(--finding, #256f86), transparent 88%);
-    }
-
-    .ai-finding strong {
-      display: block;
-      color: var(--ink);
-      font-size: 9px;
-    }
-
-    .ai-finding span {
-      display: block;
-      margin-top: 4px;
-      color: var(--muted);
-      font-size: 8px;
-      font-weight: 850;
-      line-height: 1.4;
-    }
-
-    .ai-finding button {
-      margin-top: 6px;
-      padding: 5px 7px;
-      border: 1px solid rgba(37, 111, 134, 0.15);
-      border-radius: 6px;
-      color: #256f86;
-      background: rgba(37, 111, 134, 0.05);
-      font-size: 8px;
-      font-weight: 900;
-    }
-
-    .ai-chat {
-      margin-top: auto;
-      padding: 8px;
-      border-top: 1px solid rgba(34, 126, 166, 0.1);
-    }
-
-    .ai-chat div {
-      padding: 8px;
-      border: 1px solid rgba(34, 126, 166, 0.12);
-      border-radius: 8px;
-      color: var(--muted);
-      background: #fff;
-      font-size: 8px;
-      font-weight: 850;
+      font-size: 13px;
     }
 
     .board > .screen:nth-child(6) .title {
@@ -6179,7 +4989,7 @@
     .board > .screen:nth-child(6) .timeline.compact,
     .board > .screen:nth-child(6) .result {
       top: 276px;
-      bottom: 24px;
+      bottom: 88px;
       height: auto;
       padding: 22px;
       border-radius: 18px;
@@ -6665,7 +5475,7 @@
     .board > .screen:nth-child(7) .registry-table,
     .board > .screen:nth-child(7) .detail {
       top: 288px;
-      bottom: 24px;
+      bottom: 88px;
       height: auto;
       border-radius: 18px;
       border-color: rgba(34, 126, 166, 0.16);
@@ -7206,7 +6016,7 @@
       left: 300px;
       right: 70px;
       top: 374px;
-      bottom: 24px;
+      bottom: 88px;
       display: grid;
       grid-template-columns: minmax(0, 1fr) 324px;
       gap: 24px;
@@ -7565,7 +6375,7 @@
       left: 300px;
       right: 70px;
       top: 374px;
-      bottom: 24px;
+      bottom: 88px;
       display: grid;
       grid-template-columns: minmax(0, 1fr) 324px;
       gap: 24px;
@@ -7740,484 +6550,6 @@
     .audit-footer .footer-lock i {
       background: var(--dark);
     }
-
-    /* Login access gate */
-    .board > .screen:first-child {
-      border: 0;
-      border-bottom: 0;
-      background: #fff;
-      box-shadow: none;
-      filter: none;
-      outline: none;
-      opacity: 1;
-    }
-
-    .board > .screen:first-child::before {
-      display: block;
-      background:
-        radial-gradient(circle at 84% 16%, rgba(34, 126, 166, 0.055), transparent 17rem),
-        radial-gradient(circle at 14% 78%, rgba(211, 17, 69, 0.035), transparent 20rem);
-      background-size: auto, auto;
-      mask-image:
-        radial-gradient(ellipse at 84% 16%, #000 0%, transparent 58%),
-        radial-gradient(ellipse at 14% 78%, #000 0%, transparent 54%);
-      opacity: 1;
-    }
-
-    .board > .screen:first-child::after {
-      display: block;
-      top: auto;
-      left: 52%;
-      right: 5%;
-      bottom: 150px;
-      height: 1px;
-      background: linear-gradient(90deg, transparent, rgba(34, 126, 166, 0.09), rgba(211, 17, 69, 0.06), transparent);
-      opacity: 0.7;
-    }
-
-    .login-shell {
-      gap: 48px;
-      padding-left: 110px;
-      padding-right: 110px;
-      transform: translateY(-24px);
-    }
-
-    .login-copy {
-      padding-top: 80px;
-    }
-
-    .login-copy h1 {
-      max-width: 620px;
-      font-size: 38px;
-      font-weight: 760;
-      line-height: 1.2;
-      letter-spacing: 0.01em;
-    }
-
-    .login-copy > p {
-      max-width: 600px;
-      font-size: 17px;
-    }
-
-    .login-mode-strip {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      margin-top: 24px;
-      transform: translateY(-7px);
-    }
-
-    .login-mode-strip span {
-      display: inline-flex;
-      align-items: center;
-      min-height: 34px;
-      padding: 0 13px;
-      border: 1px solid rgba(34, 126, 166, 0.16);
-      border-radius: 999px;
-      color: var(--text);
-      background: rgba(255, 255, 255, 0.76);
-      font-size: 12px;
-      font-weight: 800;
-      box-shadow: 0 8px 20px rgba(31, 41, 51, 0.05);
-    }
-
-    .login-mode-strip span:first-child {
-      border-color: rgba(34, 126, 166, 0.3);
-      color: var(--blue);
-    }
-
-    .login-mode-strip span:last-child {
-      border-color: rgba(22, 135, 90, 0.24);
-      color: var(--green);
-    }
-
-    .login-hero-effect {
-      right: 110px;
-      opacity: 1;
-      filter: none;
-      transform: translateY(5px);
-    }
-
-    .login-hero-effect::before,
-    .login-hero-effect .effect-grid {
-      display: none;
-    }
-
-    .ops-visual {
-      margin-top: 34px;
-      height: 300px;
-      opacity: 1;
-      border-color: rgba(34, 126, 166, 0.12);
-      border-radius: 18px;
-      background:
-        linear-gradient(rgba(34, 126, 166, 0.045) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(34, 126, 166, 0.045) 1px, transparent 1px),
-        rgba(255, 255, 255, 0.66);
-      background-size: 34px 34px, 34px 34px, auto;
-      box-shadow: 0 22px 56px rgba(31, 41, 51, 0.055);
-    }
-
-    .ops-visual::before {
-      display: none;
-    }
-
-    .ops-visual::after,
-    .ops-visual .ops-line,
-    .ops-visual .ops-caption {
-      display: none;
-    }
-
-    .ops-visual .agent-core {
-      left: 218px;
-      top: 48px;
-      width: 214px;
-      height: 130px;
-      border-color: rgba(211, 17, 69, 0.12);
-      border-radius: 16px;
-      background:
-        radial-gradient(circle at 50% 28%, rgba(34, 126, 166, 0.07), transparent 4.8rem),
-        linear-gradient(rgba(34, 126, 166, 0.08) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(34, 126, 166, 0.08) 1px, transparent 1px),
-        rgba(255, 255, 255, 0.56);
-      background-size: auto, 17px 17px, 17px 17px, auto;
-      box-shadow: 0 18px 44px rgba(34, 126, 166, 0.08);
-      animation: none;
-      transform: none;
-    }
-
-    .ops-visual .agent-core::before {
-      left: 58px;
-      top: 20px;
-      width: 94px;
-      height: 62px;
-      border-color: rgba(34, 126, 166, 0.14);
-      border-radius: 20px;
-      background:
-        linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(244, 250, 252, 0.92)),
-        radial-gradient(circle at 50% 0%, rgba(211, 17, 69, 0.08), transparent 60%);
-    }
-
-    .ops-visual .agent-core::after {
-      content: "READ_ONLY SKILL ROUTER";
-      left: 50%;
-      right: auto;
-      bottom: 18px;
-      display: block;
-      width: max-content;
-      color: var(--blue);
-      font-size: 12px;
-      letter-spacing: 0.08em;
-      white-space: nowrap;
-      transform: translateX(-50%);
-    }
-
-    .ops-visual .agent-core span {
-      left: 76px;
-      top: 50px;
-      width: 12px;
-      height: 12px;
-      background: color-mix(in srgb, var(--red), #7dbce4 18%);
-      box-shadow:
-        38px 0 0 var(--blue),
-        0 0 0 7px rgba(211, 17, 69, 0.08),
-        38px 0 0 7px rgba(34, 126, 166, 0.08);
-    }
-
-    .ops-visual .agent-core span::before {
-      left: 17px;
-      top: -34px;
-      width: 16px;
-      height: 22px;
-      border-color: rgba(34, 126, 166, 0.32);
-    }
-
-    .ops-visual .agent-core span::after {
-      left: 7px;
-      top: 30px;
-      width: 48px;
-      background: linear-gradient(90deg, rgba(211, 17, 69, 0.38), rgba(34, 126, 166, 0.48));
-    }
-
-    .ops-visual .ops-node {
-      display: grid;
-      justify-items: center;
-      align-content: start;
-      width: 112px;
-      height: 90px;
-      min-height: 0;
-      padding: 12px 10px 8px;
-      border-color: rgba(34, 126, 166, 0.14);
-      border-radius: 12px;
-      color: rgba(51, 61, 71, 0.78);
-      background: rgba(255, 255, 255, 0.74);
-      box-shadow: 0 16px 34px rgba(34, 126, 166, 0.08);
-      font-size: 12px;
-      line-height: 1.35;
-      text-align: center;
-    }
-
-    .ops-visual .ops-node strong {
-      margin-bottom: 8px;
-      color: rgba(51, 61, 71, 0.92);
-      font-size: 14px;
-    }
-
-    .ops-visual .ops-node::before {
-      width: 26px;
-      height: 26px;
-      margin-bottom: 7px;
-      border-radius: 9px;
-      box-shadow: 0 0 0 8px color-mix(in srgb, var(--node), transparent 84%);
-    }
-
-    .ops-visual .ops-node:nth-of-type(5) {
-      left: 74px !important;
-      top: 48px !important;
-    }
-
-    .ops-visual .ops-node:nth-of-type(6) {
-      left: 464px !important;
-      top: 48px !important;
-    }
-
-    .ops-visual .ops-node:nth-of-type(7) {
-      left: 74px !important;
-      top: 168px !important;
-    }
-
-    .ops-visual .ops-node:nth-of-type(8) {
-      left: 464px !important;
-      top: 168px !important;
-    }
-
-    .ops-visual .ops-node::after {
-      display: none;
-    }
-
-    .ops-visual .ops-packet {
-      display: none;
-    }
-
-    .ops-orbit-dot {
-      position: absolute;
-      z-index: 4;
-      width: 9px;
-      height: 9px;
-      border: 2px solid #fff;
-      border-radius: 999px;
-      background: var(--dot);
-      opacity: 0;
-      box-shadow:
-        0 0 0 6px color-mix(in srgb, var(--dot), transparent 88%),
-        0 0 16px color-mix(in srgb, var(--dot), transparent 58%);
-      animation-duration: 5.6s;
-      animation-timing-function: ease-in-out;
-      animation-iteration-count: infinite;
-    }
-
-    .ops-orbit-dot.identity {
-      left: 186px;
-      top: 92px;
-      --dot: var(--red);
-      animation-name: orbit-identity;
-    }
-
-    .ops-orbit-dot.policy {
-      left: 454px;
-      top: 92px;
-      --dot: var(--blue);
-      animation-name: orbit-policy;
-      animation-delay: -1.4s;
-    }
-
-    .ops-orbit-dot.skill {
-      left: 186px;
-      top: 212px;
-      --dot: var(--yellow);
-      animation-name: orbit-skill;
-      animation-delay: -2.8s;
-    }
-
-    .ops-orbit-dot.worker {
-      left: 454px;
-      top: 212px;
-      --dot: var(--green);
-      animation-name: orbit-worker;
-      animation-delay: -4.2s;
-    }
-
-    @keyframes orbit-identity {
-      0%, 12%, 100% { transform: translate(0, 0) scale(0.7); opacity: 0; }
-      22% { opacity: 0.9; }
-      68% { transform: translate(72px, 38px) scale(1); opacity: 0.9; }
-      82% { transform: translate(104px, 48px) scale(0.55); opacity: 0; }
-    }
-
-    @keyframes orbit-policy {
-      0%, 12%, 100% { transform: translate(0, 0) scale(0.7); opacity: 0; }
-      22% { opacity: 0.9; }
-      68% { transform: translate(-72px, 38px) scale(1); opacity: 0.9; }
-      82% { transform: translate(-104px, 48px) scale(0.55); opacity: 0; }
-    }
-
-    @keyframes orbit-skill {
-      0%, 12%, 100% { transform: translate(0, 0) scale(0.7); opacity: 0; }
-      22% { opacity: 0.9; }
-      68% { transform: translate(72px, -32px) scale(1); opacity: 0.9; }
-      82% { transform: translate(104px, -50px) scale(0.55); opacity: 0; }
-    }
-
-    @keyframes orbit-worker {
-      0%, 12%, 100% { transform: translate(0, 0) scale(0.7); opacity: 0; }
-      22% { opacity: 0.9; }
-      68% { transform: translate(-72px, -32px) scale(1); opacity: 0.9; }
-      82% { transform: translate(-104px, -50px) scale(0.55); opacity: 0; }
-    }
-
-    .login-card {
-      position: relative;
-      align-self: center;
-      justify-self: end;
-      width: 552px;
-      height: 300px;
-      min-height: 300px;
-      margin: 0 54px 0 0;
-      padding: 24px 32px;
-      border-color: rgba(34, 126, 166, 0.2);
-      background: #fff;
-      transform: translateY(84px);
-    }
-
-    .login-card::before {
-      content: "P1 / READ_ONLY";
-      position: absolute;
-      top: 30px;
-      right: 32px;
-      padding: 6px 10px;
-      border: 1px solid rgba(34, 126, 166, 0.22);
-      border-radius: 999px;
-      color: var(--blue);
-      background: #f7fbfd;
-      font-size: 10px;
-      font-weight: 900;
-      letter-spacing: 0.06em;
-    }
-
-    .login-card h2 {
-      padding-right: 120px;
-      font-size: 28px;
-    }
-
-    .login-field {
-      margin-top: 10px;
-    }
-
-    .login-field label {
-      color: var(--text);
-    }
-
-    .login-input {
-      width: 100%;
-      height: 46px;
-      color: var(--text);
-      font-family: inherit;
-      font-weight: 700;
-      outline: none;
-    }
-
-    .login-input[readonly] {
-      cursor: default;
-    }
-
-    .login-input-note {
-      display: block;
-      margin-top: 7px;
-      color: var(--muted);
-      font-size: 11px;
-      line-height: 1.4;
-    }
-
-    .login-options {
-      margin: 14px 0 12px;
-    }
-
-    .login-option {
-      gap: 14px;
-      justify-content: flex-start;
-      padding: 13px 14px;
-      border-color: rgba(34, 126, 166, 0.18);
-      background: #f8fbfc;
-    }
-
-    .login-option-icon {
-      position: relative;
-      width: 32px;
-      height: 32px;
-      display: grid;
-      place-items: center;
-      flex: 0 0 auto;
-      border: 1px solid rgba(34, 126, 166, 0.2);
-      border-radius: 10px;
-      background: rgba(34, 126, 166, 0.045);
-    }
-
-    .login-option-icon::before {
-      content: "";
-      width: 12px;
-      height: 12px;
-      border: 1.5px solid rgba(34, 126, 166, 0.58);
-      border-radius: 999px;
-      box-shadow: 0 0 0 4px rgba(34, 126, 166, 0.06);
-    }
-
-    .login-option-icon::after {
-      content: "";
-      position: absolute;
-      bottom: 6px;
-      width: 14px;
-      height: 6px;
-      border: 1.5px solid rgba(34, 126, 166, 0.58);
-      border-top: 0;
-      border-radius: 0 0 8px 8px;
-    }
-
-    .login-option-copy {
-      display: grid;
-      gap: 3px;
-    }
-
-    .login-option-copy span {
-      line-height: 1.4;
-    }
-
-    .login-button {
-      height: 48px;
-      margin-top: 4px;
-      border-radius: 10px;
-      font-family: inherit;
-      cursor: pointer;
-    }
-
-    .login-button .entry-pulse {
-      animation: none;
-    }
-
-    .login-button:focus-visible,
-    .login-input:focus-visible {
-      outline: 3px solid rgba(34, 126, 166, 0.32);
-      outline-offset: 3px;
-    }
-
-    @media (prefers-reduced-motion: reduce) {
-      *,
-      *::before,
-      *::after {
-        scroll-behavior: auto !important;
-        animation-duration: 0.001ms !important;
-        animation-iteration-count: 1 !important;
-        transition-duration: 0.001ms !important;
-      }
-    }
   </style>
 </head>
 <body>
@@ -8263,15 +6595,10 @@
       <div class="login-shell">
         <div class="login-copy">
           <span class="login-kicker">SECURE OPERATOR ENTRY</span>
-          <h1>企业智能运维工作台</h1>
+          <h1>企业智能 <span class="title-robot" role="img" aria-label="Agent"></span> 平台</h1>
           <p>
-            面向研发、DBA 与运维团队，通过受控的只读诊断链路定位服务、数据库与基础设施问题。
+            面向研发、DBA 与运维团队，进入 Agent 工作区、平台总览、语义事件追踪与审计视图。
           </p>
-          <div class="login-mode-strip" aria-label="平台安全能力">
-            <span>P1 只读模式</span>
-            <span>服务端策略授权</span>
-            <span>全程审计留痕</span>
-          </div>
           <div class="ops-visual">
             <div class="ops-line" style="left: 146px; top: 112px; width: 120px; transform: rotate(-16deg);"></div>
             <div class="ops-line" style="left: 382px; top: 112px; width: 120px; transform: rotate(16deg);"></div>
@@ -8281,10 +6608,6 @@
             <div class="ops-node" style="left: 474px; top: 62px; --node: var(--blue);"><strong>Policy</strong>服务端授权</div>
             <div class="ops-node" style="left: 122px; top: 214px; --node: var(--yellow);"><strong>Skill</strong>只读候选</div>
             <div class="ops-node" style="left: 414px; top: 214px; --node: var(--green);"><strong>Worker</strong>受限执行</div>
-            <i class="ops-orbit-dot identity" aria-hidden="true"></i>
-            <i class="ops-orbit-dot policy" aria-hidden="true"></i>
-            <i class="ops-orbit-dot skill" aria-hidden="true"></i>
-            <i class="ops-orbit-dot worker" aria-hidden="true"></i>
             <div class="ops-packet"></div>
             <div class="ops-caption">
               <strong>受控诊断链路</strong>
@@ -8293,22 +6616,21 @@
           </div>
         </div>
 
-        <form class="login-card">
+        <div class="login-card">
           <h2>操作员登录</h2>
+          <p>登录后发起任务、执行授权 Skill、查看执行记录。</p>
           <div class="login-field">
-            <input id="operator-account" class="login-input" value="ops.reader@company.internal" readonly>
+            <label>账号</label>
+            <div class="login-input">ops.reader@company.internal</div>
           </div>
           <div class="login-options">
-            <div class="login-option">
-              <span class="login-option-icon" aria-hidden="true"></span>
-              <span class="login-option-copy"><strong>企业单点登录</strong><span>身份确认后，权限仍由服务端策略独立判定。</span></span>
-            </div>
+            <div class="login-option"><strong>企业 SSO 登录</strong><span>推荐</span></div>
           </div>
-          <button type="button" class="button login-button primary-entry">
-            <span class="entry-text">使用企业 SSO 登录</span>
-            <span class="entry-pulse" aria-hidden="true"></span>
-          </button>
-        </form>
+          <span class="button login-button primary-entry">
+            <span class="entry-text">进入智能体工作区</span>
+            <span class="entry-pulse"></span>
+          </span>
+        </div>
       </div>
     </section>
 
@@ -8413,6 +6735,10 @@
         <div class="event" style="--event: var(--yellow)"><strong>WORKER_ACCEPTED</strong><span>受限 Worker 已接收</span></div>
       </div>
 
+      <div class="overview-footer">
+        <div class="footer-lock"><i aria-hidden="true"></i><strong>P1 只读控制面</strong><small>策略 v1.0 / 事件契约 v1.0</small></div>
+        <div class="footer-status"><span>审计留痕</span><span>授权只读</span><span>Worker 隔离</span></div>
+      </div>
     </section>
 
     <section class="screen">
@@ -8431,7 +6757,7 @@
           <div class="search">搜索服务 / 数据库 / 工单</div>
           <div class="nav-actions">
             <span class="badge" style="background: var(--blue)">安全模式</span>
-            <span class="button">新建会话</span>
+            <span class="button">新建任务</span>
           </div>
         </div>
       </nav>
@@ -8460,18 +6786,12 @@
         <p>研发、DBA 与运维人员直接描述任务目标，Agent 根据权限生成可审计计划，并回传任务状态。</p>
       </div>
 
-      <div class="conversation-toolbar">
-        <span class="conversation-toolbar-button"><i aria-hidden="true"></i>会话列表 <b>2</b></span>
-        <div class="conversation-toolbar-main">
-          <i class="conversation-title-icon" aria-hidden="true"></i>
-          <strong>node-a 健康排查</strong>
-          <small>2 个 workflow · 1 分钟前更新</small>
-        </div>
-        <div class="conversation-toolbar-actions">
-          <span class="workspace-expand" role="button" tabindex="0" onclick="toggleWorkspaceFocus(this)">展开工作区</span>
-          <span class="conversation-action">分享</span>
-          <span class="conversation-action">接管状态</span>
-          <span class="conversation-action primary">+ 新建会话</span>
+      <div class="workspace-status-card">
+        <strong>任务执行路径</strong>
+        <p>输入目标后，平台完成策略校验、Skill 路由、Worker 接收和语义事件回传。</p>
+        <div class="workspace-steps" aria-hidden="true">
+          <span></span><span></span><span></span><span></span>
+          <span></span><span></span><span></span><span></span>
         </div>
       </div>
 
@@ -8479,44 +6799,40 @@
         <div class="exchange-window">
           <div class="exchange-head">
             <div>
-              <h2>工作会话</h2>
-              <span style="color: var(--muted); font-size: 13px;">一会话多任务 · 2 个 workflow · policy-v1</span>
+              <h2>Agent 任务对话</h2>
+              <span style="color: var(--muted); font-size: 13px;">当前会话：ROLE_agent-reader · policy-v1 · READ_ONLY</span>
             </div>
-            <span class="badge" style="background: var(--green)">事件流已连接</span>
+            <span class="badge" style="background: var(--green)">会话已确权</span>
           </div>
           <div class="exchange-body">
             <div class="message operator">
               <strong><span class="message-role-icon" aria-hidden="true"></span><span class="message-title-text">操作员</span></strong>
-              帮我检查 node-a 的健康状态和关键依赖，只做只读诊断，并关联 INC-2841。
+              帮我看一下 node-a 是否健康，如果有异常，只给出诊断结论和证据，不要执行变更。
             </div>
             <div class="message agent">
               <strong><span class="message-role-icon" aria-hidden="true"></span><span class="message-title-text">Agent</span></strong>
-              已拆分为两个独立只读任务。当前会话来自评审模板，符合范围的任务将在服务端策略通过后自动执行。
-            </div>
-            <div class="workflow-task-card" style="--task-state: var(--green)">
-              <div class="workflow-task-head">
-                <div><strong>节点健康检查</strong><small>wf-042 · node-health-read@1.1.0 · attempt 1</small></div>
-                <span class="workflow-task-state">已完成</span>
+              已识别为只读工程任务请求。将候选 Skill 限定为 READ_ONLY，并请求服务端策略校验。
+              <div class="plan-strip">
+                <div class="plan-step">1 身份确认</div>
+                <div class="plan-step">2 策略校验</div>
+                <div class="plan-step">3 Skill 路由</div>
+                <div class="plan-step">4 事件回放</div>
               </div>
-              <div class="workflow-task-tags"><span>development</span><span>node-a</span><span>READ_ONLY</span><span>健康</span></div>
-              <div class="workflow-task-progress"><span class="done"></span><span class="done"></span><span class="done"></span><span class="done"></span></div>
-              <div class="workflow-task-actions"><span>查看结果</span><span>查看事件</span><span>审计记录</span></div>
             </div>
-            <div class="workflow-task-card" style="--task-state: var(--blue)">
-              <div class="workflow-task-head">
-                <div><strong>服务依赖健康检查</strong><small>wf-043 · service-dependency-health-read@1.0.0 · attempt 1</small></div>
-                <span class="workflow-task-state">执行中</span>
-              </div>
-              <div class="workflow-task-tags"><span>payment-api</span><span>node-a</span><span>READ_ONLY</span><span>sequence 3</span></div>
-              <div class="workflow-task-progress"><span class="done"></span><span class="done"></span><span class="done"></span><span></span></div>
-              <div class="workflow-task-actions"><span>查看详情</span><span>请求取消</span><span>事件流接收中</span></div>
+            <div class="message agent message-summary">
+              <strong><span class="message-role-icon" aria-hidden="true"></span><span class="message-title-text">可审计计划摘要</span></strong>
+              目标环境 development；Skill: node-health-read@1.1.0；参数 nodeName=node-a；幂等键由控制面生成；结果进入语义事件流和审计记录。
+            </div>
+            <div class="message operator short">
+              <strong><span class="message-role-icon" aria-hidden="true"></span><span class="message-title-text">操作员</span></strong>
+              执行只读诊断。
             </div>
           </div>
           <div class="exchange-composer">
             <div class="composer-box">
               <div class="composer-placeholder">输入你的任务目标，可以是研发排障、数据库巡检、发布前检查或基础设施诊断。例如：检查 payment-api 最近错误、确认订单库慢查询趋势，并给出只读排查计划。</div>
               <div class="composer-footer">
-                <div class="composer-tags"><span>+ 服务</span><span>+ 告警</span><span>+ 工单</span><span>+ 历史 workflow</span></div>
+                <div class="composer-tags"><span>研发排障</span><span>DBA 巡检</span><span>发布检查</span><span>基础设施</span></div>
                 <span class="button agent-send-button" role="button" aria-label="提交 Agent 任务">
                   <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
                     <path d="M4.5 12.4 19.6 5.2c.7-.3 1.4.4 1.1 1.1l-7.1 15.2c-.3.7-1.3.6-1.5-.1l-1.6-6-5.9-1.5c-.8-.2-.8-1.2-.1-1.5Z" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/>
@@ -8531,27 +6847,30 @@
 
         <aside class="agent-side">
           <div class="agent-panel">
-            <h3><span class="panel-icon" aria-hidden="true"></span>选中任务详情</h3>
-            <div class="mini-row"><span>workflow</span><strong>wf-043</strong></div>
-            <div class="mini-row"><span>状态</span><strong>执行中</strong></div>
-            <div class="mini-row"><span>策略</span><strong class="state-ok">READ_ONLY</strong></div>
+            <h3><span class="panel-icon" aria-hidden="true"></span>执行边界</h3>
+            <div class="mini-row"><span>授权</span><strong>策略</strong></div>
+            <div class="mini-row"><span>范围</span><strong class="state-ok">READ_ONLY</strong></div>
+            <div class="mini-row"><span>输出</span><strong>计划摘要</strong></div>
           </div>
           <div class="agent-panel">
-            <h3><span class="panel-icon" aria-hidden="true"></span>Skill 与事件</h3>
-            <div class="mini-row"><span>Skill</span><strong>dependency</strong></div>
-            <div class="mini-row"><span>最近事件</span><strong>WORKER_ACCEPTED</strong></div>
-            <div class="mini-row"><span>sequence</span><strong>3 / continuous</strong></div>
+            <h3><span class="panel-icon" aria-hidden="true"></span>候选 Skill</h3>
+            <div class="mini-row"><span>node-health</span><strong class="state-ok">匹配</strong></div>
+            <div class="mini-row"><span>dependency</span><strong class="state-warn">备选</strong></div>
+            <div class="mini-row"><span>write/script</span><strong class="state-deny">禁止</strong></div>
           </div>
           <div class="agent-panel scan-line">
-            <h3><span class="panel-icon" aria-hidden="true"></span>会话上下文</h3>
-            <div class="mini-row"><span>目标</span><strong>node-a</strong></div>
-            <div class="mini-row"><span>关联工单</span><strong>INC-2841</strong></div>
-            <div class="mini-row"><span>自动模式</span><strong class="state-ok">模板启用</strong></div>
-            <div class="mini-row"><span>分享</span><strong>只读链接</strong></div>
+            <h3><span class="panel-icon" aria-hidden="true"></span>实时状态</h3>
+            <div class="mini-row"><span>SSE</span><strong>待连接</strong></div>
+            <div class="mini-row"><span>workflow</span><strong>待创建</strong></div>
+            <div class="mini-row"><span>audit</span><strong class="state-ok">就绪</strong></div>
           </div>
         </aside>
       </div>
 
+      <div class="overview-footer workspace-footer">
+        <div class="footer-lock"><i aria-hidden="true"></i><strong>会话已确权</strong><small>策略 v1.0 / Skill 只读候选</small></div>
+        <div class="footer-status"><span>计划摘要</span><span>事件回放</span><span>审计记录</span></div>
+      </div>
     </section>
 
     <section class="screen">
@@ -8585,6 +6904,24 @@
         <p>围绕内部文档、故障案例、运维手册和变更记录进行带引用问答。</p>
       </div>
 
+      <div class="rag-hero">
+        <div class="rag-orb" aria-hidden="true"></div>
+        <div>
+          <h2>知识问答入口</h2>
+          <p>只回答可检索到的内容，输出引用来源、可信度和缺口提示。</p>
+        </div>
+      </div>
+
+      <div class="rag-health">
+        <h2>检索状态</h2>
+        <p>4 个知识源在线，向量索引最近 12 分钟更新。</p>
+        <div class="rag-health-grid" aria-hidden="true">
+          <span></span><span></span><span></span><span></span>
+          <span></span><span></span><span></span><span></span>
+          <span></span><span></span><span></span><span></span>
+        </div>
+      </div>
+
       <div class="rag-layout">
         <div class="rag-window">
           <div class="rag-head">
@@ -8592,20 +6929,14 @@
               <h2>知识库问答</h2>
               <span>当前范围：Runbook、ADR、工单复盘、发布记录</span>
             </div>
-            <span class="workspace-expand" role="button" tabindex="0" onclick="toggleWorkspaceFocus(this)">展开工作区</span>
             <span class="badge" style="background: var(--green)">引用已开启</span>
           </div>
           <div class="rag-body">
             <div class="rag-question">
-              <div class="rag-message-head">
-                <span class="rag-message-role"><span class="message-role-icon" aria-hidden="true"></span>操作员</span>
-              </div>
               payment-api 最近 7 天错误率升高时，应该先查哪些 Runbook 和历史工单？
             </div>
             <div class="rag-answer">
-              <div class="rag-message-head">
-                <span class="rag-message-role"><span class="message-role-icon" aria-hidden="true"></span>Agent</span>
-              </div>
+              <strong>Agent 回答</strong>
               <p>建议先从服务依赖、发布窗口和数据库慢查询三个方向排查。当前知识库中可直接引用的材料包括 payment-api 故障 Runbook、订单库慢查询复盘和 6 月发布检查记录。未检索到生产写操作授权文档，因此回答只给出排查路径。</p>
               <div class="rag-evidence">
                 <span><b>Runbook</b>payment-api 错误率排查，第 3 节</span>
@@ -8650,9 +6981,13 @@
         </aside>
       </div>
 
+      <div class="overview-footer rag-footer">
+        <div class="footer-lock"><i aria-hidden="true"></i><strong>RAG 引用模式</strong><small>知识源在线 / 无引用不回答</small></div>
+        <div class="footer-status"><span>Runbook</span><span>工单复盘</span><span>发布记录</span></div>
+      </div>
     </section>
 
-    <section class="screen" id="sql-workbench-screen">
+    <section class="screen">
       <nav class="nav">
         <div class="logo">EA</div><div class="brand">企业智能 Agent</div>
         <a>总览</a><a>Agent 工作区</a><a>RAG 问答</a><a class="active">SQL 工作台</a><a>诊断工作台</a><a>Skill 注册中心</a><a>工作流事件</a><a>审计记录</a>
@@ -8680,101 +7015,71 @@
 
       <div class="title">
         <h1>SQL 工作台</h1>
-        <p>标准数据库开发工作台，AI 在不打断编辑流程的前提下提供错误分析与性能优化。</p>
+        <p>完整数据库控制台，覆盖连接、查询、写入、结果、配置、审计和大模型辅助。</p>
       </div>
 
       <div class="sql-toolbar">
-        <div class="filter-select"><b>连接</b><span>as400-development</span></div>
-        <div class="filter-select"><b>环境</b><span>development</span></div>
-        <div class="filter-select"><b>事务</b><span>自动提交</span></div>
-        <span class="workspace-expand" role="button" tabindex="0" onclick="toggleWorkspaceFocus(this)">展开工作区</span>
-        <span class="sql-run-state">已连接 · 开发环境</span>
+        <div class="filter-search">搜索连接 / 库表 / SQL 指纹</div>
+        <div class="filter-select"><b>连接</b><span>orders-dev</span></div>
+        <div class="filter-select"><b>模式</b><span>读写</span></div>
+        <div class="filter-select"><b>事务</b><span>手动提交</span></div>
+        <span class="sql-run-state">AI Copilot 已接入 / 策略已加载</span>
       </div>
 
       <div class="sql-layout">
-        <div class="sql-card main">
-          <div class="db-workbench">
-            <aside class="db-panel">
-              <div class="db-panel-title">数据库对象 <span class="db-object-collapse" role="button" tabindex="0" onclick="toggleDatabaseObjects(this)" title="向左收起数据库对象">←</span><small>刷新 · 新建</small></div>
-              <div class="db-tree-search">搜索表、视图、字段</div>
-              <div class="db-tree">
-                <div style="--tree-icon:'▾';--tree-color:var(--green)">as400-development</div>
-                <div style="--indent:14px;--tree-icon:'▾'">ORDERS</div>
-                <div style="--indent:28px;--tree-icon:'▾'">Tables</div>
-                <div class="selected" style="--indent:42px;--tree-icon:'▦'">ORDERS</div>
-                <div style="--indent:42px;--tree-icon:'▦'">ORDER_ITEMS</div>
-                <div style="--indent:42px;--tree-icon:'▦'">ORDER_EVENTS</div>
-                <div style="--indent:28px;--tree-icon:'›'">Views</div>
-                <div style="--indent:28px;--tree-icon:'›'">Indexes</div>
-                <div style="--indent:28px;--tree-icon:'›'">Procedures</div>
-                <div style="--indent:14px;--tree-icon:'›'">INVENTORY</div>
-              </div>
-            </aside>
-
-            <section class="db-main">
-              <div class="db-file-tabs"><span class="db-object-restore" role="button" tabindex="0" onclick="toggleDatabaseObjects(this)" title="展开数据库对象">→</span><span class="active">orders_pending.sql ×</span><span>order_fix.sql ×</span><span>＋</span><i>Ln 7, Col 18 · UTF-8</i></div>
-              <div class="db-editor-toolbar"><span class="run">▶ 执行当前语句</span><span>▷ 执行脚本</span><span class="stop">■ 停止</span><span>Explain</span><span>格式化</span><span>保存</span><em>Ctrl+Enter 执行当前语句</em></div>
-              <div class="db-editor">
-                <div class="db-gutter">1
-2
-3
-4
-5
-6
-7
-8
-9
-10</div>
-                <div class="db-run-marker">▶</div>
-                <div class="db-code"><span class="keyword">SELECT</span> o.order_id, o.status, o.amount, o.customer_id, o.created_at
-<span class="keyword">FROM</span> ORDERS.ORDERS o
-<span class="keyword">WHERE</span> o.status = <span class="string">'PENDING'</span>
-  <span class="keyword">AND</span> o.created_at &gt; CURRENT_DATE - 7 DAYS
-<span class="keyword">ORDER BY</span> o.created_at DESC
-<span class="keyword">FETCH FIRST</span> 100 ROWS ONLY;
-
-<span class="warning-line"><span class="keyword">UPDATE</span> ORDERS.ORDERS <span class="keyword">SET</span> status = <span class="string">'REVIEW_REQUIRED'</span> <span class="keyword">WHERE</span> user_id = :userId;</span></div>
-              </div>
-              <div class="db-results">
-                <div class="db-result-tabs"><span class="active">结果 1</span><span>消息</span><span>执行计划</span><span>历史</span><span>导出</span></div>
-                <table>
-                  <thead><tr><th>#</th><th>order_id</th><th>status</th><th>amount</th><th>customer_id</th><th>created_at</th></tr></thead>
-                  <tbody>
-                    <tr><td>1</td><td>OD-10482</td><td>PENDING</td><td>428.00</td><td>C-***921</td><td>2026-06-13 10:42</td></tr>
-                    <tr><td>2</td><td>OD-10483</td><td>PENDING</td><td>1,280.00</td><td>C-***104</td><td>2026-06-13 10:38</td></tr>
-                    <tr><td>3</td><td>OD-10491</td><td>PENDING</td><td>86.50</td><td>C-***672</td><td>2026-06-13 10:31</td></tr>
-                    <tr><td>4</td><td>OD-10496</td><td>PENDING</td><td>709.00</td><td>C-***338</td><td>2026-06-13 10:24</td></tr>
-                    <tr><td>5</td><td>OD-10502</td><td>PENDING</td><td>219.90</td><td>C-***517</td><td>2026-06-13 10:18</td></tr>
-                    <tr><td>6</td><td>OD-10507</td><td>PENDING</td><td>3,460.00</td><td>C-***286</td><td>2026-06-13 10:11</td></tr>
-                    <tr><td>7</td><td>OD-10511</td><td>PENDING</td><td>156.80</td><td>C-***843</td><td>2026-06-13 10:05</td></tr>
-                    <tr><td>8</td><td>OD-10518</td><td>PENDING</td><td>982.00</td><td>C-***459</td><td>2026-06-13 09:57</td></tr>
-                    <tr><td>9</td><td>OD-10523</td><td>PENDING</td><td>64.50</td><td>C-***730</td><td>2026-06-13 09:49</td></tr>
-                    <tr><td>10</td><td>OD-10529</td><td>PENDING</td><td>1,875.20</td><td>C-***195</td><td>2026-06-13 09:42</td></tr>
-                  </tbody>
-                </table>
-                <div class="db-result-status"><span>86 行 · 第 1/9 页</span><span>只读结果 · 已脱敏</span><span>184ms</span><span>每页 10 · 上一页 · 下一页</span></div>
-              </div>
-            </section>
-
-            <aside class="db-panel ai-copilot">
-              <div class="db-panel-title">AI SQL 助手 <span class="ai-collapse-handle" title="向右收起 AI 助手">→</span></div>
-              <div class="ai-mode-tabs"><span class="active">错误分析</span><span>性能优化</span><span>解释 SQL</span></div>
-              <div class="ai-findings">
-                <div class="ai-finding" style="--finding:var(--red)"><strong>潜在逻辑错误</strong><span>UPDATE 仅按 user_id 过滤，可能修改该用户全部历史订单。建议增加 status 与时间范围条件。</span><button>查看建议修改</button></div>
-                <div class="ai-finding" style="--finding:var(--yellow)"><strong>性能风险</strong><span>查询按 status、created_at 过滤并排序。当前索引仅覆盖 status，可能产生额外排序。</span><button>生成索引建议</button></div>
-                <div class="ai-finding" style="--finding:var(--blue)"><strong>执行计划摘要</strong><span>预计扫描 18,420 行，返回 86 行。建议复合索引 (status, created_at DESC)。</span><button>对比优化前后</button></div>
-                <div class="ai-finding" style="--finding:var(--green)"><strong>结果检查</strong><span>未发现空值异常；amount 分布与过去 7 天基线一致。</span></div>
-              </div>
-              <div class="ai-chat"><div>询问 AI：为什么这个查询慢？如何避免误更新？</div></div>
-            </aside>
+        <div class="sql-card compact">
+          <span class="sql-card-kicker" style="--dot: var(--green)">连接管理</span>
+          <h2>连接与库表</h2>
+          <div class="sql-connection-list">
+            <div class="sql-connection" style="--dot: var(--green)"><strong>orders-dev</strong><span>PostgreSQL / 读写 / 23ms</span></div>
+            <div class="sql-connection" style="--dot: var(--blue)"><strong>inventory-dev</strong><span>MySQL / 只读 / 31ms</span></div>
+            <div class="sql-connection" style="--dot: var(--yellow)"><strong>reporting</strong><span>ClickHouse / 分析 / 18ms</span></div>
           </div>
+          <div class="sql-tree">
+            <div class="sql-tree-item" style="--dot: #256f86"><strong>orders</strong><span>order_id, user_id, status, amount</span></div>
+            <div class="sql-tree-item" style="--dot: var(--green)"><strong>order_items</strong><span>sku_id, quantity, price</span></div>
+            <div class="sql-tree-item" style="--dot: var(--red)"><strong>payments</strong><span>payment_id, channel, state</span></div>
+          </div>
+          <div class="sql-config-list">
+            <div class="sql-config-item" style="--dot: var(--dark)"><strong>连接配置</strong><span>超时 30s / 返回 500 行 / 自动提交关闭</span></div>
+            <div class="sql-config-item" style="--dot: var(--red)"><strong>写入策略</strong><span>DML 需预览影响行，生产需审批</span></div>
+          </div>
+        </div>
+
+        <div class="sql-card main">
+          <span class="sql-card-kicker" style="--dot: var(--red)">读 / 写 / 查 / 配置</span>
+          <h2>查询编辑器</h2>
+          <div class="sql-console-tabs"><span class="active">Query 1</span><span>DML 变更</span><span>Explain</span><span>配置</span><span>历史</span></div>
+          <div class="sql-console-meta"><span>连接<b>orders-dev</b></span><span>事务<b>manual</b></span><span>返回上限<b>500 行</b></span><span>AI 辅助<b>解释 / 优化 / 预检</b></span></div>
+          <div class="sql-editor-box console"><code>UPDATE orders
+SET status = 'REVIEW_REQUIRED'
+WHERE user_id = :userId
+  AND created_at &gt; now() - interval '7 days'
+RETURNING order_id, status, updated_at;</code></div>
+          <div class="sql-console-actions"><span class="button">执行 SQL</span><span class="button secondary">预览影响</span><span class="button secondary">Explain</span><span class="button secondary">保存片段</span></div>
+          <div class="sql-result-tabs"><span class="active">结果集</span><span>执行计划</span><span>变更预览</span><span>日志</span></div>
+          <div class="sql-result-grid">
+            <table>
+              <thead><tr><th>order_id</th><th>status</th><th>updated_at</th><th>rows</th></tr></thead>
+              <tbody>
+                <tr><td>OD-10482</td><td>REVIEW_REQUIRED</td><td>20:38:14</td><td>1</td></tr>
+                <tr><td>OD-10483</td><td>REVIEW_REQUIRED</td><td>20:38:14</td><td>1</td></tr>
+                <tr><td>OD-10491</td><td>PENDING</td><td>未变更</td><td>0</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="sql-explain-mini"><span>扫描行数<b>1,248</b></span><span>影响行数<b>2</b></span><span>风险等级<b>中</b></span></div>
+          <div class="sql-config-strip"><span>提交控制<b>Commit / Rollback</b></span><span>慢 SQL 阈值<b>300ms</b></span><span>审计绑定<b>trace + operator</b></span></div>
         </div>
 
       </div>
 
+      <div class="overview-footer sql-footer">
+        <div class="footer-lock"><i aria-hidden="true"></i><strong>SQL 控制台在线</strong><small>读 / 写 / 查 / 配置 / AI 辅助</small></div>
+        <div class="footer-status"><span>连接管理</span><span>查询执行</span><span>结果集</span><span>模型助手</span></div>
+      </div>
     </section>
-
-    <section class="screen">
+<section class="screen">
       <nav class="nav">
         <div class="logo">EA</div><div class="brand">企业智能 Agent</div>
         <a>总览</a><a>Agent 工作区</a><a>RAG 问答</a><a>SQL 工作台</a><a class="active">诊断工作台</a><a>Skill 注册中心</a><a>工作流事件</a><a>审计记录</a>
@@ -8850,6 +7155,10 @@
           <div class="result-chip" style="--chip: var(--green)"><strong>心跳状态</strong><span>正常响应</span></div>
           <div class="result-chip" style="--chip: var(--yellow)"><strong>结果去向</strong><span>事件流与审计记录</span></div>
         </div>
+      </div>
+      <div class="overview-footer diagnostic-footer">
+        <div class="footer-lock"><i aria-hidden="true"></i><strong>诊断请求就绪</strong><small>参数已锁定 / 审计会记录</small></div>
+        <div class="footer-status"><span>只读 Skill</span><span>事件回放</span><span>结果摘要</span></div>
       </div>
     </section>
 
@@ -8935,6 +7244,10 @@
           <div class="detail-chip" style="--chip: var(--yellow)"><strong>Input / Output</strong><span>nodeName / JSON 结果摘要</span></div>
         </div>
       </div>
+      <div class="overview-footer registry-footer">
+        <div class="footer-lock"><i aria-hidden="true"></i><strong>Skill 已纳管</strong><small>Schema / 签名 / 审计拦截</small></div>
+        <div class="footer-status"><span>版本治理</span><span>只读风险</span><span>注册可用</span></div>
+      </div>
     </section>
 
     <section class="screen">
@@ -9018,6 +7331,10 @@
         </aside>
       </div>
 
+      <div class="overview-footer workflow-footer">
+        <div class="footer-lock"><i aria-hidden="true"></i><strong>事件流已接收</strong><small>SSE connected / sequence continuous</small></div>
+        <div class="footer-status"><span>事实源</span><span>可回放</span><span>幂等键</span><span>审计衔接</span></div>
+      </div>
     </section>
 
     <section class="screen">
@@ -9101,43 +7418,11 @@
         </aside>
       </div>
 
+      <div class="overview-footer audit-footer">
+        <div class="footer-lock"><i aria-hidden="true"></i><strong>审计链已封存</strong><small>hash 链完整 / 保留 180 天</small></div>
+        <div class="footer-status"><span>身份</span><span>策略</span><span>Skill</span><span>Worker</span></div>
+      </div>
     </section>
   </main>
-  <script>
-    function toggleWorkspaceFocus(control) {
-      const screen = control.closest(".screen");
-      const focused = screen.classList.toggle("workspace-focus");
-
-      screen.querySelectorAll(".workspace-expand").forEach((button) => {
-        button.classList.toggle("active", focused);
-        button.textContent = focused ? "退出展开" : "展开工作区";
-        button.setAttribute("aria-pressed", String(focused));
-      });
-    }
-
-    function toggleDatabaseObjects(control) {
-      const workbench = control.closest(".db-workbench");
-      workbench.classList.toggle("db-objects-collapsed");
-    }
-
-    document.querySelectorAll(".workspace-expand").forEach((button) => {
-      button.setAttribute("aria-pressed", "false");
-      button.addEventListener("keydown", (event) => {
-        if (event.key === "Enter" || event.key === " ") {
-          event.preventDefault();
-          toggleWorkspaceFocus(button);
-        }
-      });
-    });
-
-    document.querySelectorAll(".db-object-collapse, .db-object-restore").forEach((button) => {
-      button.addEventListener("keydown", (event) => {
-        if (event.key === "Enter" || event.key === " ") {
-          event.preventDefault();
-          toggleDatabaseObjects(button);
-        }
-      });
-    });
-  </script>
 </body>
 </html>

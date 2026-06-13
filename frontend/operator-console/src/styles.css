@@ -162,23 +162,6 @@ h2 {
   font-size: 13px;
 }
 
-.workspace-select {
-  display: grid;
-  gap: 8px;
-  margin-top: 16px;
-  color: #c9d6e8;
-  font-size: 14px;
-}
-
-.workspace-select select {
-  min-height: 42px;
-  border: 1px solid rgba(148, 163, 184, 0.3);
-  border-radius: 6px;
-  background: rgba(15, 23, 42, 0.88);
-  color: #f8fafc;
-  padding: 0 12px;
-}
-
 .session-copy {
   margin: 0;
   color: #9eb0c8;

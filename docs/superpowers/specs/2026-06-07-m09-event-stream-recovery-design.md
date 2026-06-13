@@ -23,7 +23,7 @@
 
 - 首次请求仍由现有启动入口创建只读工作流；
 - SSE 断开后，前端自动重连；
-- 重连时按 `workspaceId + workflowId + afterSequence` 从事实源恢复后续事件；
+- 重连时按 `workflowId + afterSequence` 从事实源恢复后续事件；
 - 前端按强类型事件和有序序号去重，不从展示文本推断状态；
 - 不引入生产写执行、历史工作流列表、浏览器端授权决策或执行中增量推送。
 
@@ -42,7 +42,7 @@
 - 历史工作流列表、查询页或手工选择旧工作流恢复；
 - 执行中的增量事件推送；
 - 任意脚本执行、生产写操作或新的审批交互；
-- 外部 SaaS 多租户、外部客户接入或产品边界扩展；内部 Team Workspace 事件恢复按 `workspaceId + workflowId + afterSequence` 执行。
+- 多租户、外部客户接入或产品边界扩展。
 
 ## 3. 方案比较
 
@@ -113,7 +113,7 @@
 
 新增恢复入口：
 
-- `GET /internal/diagnostics/read-only/workflows/{workflowId}/events?workspaceId=<workspaceId>&afterSequence=<n>`
+- `GET /internal/diagnostics/read-only/workflows/{workflowId}/events?afterSequence=<n>`
 
 职责约束如下：
 
@@ -135,7 +135,7 @@
 服务端需要保证：
 
 - 只能读取存在的工作流；
-- 恢复查询出的事件使用 `contractVersion=2.0` 的强类型语义事件，并在顶层携带 `workspaceId`；
+- 恢复查询出的事件仍是 `contractVersion=1.0` 的强类型语义事件；
 - 不泄露未受控的内部状态。
 
 ### 4.3 前端状态机
@@ -284,7 +284,7 @@
 
 - 首次只读诊断仍可按原入口正常发起；
 - 前端在终态前遇到连接中断时会自动进入恢复流程；
-- 恢复请求按 `workspaceId + workflowId + afterSequence` 从持久化事件继续读取；
+- 恢复请求按 `workflowId + afterSequence` 从持久化事件继续读取；
 - 前端不会渲染重复事件；
 - 前端显式展示连接中、恢复中、完成和失败状态；
 - 未认证请求返回 `401`，无权限请求返回 `403`；

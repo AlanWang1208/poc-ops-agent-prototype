@@ -61,7 +61,7 @@
 
 ## 2026-06-07 M09 事件流恢复补充证据
 
-- `R2dbcReadOnlyWorkflowStoreTest` 已覆盖按 `workspaceId + workflowId + afterSequence` 读取后续语义事件。
+- `R2dbcReadOnlyWorkflowStoreTest` 已覆盖按 `workflowId + afterSequence` 读取后续语义事件。
 - `ControlPlaneApplicationTest` 已覆盖恢复接口 `GET /internal/diagnostics/read-only/workflows/{workflowId}/events` 的策略保护与 SSE 输出。
 - `frontend/operator-console` 已增加当前工作流内自动恢复、事件去重和连接状态展示，并通过 `npm run build`。
 - 当前恢复能力仍以“已落盘事件续传”为边界，不宣称支持执行中的增量事件推送。

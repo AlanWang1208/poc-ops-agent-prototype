@@ -34,31 +34,11 @@ public class RoleBasedPolicyDecider implements PolicyDecisionService {
       OperatorIdentity identity,
       String action,
       String resource) {
-    return decide(
-        identity,
-        new WorkspacePolicyContext(identity.currentWorkspaceId(), null, null),
-        action,
-        resource);
-  }
-
-  /**
-   * 对一次工作空间作用域访问请求做角色匹配决策。
-   */
-  @Override
-  public PolicyDecision decide(
-      OperatorIdentity identity,
-      WorkspacePolicyContext workspaceContext,
-      String action,
-      String resource) {
     Set<String> requiredRoles = requiredRolesByAction.get(action);
     if (requiredRoles == null) {
       return new PolicyDecision(action, resource, policyVersion, false, "no policy rule for action");
     }
-    if (!identity.hasWorkspace(workspaceContext.workspaceId())) {
-      return new PolicyDecision(action, resource, policyVersion, false, "operator is not a member of workspace");
-    }
-    boolean allowed = identity.rolesForWorkspace(workspaceContext.workspaceId()).stream()
-        .anyMatch(requiredRoles::contains);
+    boolean allowed = identity.roles().stream().anyMatch(requiredRoles::contains);
     return new PolicyDecision(
         action,
         resource,

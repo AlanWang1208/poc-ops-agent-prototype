@@ -29,46 +29,6 @@ CREATE TABLE IF NOT EXISTS identity_account_role_grant (
         FOREIGN KEY (account_id) REFERENCES identity_account (account_id)
 );
 
-CREATE TABLE IF NOT EXISTS identity_workspace (
-    workspace_id VARCHAR(120) PRIMARY KEY,
-    workspace_code VARCHAR(120) NOT NULL UNIQUE,
-    display_name VARCHAR(200) NOT NULL,
-    workspace_state VARCHAR(40) NOT NULL,
-    created_at TIMESTAMP WITH TIME ZONE NOT NULL,
-    updated_at TIMESTAMP WITH TIME ZONE NOT NULL
-);
-
-CREATE TABLE IF NOT EXISTS identity_workspace_membership (
-    membership_id VARCHAR(120) PRIMARY KEY,
-    workspace_id VARCHAR(120) NOT NULL,
-    account_id VARCHAR(120) NOT NULL,
-    membership_state VARCHAR(40) NOT NULL,
-    joined_at TIMESTAMP WITH TIME ZONE NOT NULL,
-    removed_at TIMESTAMP WITH TIME ZONE,
-    CONSTRAINT fk_identity_workspace_membership_workspace
-        FOREIGN KEY (workspace_id) REFERENCES identity_workspace (workspace_id),
-    CONSTRAINT fk_identity_workspace_membership_account
-        FOREIGN KEY (account_id) REFERENCES identity_account (account_id)
-);
-
-CREATE TABLE IF NOT EXISTS identity_workspace_role_grant (
-    grant_id VARCHAR(120) PRIMARY KEY,
-    workspace_id VARCHAR(120) NOT NULL,
-    account_id VARCHAR(120) NOT NULL,
-    role_code VARCHAR(120) NOT NULL,
-    grant_source VARCHAR(80) NOT NULL,
-    effective_from TIMESTAMP WITH TIME ZONE NOT NULL,
-    effective_to TIMESTAMP WITH TIME ZONE,
-    created_by VARCHAR(120) NOT NULL,
-    created_at TIMESTAMP WITH TIME ZONE NOT NULL,
-    revoked_by VARCHAR(120),
-    revoked_at TIMESTAMP WITH TIME ZONE,
-    CONSTRAINT fk_identity_workspace_role_grant_workspace
-        FOREIGN KEY (workspace_id) REFERENCES identity_workspace (workspace_id),
-    CONSTRAINT fk_identity_workspace_role_grant_account
-        FOREIGN KEY (account_id) REFERENCES identity_account (account_id)
-);
-
 CREATE TABLE IF NOT EXISTS identity_password_credential (
     credential_id VARCHAR(120) PRIMARY KEY,
     account_id VARCHAR(120) NOT NULL,
@@ -115,15 +75,6 @@ CREATE TABLE IF NOT EXISTS identity_password_reset_ticket (
 
 CREATE INDEX IF NOT EXISTS idx_identity_role_grant_account_id
     ON identity_account_role_grant (account_id);
-
-CREATE INDEX IF NOT EXISTS idx_identity_workspace_membership_account_id
-    ON identity_workspace_membership (account_id);
-
-CREATE INDEX IF NOT EXISTS idx_identity_workspace_role_grant_account_id
-    ON identity_workspace_role_grant (account_id);
-
-CREATE INDEX IF NOT EXISTS idx_identity_workspace_role_grant_workspace_id
-    ON identity_workspace_role_grant (workspace_id);
 
 CREATE INDEX IF NOT EXISTS idx_identity_password_credential_account_id
     ON identity_password_credential (account_id);

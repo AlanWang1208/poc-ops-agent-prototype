@@ -58,7 +58,6 @@ public class ReadOnlyDiagnosticWorkflowService {
   public Mono<ReadOnlyWorkflowResult> execute(ReadOnlyWorkflowRequest request) {
     String parametersHash = parameterHash(request);
     return workflowStore.findByIdempotency(
-            request.workspaceId(),
             request.idempotencyKey(),
             request.operator().operatorId(),
             request.targetEnvironment(),
@@ -79,8 +78,6 @@ public class ReadOnlyDiagnosticWorkflowService {
       String parametersHash) {
     var candidates = skillRoutingService.findCandidates(new SkillRoutingCriteria(
         request.skillId(),
-        request.workspaceId(),
-        List.of(request.skillId()),
         null,
         SkillRiskLevel.READ_ONLY,
         List.of(),
@@ -122,16 +119,15 @@ public class ReadOnlyDiagnosticWorkflowService {
         command);
 
     List<SemanticEvent> initialEvents = new ArrayList<>();
-    initialEvents.add(event(request.workspaceId(), workflowId, 1, SemanticEventType.WORKFLOW_STARTED,
+    initialEvents.add(event(workflowId, 1, SemanticEventType.WORKFLOW_STARTED,
         new WorkflowStartedPayload(SemanticEventType.WORKFLOW_STARTED, commandId, request.operator().operatorId())));
-    initialEvents.add(event(request.workspaceId(), workflowId, 2, SemanticEventType.SKILL_ROUTED,
+    initialEvents.add(event(workflowId, 2, SemanticEventType.SKILL_ROUTED,
         new SkillRoutedPayload(SemanticEventType.SKILL_ROUTED, selectedSkill.skillId(), selectedSkill.version())));
-    initialEvents.add(event(request.workspaceId(), workflowId, 3, SemanticEventType.WORKER_ACCEPTED,
+    initialEvents.add(event(workflowId, 3, SemanticEventType.WORKER_ACCEPTED,
         new WorkerAcceptedPayload(SemanticEventType.WORKER_ACCEPTED, executionRequestId)));
 
     return workflowStore.createWorkflow(
             workflowId,
-            request.workspaceId(),
             request.idempotencyKey(),
             request.operator().operatorId(),
             request.targetEnvironment(),
@@ -152,13 +148,12 @@ public class ReadOnlyDiagnosticWorkflowService {
             StoredWorkflowAttemptKind.INITIAL,
             now,
             now.plusSeconds(ATTEMPT_TIMEOUT_SECONDS)))
-        .then(appendEvents(request.workspaceId(), workflowId, initialEvents))
+        .then(appendEvents(workflowId, initialEvents))
         .then(workerGateway.execute(workerRequest))
-        .flatMap(result -> complete(request.workspaceId(), workflowId, 1, initialEvents, result));
+        .flatMap(result -> complete(workflowId, 1, initialEvents, result));
   }
 
   private Mono<ReadOnlyWorkflowResult> complete(
-      String workspaceId,
       String workflowId,
       int attemptNo,
       List<SemanticEvent> initialEvents,
@@ -168,20 +163,20 @@ public class ReadOnlyDiagnosticWorkflowService {
     boolean retryable = false;
     if (result.status() == WorkerExecutionStatus.SUCCEEDED) {
       storedStatus = StoredWorkflowStatus.SUCCEEDED;
-      events.add(event(workspaceId, workflowId, 4, SemanticEventType.WORKFLOW_COMPLETED,
+      events.add(event(workflowId, 4, SemanticEventType.WORKFLOW_COMPLETED,
           new WorkflowCompletedPayload(SemanticEventType.WORKFLOW_COMPLETED, result.outputSchemaId(), result.output())));
     } else {
       retryable = retryableFailureClassifier.isRetryable(result);
       storedStatus = retryable
           ? StoredWorkflowStatus.FAILED_RETRYABLE
           : StoredWorkflowStatus.FAILED_TERMINAL;
-      events.add(event(workspaceId, workflowId, 4, SemanticEventType.WORKFLOW_FAILED,
+      events.add(event(workflowId, 4, SemanticEventType.WORKFLOW_FAILED,
           new WorkflowFailedPayload(
               SemanticEventType.WORKFLOW_FAILED,
               result.errorCode() == null ? "WORKER_FAILED" : result.errorCode(),
               result.errorMessage() == null ? "worker execution failed" : result.errorMessage())));
     }
-    return appendEvents(workspaceId, workflowId, events.subList(initialEvents.size(), events.size()))
+    return appendEvents(workflowId, events.subList(initialEvents.size(), events.size()))
         .then(workflowStore.markWorkflowCompleted(
             workflowId,
             storedStatus,
@@ -193,14 +188,12 @@ public class ReadOnlyDiagnosticWorkflowService {
   }
 
   private SemanticEvent event(
-      String workspaceId,
       String workflowId,
       long sequence,
       SemanticEventType type,
       SemanticEventPayload payload) {
     return new SemanticEvent(
-        "2.0",
-        workspaceId,
+        "1.0",
         UUID.randomUUID().toString(),
         workflowId,
         sequence,
@@ -209,9 +202,9 @@ public class ReadOnlyDiagnosticWorkflowService {
         payload);
   }
 
-  private Mono<Void> appendEvents(String workspaceId, String workflowId, List<SemanticEvent> events) {
+  private Mono<Void> appendEvents(String workflowId, List<SemanticEvent> events) {
     return reactor.core.publisher.Flux.fromIterable(events)
-        .concatMap(event -> workflowStore.appendEvent(workspaceId, workflowId, event.sequence(), event))
+        .concatMap(event -> workflowStore.appendEvent(workflowId, event.sequence(), event))
         .then();
   }
 

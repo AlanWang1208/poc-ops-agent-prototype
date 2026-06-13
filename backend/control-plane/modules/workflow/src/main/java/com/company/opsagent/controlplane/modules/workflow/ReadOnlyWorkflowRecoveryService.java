@@ -68,7 +68,6 @@ public class ReadOnlyWorkflowRecoveryService {
             now.plusSeconds(ATTEMPT_TIMEOUT_SECONDS))
         .then(workerGateway.execute(request))
         .flatMap(result -> completeReplay(
-            candidate.workflow().workspaceId(),
             candidate.workflow().workflowId(),
             nextAttemptNo,
             candidate.events(),
@@ -77,7 +76,6 @@ public class ReadOnlyWorkflowRecoveryService {
   }
 
   private Mono<Void> completeReplay(
-      String workspaceId,
       String workflowId,
       int attemptNo,
       List<SemanticEvent> existingEvents,
@@ -88,8 +86,7 @@ public class ReadOnlyWorkflowRecoveryService {
     List<SemanticEvent> replayEvents = new ArrayList<>();
     if (result.status() == WorkerExecutionStatus.SUCCEEDED) {
       replayEvents.add(new SemanticEvent(
-          "2.0",
-          workspaceId,
+          "1.0",
           UUID.randomUUID().toString(),
           workflowId,
           nextSequence,
@@ -101,8 +98,7 @@ public class ReadOnlyWorkflowRecoveryService {
               result.output())));
     } else {
       replayEvents.add(new SemanticEvent(
-          "2.0",
-          workspaceId,
+          "1.0",
           UUID.randomUUID().toString(),
           workflowId,
           nextSequence,
@@ -120,7 +116,7 @@ public class ReadOnlyWorkflowRecoveryService {
             : StoredWorkflowStatus.FAILED_TERMINAL);
     boolean retryable = status == StoredWorkflowStatus.FAILED_RETRYABLE;
     return Flux.fromIterable(replayEvents)
-        .concatMap(event -> workflowStore.appendEvent(workspaceId, workflowId, event.sequence(), event))
+        .concatMap(event -> workflowStore.appendEvent(workflowId, event.sequence(), event))
         .then(workflowStore.markWorkflowCompleted(
             workflowId,
             status,

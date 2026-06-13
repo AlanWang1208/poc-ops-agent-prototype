@@ -16,26 +16,5 @@ public record BrowserSessionResponse(
     String subject,
     String username,
     List<String> roles,
-    List<WorkspaceSummary> workspaces,
-    String currentWorkspaceId,
     String authenticationType) {
-
-  public BrowserSessionResponse(
-      boolean authenticated,
-      String subject,
-      String username,
-      List<String> roles,
-      String authenticationType) {
-    this(authenticated, subject, username, roles, List.of(), null, authenticationType);
-  }
-
-  /**
-   * 操作台展示和选择 Team Workspace 所需的摘要。
-   */
-  public record WorkspaceSummary(
-      String workspaceId,
-      String workspaceCode,
-      String displayName,
-      List<String> roles) {
-  }
 }

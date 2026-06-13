@@ -33,7 +33,7 @@
 - 任意生产写执行、脚本执行或策略绕过；
 - 新的外部部署服务；
 - 浏览器端授权决策；
-- 外部 SaaS 多租户、外部客户接入或产品边界扩展；内部 Team Workspace 会话返回按 `docs/superpowers/specs/2026-06-13-team-workspace-customization-design.md` 处理。
+- 多租户、外部客户接入或产品边界扩展。
 
 ## 3. 方案比较
 

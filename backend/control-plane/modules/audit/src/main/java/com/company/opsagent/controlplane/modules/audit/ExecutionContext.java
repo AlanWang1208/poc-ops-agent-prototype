@@ -9,7 +9,6 @@ import java.util.List;
  * @param traceId 链路追踪标识
  * @param subject 主体标识
  * @param username 用户名
- * @param workspaceId 当前 Team Workspace 标识
  * @param roles 主体角色列表
  * @param action 当前执行动作
  * @param resource 当前访问资源
@@ -22,7 +21,6 @@ public record ExecutionContext(
     String traceId,
     String subject,
     String username,
-    String workspaceId,
     List<String> roles,
     String action,
     String resource,
@@ -34,9 +32,6 @@ public record ExecutionContext(
    * 防御性复制角色集合，避免上下文被外部改写。
    */
   public ExecutionContext {
-    if (workspaceId == null || workspaceId.isBlank()) {
-      throw new IllegalArgumentException("workspaceId must not be blank");
-    }
     roles = List.copyOf(roles);
   }
 }

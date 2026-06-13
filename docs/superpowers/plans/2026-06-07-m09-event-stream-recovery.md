@@ -4,13 +4,11 @@
 
 **Goal:** Build current-workflow event stream auto-recovery for the P1 read-only operator console without expanding into login flow or write execution.
 
-**Architecture:** Keep the existing startup SSE endpoint for first connection, add a read-only recovery SSE endpoint backed by persisted workflow events, and teach the React console to reconnect with `workspaceId + workflowId + afterSequence` while deduplicating strong-typed events. Reuse M05 persistence as the only recovery fact source and keep server-side auth, policy, and audit in place for both startup and recovery requests.
+**Architecture:** Keep the existing startup SSE endpoint for first connection, add a read-only recovery SSE endpoint backed by persisted workflow events, and teach the React console to reconnect with `workflowId + afterSequence` while deduplicating strong-typed events. Reuse M05 persistence as the only recovery fact source and keep server-side auth, policy, and audit in place for both startup and recovery requests.
 
 **Tech Stack:** Java 21, Spring Boot WebFlux, Reactor, R2DBC, React 19, TypeScript 5, Vite
 
 ---
-
-> **2026-06-13 Revision:** Team Workspace is now the internal logical isolation boundary. Recovery examples in this plan must include `workspaceId` alongside `workflowId` and `afterSequence`, as specified in `docs/superpowers/plans/2026-06-13-team-workspace-customization.md`. External SaaS multi-tenancy, external customer access, and billing remain out of scope.
 
 ## File Map
 
@@ -331,7 +329,7 @@ git commit -m "Add operator console event stream recovery"
 
 ```markdown
 - 断开浏览器网络或刷新代理后，操作台会进入“恢复中”状态；
-- 控制面恢复接口按 `workspaceId + workflowId + afterSequence` 返回后续已落盘事件；
+- 控制面恢复接口按 `workflowId + afterSequence` 返回后续已落盘事件；
 - 收到 `WORKFLOW_COMPLETED` 或 `WORKFLOW_FAILED` 后停止自动重连。
 ```
 

@@ -5,11 +5,9 @@ import com.company.opsagent.controlplane.modules.audit.AuditEvent;
 import com.company.opsagent.controlplane.modules.audit.AuditTrail;
 import com.company.opsagent.controlplane.modules.audit.ExecutionContext;
 import com.company.opsagent.controlplane.modules.identity.OperatorIdentity;
-import com.company.opsagent.controlplane.modules.identity.TeamWorkspaceConstants;
 import com.company.opsagent.controlplane.modules.identity.api.IdentitySessionQueryService;
 import com.company.opsagent.controlplane.modules.policy.PolicyDecision;
 import com.company.opsagent.controlplane.modules.policy.PolicyDecisionService;
-import com.company.opsagent.controlplane.modules.policy.WorkspacePolicyContext;
 import java.time.OffsetDateTime;
 import java.util.Optional;
 import java.util.UUID;
@@ -34,7 +32,6 @@ import reactor.core.scheduler.Schedulers;
 public class PolicyEnforcementWebFilter implements WebFilter {
 
   public static final String EXECUTION_CONTEXT_ATTRIBUTE = "ops-agent.execution-context";
-  public static final String WORKSPACE_HEADER = "X-Team-Workspace-Id";
 
   private final PolicyDecisionService policyDecisionService;
   private final AuditTrail auditTrail;
@@ -88,30 +85,24 @@ public class PolicyEnforcementWebFilter implements WebFilter {
     ActionDescriptor descriptor = ActionDescriptor.resolve(
         exchange.getRequest().getMethod(),
         exchange.getRequest().getPath().value());
-    String workspaceId = selectedWorkspaceId(exchange, principal);
     if (descriptor == null) {
-      record(exchange, principal.subject(), workspaceId, "internal.unknown", exchange.getRequest().getPath().value(), policyDecisionService.policyVersion(), "DENY", "no action mapping");
+      record(exchange, principal.subject(), "internal.unknown", exchange.getRequest().getPath().value(), policyDecisionService.policyVersion(), "DENY", "no action mapping");
       return errorResponseWriter.write(exchange, HttpStatus.FORBIDDEN, "POLICY_DENIED", "no policy rule for request");
     }
-    PolicyDecision decision = policyDecisionService.decide(
-        principal,
-        new WorkspacePolicyContext(workspaceId, skillId(exchange), targetEnvironment(exchange)),
-        descriptor.action(),
-        descriptor.resource());
+    PolicyDecision decision = policyDecisionService.decide(principal, descriptor.action(), descriptor.resource());
     ExecutionContext executionContext = new ExecutionContext(
         exchange.getRequest().getId(),
         traceId(exchange),
         principal.subject(),
         principal.username(),
-        workspaceId,
-        principal.rolesForWorkspace(workspaceId),
+        principal.roles(),
         descriptor.action(),
         descriptor.resource(),
         exchange.getRequest().getMethod().name(),
         exchange.getRequest().getPath().value(),
         decision.policyVersion());
     exchange.getAttributes().put(EXECUTION_CONTEXT_ATTRIBUTE, executionContext);
-    record(exchange, principal.subject(), workspaceId, descriptor.action(), descriptor.resource(), decision.policyVersion(), decision.allowed() ? "ALLOW" : "DENY", decision.reason());
+    record(exchange, principal.subject(), descriptor.action(), descriptor.resource(), decision.policyVersion(), decision.allowed() ? "ALLOW" : "DENY", decision.reason());
     if (!decision.allowed()) {
       return errorResponseWriter.write(exchange, HttpStatus.FORBIDDEN, "POLICY_DENIED", decision.reason());
     }
@@ -159,7 +150,7 @@ public class PolicyEnforcementWebFilter implements WebFilter {
     String path = exchange.getRequest().getPath().value();
     ActionDescriptor descriptor = Optional.ofNullable(ActionDescriptor.resolve(exchange.getRequest().getMethod(), path))
         .orElse(new ActionDescriptor("internal.unknown", path));
-    record(exchange, "anonymous", TeamWorkspaceConstants.DEFAULT_WORKSPACE_ID, descriptor.action(), descriptor.resource(), policyDecisionService.policyVersion(), "DENY", "missing authenticated principal");
+    record(exchange, "anonymous", descriptor.action(), descriptor.resource(), policyDecisionService.policyVersion(), "DENY", "missing authenticated principal");
     return errorResponseWriter.write(exchange, HttpStatus.UNAUTHORIZED, "UNAUTHENTICATED", "missing or invalid authentication");
   }
 
@@ -169,7 +160,6 @@ public class PolicyEnforcementWebFilter implements WebFilter {
   private void record(
       ServerWebExchange exchange,
       String subject,
-      String workspaceId,
       String action,
       String resource,
       String policyVersion,
@@ -180,7 +170,6 @@ public class PolicyEnforcementWebFilter implements WebFilter {
         exchange.getRequest().getId(),
         traceId(exchange),
         subject,
-        workspaceId,
         action,
         resource,
         policyVersion,
@@ -198,24 +187,6 @@ public class PolicyEnforcementWebFilter implements WebFilter {
     return Optional.ofNullable(exchange.getRequest().getHeaders().getFirst("X-Trace-Id"))
         .filter(value -> !value.isBlank())
         .orElse(exchange.getRequest().getId());
-  }
-
-  private String selectedWorkspaceId(ServerWebExchange exchange, OperatorIdentity principal) {
-    return Optional.ofNullable(exchange.getRequest().getHeaders().getFirst(WORKSPACE_HEADER))
-        .filter(value -> !value.isBlank())
-        .orElse(principal.currentWorkspaceId());
-  }
-
-  private String skillId(ServerWebExchange exchange) {
-    return Optional.ofNullable(exchange.getRequest().getHeaders().getFirst("X-Ops-Agent-Skill-Id"))
-        .filter(value -> !value.isBlank())
-        .orElse(null);
-  }
-
-  private String targetEnvironment(ServerWebExchange exchange) {
-    return Optional.ofNullable(exchange.getRequest().getHeaders().getFirst("X-Ops-Agent-Target-Environment"))
-        .filter(value -> !value.isBlank())
-        .orElse(null);
   }
 
   /**

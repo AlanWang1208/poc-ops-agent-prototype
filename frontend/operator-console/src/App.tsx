@@ -57,7 +57,6 @@ export default function App() {
   const [sessionPhase, setSessionPhase] = useState<SessionPhase>("loading");
   const [session, setSession] = useState<BrowserSession | null>(null);
   const [sessionError, setSessionError] = useState("");
-  const [selectedWorkspaceId, setSelectedWorkspaceId] = useState("workspace-default");
   const [debugToken, setDebugToken] = useState("");
   const [nodeName, setNodeName] = useState("node-a");
   const [events, setEvents] = useState<SemanticEvent[]>([]);
@@ -82,12 +81,6 @@ export default function App() {
     try {
       const currentSession = await fetchBrowserSession();
       setSession(currentSession);
-      setSelectedWorkspaceId((current) => {
-        if (current && currentSession.workspaces.some((workspace) => workspace.workspaceId === current)) {
-          return current;
-        }
-        return currentSession.currentWorkspaceId ?? currentSession.workspaces[0]?.workspaceId ?? "";
-      });
       setSessionPhase(currentSession.authenticated ? "authenticated" : "anonymous");
     } catch (caught) {
       setSession(null);
@@ -135,7 +128,6 @@ export default function App() {
       try {
         await delay(attempt * 400);
         await resumeDiagnosticEvents(
-          selectedWorkspaceId,
           currentWorkflowId,
           lastSequenceRef.current,
           currentToken,
@@ -160,10 +152,6 @@ export default function App() {
       setError("请先完成浏览器登录，或在开发调试区填写 Bearer Token");
       return;
     }
-    if (!selectedWorkspaceId) {
-      setError("请选择 Team Workspace 后再发起诊断");
-      return;
-    }
 
     const expectedRunId = runIdRef.current + 1;
     const currentToken = debugToken.trim();
@@ -173,7 +161,6 @@ export default function App() {
     setRunning(true);
 
     const request: DiagnosticRequest = {
-      workspaceId: selectedWorkspaceId,
       skillId: "node-health-read",
       targetEnvironment: "development",
       idempotencyKey: `node-health:${nodeName}:${Date.now()}`,
@@ -198,7 +185,6 @@ export default function App() {
 
   const phaseClassName = `phase phase-${phase}`;
   const consoleEnabled = canUseConsole(session, debugToken);
-  const selectedWorkspace = session?.workspaces.find((workspace) => workspace.workspaceId === selectedWorkspaceId);
 
   return (
     <main>
@@ -246,26 +232,6 @@ export default function App() {
                   <span key={role}>{role}</span>
                 ))}
               </div>
-              <label className="workspace-select">
-                Team Workspace
-                <select
-                  value={selectedWorkspaceId}
-                  onChange={(inputEvent) => setSelectedWorkspaceId(inputEvent.target.value)}
-                >
-                  {session.workspaces.map((workspace) => (
-                    <option key={workspace.workspaceId} value={workspace.workspaceId}>
-                      {workspace.displayName}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              {selectedWorkspace && (
-                <div className="role-list">
-                  {selectedWorkspace.roles.map((role) => (
-                    <span key={`${selectedWorkspace.workspaceId}:${role}`}>{role}</span>
-                  ))}
-                </div>
-              )}
               <div className="session-actions">
                 <button type="button" onClick={() => void refreshSession()}>
                   刷新会话
@@ -346,10 +312,6 @@ export default function App() {
         <article className={phaseClassName}>
           <span className="phase-label">事件流状态</span>
           <strong>{phaseLabels[phase]}</strong>
-        </article>
-        <article className="phase">
-          <span className="phase-label">Team Workspace</span>
-          <strong>{selectedWorkspace?.displayName ?? "尚未选择"}</strong>
         </article>
         <article className="phase">
           <span className="phase-label">工作流 ID</span>

@@ -15,17 +15,6 @@ public interface PolicyDecisionService {
   PolicyDecision decide(OperatorIdentity identity, String action, String resource);
 
   /**
-   * 针对指定主体、工作空间、动作和资源做一次策略决策。
-   */
-  default PolicyDecision decide(
-      OperatorIdentity identity,
-      WorkspacePolicyContext workspaceContext,
-      String action,
-      String resource) {
-    return decide(identity, action, resource);
-  }
-
-  /**
    * 返回当前策略版本号。
    */
   String policyVersion();
