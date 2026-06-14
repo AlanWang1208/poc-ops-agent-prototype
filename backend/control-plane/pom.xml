@@ -25,5 +25,6 @@
     <module>modules/workflow</module>
     <module>modules/orchestration</module>
     <module>modules/events</module>
+    <module>modules/sqlworkbench</module>
   </modules>
 </project>

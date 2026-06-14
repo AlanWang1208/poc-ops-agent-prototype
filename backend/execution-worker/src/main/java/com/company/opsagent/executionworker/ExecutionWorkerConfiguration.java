@@ -37,4 +37,14 @@ public class ExecutionWorkerConfiguration {
       Clock workerClock) {
     return new RestrictedReadOnlyExecutionWorker(List.of(nodeHealthReadAdapter), workerClock);
   }
+
+  @Bean
+  RestrictedSqlQueryExecutionWorker restrictedSqlQueryExecutionWorker(Clock workerClock) {
+    return new RestrictedSqlQueryExecutionWorker(
+        new CalciteSqlReadOnlyGuard(),
+        request -> {
+          throw new IllegalStateException("AS/400 connection and KeyStore are not configured");
+        },
+        workerClock);
+  }
 }
