@@ -17,7 +17,7 @@ public class CalciteSqlReadOnlyGuard implements SqlReadOnlyGuard {
   public boolean isReadOnly(String sql) {
     try {
       SqlNodeList statements = SqlParser.create(sql).parseStmtList();
-      return statements.size() == 1 && isSelect(statements.get(0));
+      return statements.size() == 1 && isSelect(statements.getFirst());
     } catch (SqlParseException exception) {
       return false;
     }
