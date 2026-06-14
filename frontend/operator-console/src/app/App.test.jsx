@@ -16,6 +16,9 @@ describe("App", () => {
       </AppProviders>,
     );
 
-    expect(screen.getByRole("heading", { name: "登录页" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "企业智能运维工作台" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("SECURE OPERATOR ENTRY")).toBeInTheDocument();
   });
 });

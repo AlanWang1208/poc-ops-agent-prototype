@@ -3,10 +3,7 @@ import { Navigate, Route, Routes } from "react-router-dom";
 import { AppShell } from "../components/layout/AppShell.jsx";
 import { PageHeader } from "../components/layout/PageHeader.jsx";
 import { Card } from "../components/primitives/Card.jsx";
-
-function LoginPlaceholder() {
-  return <PageHeader title="登录页" />;
-}
+import { LoginPage } from "../features/auth/LoginPage.jsx";
 
 /**
  * @param {{title: string, description: string}} props
@@ -26,7 +23,7 @@ export function AppRouter() {
   return (
     <Routes>
       <Route element={<Navigate replace to="/login" />} path="/" />
-      <Route element={<LoginPlaceholder />} path="/login" />
+      <Route element={<LoginPage />} path="/login" />
       <Route
         element={
           <ProtectedPlaceholder
