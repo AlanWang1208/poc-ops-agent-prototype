@@ -94,3 +94,27 @@
   - `npm run test`：通过，9 个测试文件，44 个测试。
   - `npm run check`：通过。
   - `npm run lint`：通过。
+
+## Task 10：CI、README 与规划事实源更新
+
+- 状态：已完成。
+- 完成内容：
+  - CI 前端门禁已扩展为依赖安装、`checkJs`、ESLint、Vitest、Vite Build、高危依赖审计、Playwright Chromium 安装和浏览器验收。
+  - CI 已配置 Playwright 失败报告上传。
+  - 操作台 README 已记录四个首轮页面、JavaScript/JSDoc/checkJs 工具链、本地验证命令、真实接口优先原则、P1 禁止项、发布影响和回滚方式。
+  - 已更新模块地图、项目计划、设计追溯和测试评测基线，记录 M09 首轮重写范围、已接入接口、未开放能力和浏览器验收门禁。
+  - 已确认前端页面和共享组件没有直接 `fetch`，请求仍集中在 `src/api`。
+  - 已确认生产 SQL、Commit、Rollback、任意脚本等禁止项只出现在边界说明或断言不存在的测试中。
+- 验证证据：
+  - `npm ci`：通过，0 漏洞。
+  - `npm run check`：通过。
+  - `npm run lint`：通过。
+  - `npm run test`：通过，9 个测试文件，44 个测试。
+  - `npm run build`：通过。
+  - `npm audit --audit-level=high`：通过，0 漏洞。
+  - `npm run test:e2e`：通过，3 个桌面项目共 9 个浏览器测试。
+  - `git diff --check`：通过。
+  - `powershell -NoProfile -ExecutionPolicy Bypass -File ./tools/ci/check-repository.ps1`：通过。
+  - `powershell -NoProfile -ExecutionPolicy Bypass -File ./tools/ci/check-contracts.ps1`：通过。
+  - `powershell -NoProfile -ExecutionPolicy Bypass -File ./tools/ci/scan-secrets.ps1`：通过。
+  - `./mvnw.cmd -f ./pom.xml -B -ntp verify`：通过，后端 reactor `BUILD SUCCESS`。

@@ -29,8 +29,8 @@
 | M04 Agent 路由与候选筛选 | 进行中 | 85% | 已完成确定性候选筛选、发布态约束和与只读工作流的联动 | 继续补充路由解释 API、评测集和更丰富的排序策略 |
 | M05 只读工作流切片 | 已完成 | 100% | 已生成强类型只读命令、短期 Worker 请求和顺序语义事件；同时已落地 H2/R2DBC 工作流实例、attempt 与事件持久化、幂等复用、结果与事件回读、启动恢复装配、版本化迁移脚本，以及针对 `FAILED_RETRYABLE` 和 attempt 已过期在途实例的单次受控重放 | 无；后续仅在 P2/P3 扩展正式生产数据库接入与更长期恢复演练 |
 | M07 受限执行 Worker | 进行中 | 55% | 已提供独立 WebFlux Worker、回环地址开发配置、显式允许列表和 `node-health-read` 适配器 | 完成生产传输认证、网络出口、短期凭据和部署隔离 ADR |
-| M09 语义事件与只读操作台 | 进行中 | 60% | 已定义强类型语义事件、SSE 接口和 React/TypeScript 最小只读操作台 | 增加重连、断点恢复、会话登录联调和浏览器验收 |
-| M09 SQL 工作台 P1 切片 | 进行中 | 55% | 已完成 AS/400 开发测试连接目录、SQL AST 校验、DML 静态预检、Worker 双重拒绝边界和 SQL 工作台界面 | 接入真实 Db2 for i 只读账号、KeyStore 解锁、查询工作流、结果分页脱敏与短期留存 |
+| M09 语义事件与只读操作台 | 进行中 | 78% | 已定义强类型语义事件、SSE 接口和 React/JSDoc/checkJs 操作台；首轮页面已覆盖登录页、Agent 工作台、Skill 注册中心和 SQL 工作台，并完成桌面浏览器验收 | 接入真实只读诊断工作流提交、RAG 问答页、审计详情页和更完整的断点恢复验收 |
+| M09 SQL 工作台 P1 切片 | 进行中 | 65% | 已完成 AS/400 开发测试连接目录、SQL AST 校验、DML 静态预检、Worker 双重拒绝边界和 SQL 工作台界面；前端仅展示服务端验证报告，不提供 DML 执行、Commit 或 Rollback | 接入真实 Db2 for i 只读账号、KeyStore 解锁、查询工作流、结果分页脱敏与短期留存 |
 | M09 SQL 工作台 P2 受控 CRUD | 已规划 | 0% | 已确认语义执行轨道、Notebook 式独立结果和开发环境受控 CRUD 产品方向 | 完成会话与单元契约、DML 影响预览、环境风险策略、持久化工作流、受限写 Worker、短事务、审计和安全评审 |
 | M01 接入网关与身份认证 | 进行中 | 78% | 已完成开发态 JWT、真实 OIDC 配置模式、本地 Mock OIDC 联调，以及正式内建身份模式下的账号、密码、锁定、会话、管理员重置密码、首次改密、登出撤销与身份契约 | 后续补内建 OIDC 对外发行、完整 MFA 实装、自助找回密码与更完整的运维开户工具 |
 
@@ -143,3 +143,12 @@ P1 SQL 工作台仍只允许 DML 预检。开发环境受控增删改查属于 P
 - 已新增 R2DBC Agent 工作流事实源，覆盖 workflow 幂等、Tool Step 顺序和完成状态。
 - 当前 P1 Tool 执行仍保持平台守护边界：非只读、未发布或不可见 Skill 被拒绝；Worker 执行接线不在本次放宽。
 - 已补充评测清单和 POC 运行手册，记录启用、回退和依赖验证方式。
+
+## 2026-06-14 M09 操作台首轮重写进展
+
+- 已将操作台前端明确落到 JavaScript / JSX、JSDoc 和 TypeScript `checkJs` 工具链。
+- 已完成四个首轮页面：登录页、Agent 工作台、Skill 注册中心和 SQL 工作台。
+- 已接入真实控制面接口边界：`/auth/session`、`/internal/routing/skills/search`、`/internal/skills`、`/internal/sql-workbench/connections` 和 `/internal/sql-workbench/queries/validate`。
+- 未开放能力保持禁用：Agent 任务发送、Skill 安装升级卸载、AI SQL 助手、DML 执行、Commit、Rollback 和生产 SQL 连接。
+- 已新增 Playwright 浏览器验收，覆盖 `1280px`、`1440px`、`1920px` 三个桌面视口。
+- 发布影响限定为前端展示和只读校验入口；回滚方式为回退操作台前端提交，不要求后端契约回滚。
