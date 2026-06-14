@@ -1,0 +1,183 @@
+.page {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: minmax(420px, 0.92fr) minmax(420px, 0.68fr);
+  background:
+    linear-gradient(120deg, rgba(37, 132, 169, 0.12), transparent 38%),
+    linear-gradient(rgba(37, 132, 169, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(37, 132, 169, 0.04) 1px, transparent 1px),
+    var(--color-canvas);
+  background-size: auto, 36px 36px, 36px 36px, auto;
+}
+
+.brandPanel {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: clamp(40px, 5vw, 72px);
+}
+
+.brandMark {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+  color: var(--color-text);
+  font-weight: 800;
+}
+
+.brandIcon {
+  display: grid;
+  width: 46px;
+  height: 46px;
+  place-items: center;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle, white 47%, transparent 49%),
+    conic-gradient(var(--color-accent), var(--color-info), var(--color-success), var(--color-accent));
+  color: var(--color-accent);
+  font-size: 0.72rem;
+  font-weight: 900;
+}
+
+.hero {
+  max-width: 720px;
+}
+
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  margin-bottom: var(--space-4);
+  border: 1px solid color-mix(in srgb, var(--color-info) 22%, transparent);
+  border-radius: 999px;
+  padding: 6px 12px;
+  background: color-mix(in srgb, var(--color-surface) 80%, transparent);
+  color: var(--color-info);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.hero h1 {
+  max-width: 12ch;
+  margin: 0;
+  color: var(--color-text);
+  font-size: clamp(3rem, 6vw, 5.8rem);
+  line-height: 0.98;
+}
+
+.hero p {
+  max-width: 620px;
+  margin: var(--space-5) 0 0;
+  color: var(--color-muted);
+  font-size: 1.08rem;
+  line-height: 1.75;
+}
+
+.statusStrip {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-3);
+  max-width: 760px;
+}
+
+.statusCard {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: color-mix(in srgb, var(--color-surface) 86%, transparent);
+  padding: var(--space-4);
+  box-shadow: 0 10px 24px rgba(31, 45, 61, 0.06);
+}
+
+.statusCard strong,
+.statusCard span {
+  display: block;
+}
+
+.statusCard strong {
+  color: var(--color-text);
+  font-size: 0.9rem;
+}
+
+.statusCard span {
+  margin-top: var(--space-2);
+  color: var(--color-muted);
+  font-size: 0.78rem;
+}
+
+.loginPanel {
+  display: grid;
+  place-items: center;
+  padding: clamp(32px, 4vw, 64px);
+  background: color-mix(in srgb, var(--color-surface) 76%, transparent);
+  box-shadow: -20px 0 60px rgba(31, 45, 61, 0.06);
+}
+
+.loginCard {
+  width: min(100%, 480px);
+  border: 1px solid color-mix(in srgb, var(--color-info) 18%, var(--color-border));
+  border-radius: 14px;
+  background: var(--color-surface);
+  padding: var(--space-6);
+  box-shadow: var(--shadow-shell);
+}
+
+.loginCard h2 {
+  margin: 0;
+  color: var(--color-text);
+  font-size: 1.7rem;
+}
+
+.loginCard p {
+  margin: var(--space-3) 0 0;
+  color: var(--color-muted);
+  line-height: 1.65;
+}
+
+.loginAction {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  margin-top: var(--space-5);
+  border-radius: var(--radius-control);
+  background: var(--color-accent);
+  color: white;
+  padding: 12px 16px;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.loginAction:hover {
+  background: var(--color-accent-hover);
+}
+
+.boundaryList {
+  display: grid;
+  gap: var(--space-3);
+  margin: var(--space-5) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.boundaryList li {
+  border-left: 3px solid var(--color-info);
+  border-radius: var(--radius-control);
+  background: var(--color-surface-subtle);
+  padding: var(--space-3);
+  color: var(--color-text);
+  font-size: 0.88rem;
+}
+
+.feedback {
+  margin-top: var(--space-4);
+}
+
+@media (max-width: 960px) {
+  .page {
+    grid-template-columns: 1fr;
+  }
+
+  .statusStrip {
+    grid-template-columns: 1fr;
+  }
+}
+

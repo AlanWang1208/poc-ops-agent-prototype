@@ -1,5 +1,6 @@
 import { NavLink } from "react-router-dom";
 
+import { getLogoutUrl } from "../../api/auth-api.js";
 import styles from "./AppShell.module.css";
 
 const navigation = [
@@ -11,12 +12,16 @@ const navigation = [
 /**
  * @typedef {object} AppShellProps
  * @property {import("react").ReactNode} children
+ * @property {import("../../schemas/auth-schemas.js").BrowserSession} [session]
  */
 
 /**
  * @param {AppShellProps} props
  */
-export function AppShell({ children }) {
+export function AppShell({ children, session }) {
+  const username = session?.authenticated ? session.username : null;
+  const initials = username ? username.slice(0, 2).toUpperCase() : "OP";
+
   return (
     <div className={styles.shell}>
       <aside className={styles.sidebar}>
@@ -57,13 +62,22 @@ export function AppShell({ children }) {
           </div>
           <div aria-label="当前会话" className={styles.session}>
             <span aria-hidden="true" className={styles.avatar}>
-              OP
+              {initials}
             </span>
             <span>
-              <strong>当前会话</strong>
-              <small>会话信息将在登录后接入</small>
+              <strong>{username ?? "当前会话"}</strong>
+              <small>
+                {username && session
+                  ? `已认证：${session.authenticationType}`
+                  : "会话信息将在登录后接入"}
+              </small>
             </span>
           </div>
+          {username ? (
+            <a className={styles.logoutLink} href={getLogoutUrl()}>
+              退出登录
+            </a>
+          ) : null}
         </div>
       </aside>
       <main className={styles.content}>{children}</main>
