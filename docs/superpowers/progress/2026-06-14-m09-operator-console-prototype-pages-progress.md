@@ -44,3 +44,19 @@
   - `npm run check`：通过。
   - `npm run lint`：通过。
   - `npm run test`：通过，7 个测试文件，36 个测试。
+
+## Task 7：Skill 注册中心
+
+- 状态：已完成。
+- 完成内容：
+  - 新增 Skill 注册中心页面、Skill 查询 Hook、数据表格和状态徽标组件。
+  - 调用 `/internal/skills` 读取真实 Skill 目录。
+  - 支持基于真实列表的本地搜索、分类筛选和风险筛选。
+  - 展示 Skill ID、风险、Owner、发布状态和选中 Skill 详情。
+  - 安装、升级、卸载操作全部保持禁用，并显示“服务端未提供受控变更接口”。
+  - 覆盖真实空数据、服务端 `403` 和契约不兼容状态。
+- 验证证据：
+  - `npm run test -- src/features/skill-registry/SkillRegistryPage.test.jsx`：通过，4 个测试。
+  - `npm run check`：通过。
+  - `npm run lint`：通过。
+  - `npm run test`：通过，8 个测试文件，40 个测试。

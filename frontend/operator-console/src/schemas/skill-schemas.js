@@ -1,5 +1,9 @@
 import { z } from "zod";
 
+/**
+ * @typedef {z.infer<typeof registeredSkillSchema>} RegisteredSkill
+ */
+
 const nonBlankString = z.string().trim().min(1);
 
 export const skillCategorySchema = z.enum([

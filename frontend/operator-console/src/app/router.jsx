@@ -6,6 +6,7 @@ import { AgentWorkspacePage } from "../features/agent-workspace/AgentWorkspacePa
 import { LoginPage } from "../features/auth/LoginPage.jsx";
 import { ProtectedRoute } from "../features/auth/ProtectedRoute.jsx";
 import { useSession } from "../features/auth/use-session.js";
+import { SkillRegistryPage } from "../features/skill-registry/SkillRegistryPage.jsx";
 
 /**
  * @param {{title: string, description: string}} props
@@ -51,10 +52,7 @@ export function AppRouter() {
       <Route
         element={
           <ProtectedRoute>
-            <ProtectedPlaceholder
-              description="浏览已注册并发布的只读 Skill。"
-              title="Skill 注册中心"
-            />
+            <SkillRegistryPage />
           </ProtectedRoute>
         }
         path="/skills"
