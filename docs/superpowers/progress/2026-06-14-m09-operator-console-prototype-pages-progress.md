@@ -60,3 +60,21 @@
   - `npm run check`：通过。
   - `npm run lint`：通过。
   - `npm run test`：通过，8 个测试文件，40 个测试。
+
+## Task 8：SQL 工作台
+
+- 状态：已完成。
+- 完成内容：
+  - 新增 SQL 工作台页面、Monaco SQL 编辑器封装和 SQL 工作台查询 Hook。
+  - 路由 `/sql` 已从占位页切换为真实页面。
+  - 调用 `/internal/sql-workbench/connections` 读取服务端允许的开发与测试环境连接。
+  - 调用 `/internal/sql-workbench/queries/validate` 提交版本化 SQL 校验请求，固定包含连接、目标环境、Schema、动作、限制和幂等键。
+  - 页面按钮和提交逻辑均遵循服务端返回的连接 capability 列表。
+  - 提供“校验只读执行”和“DML 预检”入口，仅渲染服务端校验报告，不提供提交、回滚或写执行入口。
+  - “询问 AI”保持禁用，避免在 P1 中引入未开放的模型生成链路。
+  - 生产连接会被现有前端契约拒绝并显示“SQL 连接契约不兼容”，不会落入页面列表。
+- 验证证据：
+  - `npm run test -- src/features/sql-workbench/SqlWorkbenchPage.test.jsx`：通过，4 个测试。
+  - `npm run check`：通过。
+  - `npm run lint`：通过。
+  - `npm run test`：通过，9 个测试文件，44 个测试。

@@ -1,26 +1,12 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 
 import { PageHeader } from "../components/layout/PageHeader.jsx";
-import { Card } from "../components/primitives/Card.jsx";
 import { AgentWorkspacePage } from "../features/agent-workspace/AgentWorkspacePage.jsx";
 import { LoginPage } from "../features/auth/LoginPage.jsx";
 import { ProtectedRoute } from "../features/auth/ProtectedRoute.jsx";
 import { useSession } from "../features/auth/use-session.js";
 import { SkillRegistryPage } from "../features/skill-registry/SkillRegistryPage.jsx";
-
-/**
- * @param {{title: string, description: string}} props
- */
-function ProtectedPlaceholder({ title, description }) {
-  return (
-    <>
-      <PageHeader description={description} title={title} />
-      <Card ariaLabel={`${title}内容`}>
-        <p>页面将在后续任务中接入真实接口。</p>
-      </Card>
-    </>
-  );
-}
+import { SqlWorkbenchPage } from "../features/sql-workbench/SqlWorkbenchPage.jsx";
 
 function RootRedirect() {
   const session = useSession();
@@ -60,10 +46,7 @@ export function AppRouter() {
       <Route
         element={
           <ProtectedRoute>
-            <ProtectedPlaceholder
-              description="校验开发与测试环境中的 SQL。"
-              title="SQL 工作台"
-            />
+            <SqlWorkbenchPage />
           </ProtectedRoute>
         }
         path="/sql"

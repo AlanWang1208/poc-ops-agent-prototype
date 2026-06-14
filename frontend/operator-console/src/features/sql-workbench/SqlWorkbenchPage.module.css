@@ -1,0 +1,142 @@
+.page {
+  display: grid;
+  gap: var(--space-5);
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: minmax(280px, 0.35fr) minmax(640px, 1fr);
+  gap: var(--space-5);
+  align-items: start;
+}
+
+.panel,
+.editorPanel,
+.reportPanel {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-shell);
+  padding: var(--space-5);
+}
+
+.panel,
+.editorPanel,
+.reportPanel,
+.form {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.panel h2,
+.editorPanel h2,
+.reportPanel h2 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.connectionList {
+  display: grid;
+  gap: var(--space-3);
+  margin: 0;
+}
+
+.connectionOption {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: var(--space-3);
+  align-items: start;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-surface-subtle);
+  padding: var(--space-3);
+}
+
+.connectionOption input {
+  margin-top: 3px;
+}
+
+.connectionTitle {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-items: center;
+}
+
+.connectionTitle strong {
+  word-break: break-word;
+}
+
+.muted {
+  color: var(--color-muted);
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+.form label {
+  display: grid;
+  gap: var(--space-2);
+  color: var(--color-muted);
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
+.form select {
+  min-height: 40px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+  background: white;
+  color: var(--color-text);
+  padding: 8px 10px;
+  font: inherit;
+}
+
+.editorFrame {
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+.reportGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+
+.reportItem {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+  background: var(--color-surface-subtle);
+  padding: var(--space-3);
+}
+
+.reportItem span {
+  display: block;
+  margin-bottom: var(--space-1);
+  color: var(--color-muted);
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
+.reportList {
+  margin: var(--space-2) 0 0;
+  padding-left: var(--space-5);
+}
+
+.reportList li {
+  margin-bottom: var(--space-1);
+}
+
+@media (max-width: 1180px) {
+  .layout,
+  .reportGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
