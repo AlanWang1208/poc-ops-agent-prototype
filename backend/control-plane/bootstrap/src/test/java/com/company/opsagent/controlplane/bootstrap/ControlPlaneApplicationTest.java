@@ -68,6 +68,8 @@ import org.springframework.test.web.reactive.server.WebTestClient;
     "ops-agent.policy.required-roles-by-action.internal.skills.publish.validate[0]=ROLE_ops-admin",
     "ops-agent.policy.required-roles-by-action.internal.routing.skills.read[0]=ROLE_ops-reader",
     "ops-agent.policy.required-roles-by-action.internal.routing.skills.read[1]=ROLE_ops-admin",
+    "ops-agent.policy.required-roles-by-action.internal.agent.diagnostics.read[0]=ROLE_ops-reader",
+    "ops-agent.policy.required-roles-by-action.internal.agent.diagnostics.read[1]=ROLE_ops-admin",
     "ops-agent.skill-registry.root-path=target/test-classes/skills",
     "ops-agent.skill-registry.signature-required=true",
     "ops-agent.skill-registry.signing-secret=ops-agent-skill-signing-key-2026-06-06-0001",
@@ -322,6 +324,47 @@ class ControlPlaneApplicationTest {
   }
 
   @Test
+  void rejectsMissingTokenOnAgentDiagnosticEndpoint() {
+    auditTrail.clear();
+    webTestClient.post()
+        .uri("/api/v1/agent/diagnostics")
+        .contentType(APPLICATION_JSON)
+        .bodyValue(agentDiagnosticBody("agent-missing-token"))
+        .exchange()
+        .expectStatus().isUnauthorized()
+        .expectBody()
+        .jsonPath("$.code").isEqualTo("UNAUTHENTICATED");
+  }
+
+  @Test
+  void rejectsAgentDiagnosticEndpointWithoutReaderRole() {
+    auditTrail.clear();
+    webTestClient.post()
+        .uri("/api/v1/agent/diagnostics")
+        .headers(headers -> headers.setBearerAuth(token("auditor", List.of("ops-auditor"), "ops-agent-internal")))
+        .contentType(APPLICATION_JSON)
+        .bodyValue(agentDiagnosticBody("agent-denied"))
+        .exchange()
+        .expectStatus().isForbidden()
+        .expectBody()
+        .jsonPath("$.code").isEqualTo("POLICY_DENIED");
+  }
+
+  @Test
+  void reportsAgentRuntimeDisabledUntilExplicitlyEnabled() {
+    auditTrail.clear();
+    webTestClient.post()
+        .uri("/api/v1/agent/diagnostics")
+        .headers(headers -> headers.setBearerAuth(token("alice", List.of("ops-reader"), "ops-agent-internal")))
+        .contentType(APPLICATION_JSON)
+        .bodyValue(agentDiagnosticBody("agent-disabled"))
+        .exchange()
+        .expectStatus().isEqualTo(503)
+        .expectBody()
+        .jsonPath("$.code").isEqualTo("AGENT_RUNTIME_DISABLED");
+  }
+
+  @Test
   void wiresWorkflowPersistenceStoreAndRecoveryService() {
     Assertions.assertNotNull(readOnlyWorkflowStore);
     Assertions.assertNotNull(readOnlyWorkflowRecoveryService);
@@ -454,5 +497,18 @@ class ControlPlaneApplicationTest {
     } catch (JOSEException exception) {
       throw new IllegalStateException("failed to create test token", exception);
     }
+  }
+
+  private String agentDiagnosticBody(String idempotencyKey) {
+    return """
+        {
+          "targetEnvironment": "development",
+          "idempotencyKey": "%s",
+          "userIntent": "check node health",
+          "inputParameters": {
+            "nodeId": "node-1"
+          }
+        }
+        """.formatted(idempotencyKey);
   }
 }

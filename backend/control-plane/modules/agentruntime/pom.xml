@@ -11,9 +11,9 @@
     <relativePath>../../pom.xml</relativePath>
   </parent>
 
-  <artifactId>control-plane-workflow</artifactId>
+  <artifactId>control-plane-agentruntime</artifactId>
   <packaging>jar</packaging>
-  <name>control-plane-workflow</name>
+  <name>control-plane-agentruntime</name>
 
   <dependencies>
     <dependency>
@@ -23,21 +23,28 @@
     </dependency>
     <dependency>
       <groupId>com.company.opsagent</groupId>
-      <artifactId>control-plane-agentrouting</artifactId>
+      <artifactId>control-plane-skillregistry</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>com.company.opsagent</groupId>
-      <artifactId>control-plane-agentruntime</artifactId>
+      <artifactId>control-plane-policy</artifactId>
       <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>io.agentscope</groupId>
+      <artifactId>agentscope</artifactId>
+      <version>1.0.12</version>
+      <exclusions>
+        <exclusion>
+          <groupId>io.modelcontextprotocol.sdk</groupId>
+          <artifactId>mcp</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>io.projectreactor</groupId>
       <artifactId>reactor-core</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.springframework</groupId>
-      <artifactId>spring-r2dbc</artifactId>
     </dependency>
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
@@ -51,11 +58,6 @@
     <dependency>
       <groupId>io.projectreactor</groupId>
       <artifactId>reactor-test</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>io.r2dbc</groupId>
-      <artifactId>r2dbc-h2</artifactId>
       <scope>test</scope>
     </dependency>
   </dependencies>

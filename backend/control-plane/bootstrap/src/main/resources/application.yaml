@@ -73,12 +73,29 @@ ops-agent:
       internal.diagnostics.read:
         - ROLE_ops-reader
         - ROLE_ops-admin
+      internal.agent.diagnostics.read:
+        - ROLE_ops-reader
+        - ROLE_ops-admin
       internal.identity.password-reset:
         - ROLE_ops-admin
   worker:
     base-url: http://127.0.0.1:8091
   workflow:
     startup-recovery-enabled: true
+  agent-runtime:
+    enabled: false
+    provider: agentscope
+    model-name: ""
+    base-url: ""
+    api-key-env: AGENTSCOPE_API_KEY
+    timeout: 30s
+    max-tool-calls: 5
+    max-tool-call-duration: 30s
+    max-iterations: 5
+    p1-read-only-only: true
+    workspace-id: workspace-default
+    workspace-code: default
+    workspace-display-name: Default Workspace
   skill-registry:
     root-path: backend/skills
     signature-required: true

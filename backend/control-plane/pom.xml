@@ -22,6 +22,7 @@
     <module>modules/audit</module>
     <module>modules/skillregistry</module>
     <module>modules/agentrouting</module>
+    <module>modules/agentruntime</module>
     <module>modules/workflow</module>
     <module>modules/orchestration</module>
     <module>modules/events</module>

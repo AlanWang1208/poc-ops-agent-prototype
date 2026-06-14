@@ -48,6 +48,11 @@
     </dependency>
     <dependency>
       <groupId>com.company.opsagent</groupId>
+      <artifactId>control-plane-agentruntime</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.company.opsagent</groupId>
       <artifactId>control-plane-workflow</artifactId>
       <version>${project.version}</version>
     </dependency>

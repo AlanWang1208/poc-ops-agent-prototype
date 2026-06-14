@@ -2,12 +2,16 @@ package com.company.opsagent.controlplane.bootstrap.config;
 
 import com.company.opsagent.controlplane.bootstrap.service.WebClientWorkerGateway;
 import com.company.opsagent.controlplane.modules.agentrouting.SkillRoutingService;
+import com.company.opsagent.controlplane.modules.workflow.AgentDiagnosticWorkflowService;
+import com.company.opsagent.controlplane.modules.workflow.AgentWorkflowStore;
 import com.company.opsagent.controlplane.modules.workflow.ReadOnlyDiagnosticWorkflowService;
 import com.company.opsagent.controlplane.modules.workflow.ReadOnlyWorkflowRecoveryService;
 import com.company.opsagent.controlplane.modules.workflow.ReadOnlyWorkflowStore;
+import com.company.opsagent.controlplane.modules.workflow.R2dbcAgentWorkflowStore;
 import com.company.opsagent.controlplane.modules.workflow.R2dbcReadOnlyWorkflowStore;
 import com.company.opsagent.controlplane.modules.workflow.RetryableFailureClassifier;
 import com.company.opsagent.controlplane.modules.workflow.WorkerGateway;
+import com.company.opsagent.controlplane.modules.agentruntime.AgentRuntimeService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.Clock;
 import org.springframework.boot.ApplicationRunner;
@@ -42,11 +46,17 @@ public class WorkflowConfiguration {
   }
 
   @Bean
+  AgentWorkflowStore agentWorkflowStore(DatabaseClient databaseClient) {
+    return new R2dbcAgentWorkflowStore(databaseClient);
+  }
+
+  @Bean
   ConnectionFactoryInitializer workflowSchemaInitializer(ConnectionFactory connectionFactory) {
     var initializer = new ConnectionFactoryInitializer();
     initializer.setConnectionFactory(connectionFactory);
     initializer.setDatabasePopulator(new ResourceDatabasePopulator(
-        new ClassPathResource("sql/migrations/V001__workflow_schema.sql")));
+        new ClassPathResource("sql/migrations/V001__workflow_schema.sql"),
+        new ClassPathResource("sql/migrations/V002__agent_workflow_schema.sql")));
     return initializer;
   }
 
@@ -93,5 +103,15 @@ public class WorkflowConfiguration {
         Clock.systemUTC(),
         workflowStore,
         retryableFailureClassifier);
+  }
+
+  @Bean
+  AgentDiagnosticWorkflowService agentDiagnosticWorkflowService(
+      AgentRuntimeService agentRuntimeService,
+      AgentWorkflowStore agentWorkflowStore) {
+    return new AgentDiagnosticWorkflowService(
+        agentRuntimeService,
+        agentWorkflowStore,
+        Clock.systemUTC());
   }
 }
