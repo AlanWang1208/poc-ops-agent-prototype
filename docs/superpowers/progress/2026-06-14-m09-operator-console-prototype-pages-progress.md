@@ -78,3 +78,19 @@
   - `npm run check`：通过。
   - `npm run lint`：通过。
   - `npm run test`：通过，9 个测试文件，44 个测试。
+
+## Task 9：浏览器流程和桌面视觉验收
+
+- 状态：已完成。
+- 完成内容：
+  - 新增 Playwright 配置，覆盖 `1280px`、`1440px`、`1920px` 三个桌面视口。
+  - 新增端到端用例，使用浏览器级路由 Mock 控制面接口，覆盖登录页、Agent 工作台、Skill 注册中心和 SQL 工作台。
+  - 验证主导航、页面标题、关键数据、禁用态、SQL 校验提交和 DML 预检拒绝报告。
+  - 增加横向溢出断言，覆盖桌面视觉验收中的层级、间距和裁切风险。
+  - Playwright 配置支持通过 `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH` 使用本机 Chrome；CI 可继续使用标准 Playwright Chromium。
+  - Vitest 已排除 `tests/e2e/**`，避免单元测试误加载 Playwright 测试文件。
+- 验证证据：
+  - `npm run test:e2e`：通过，3 个桌面项目共 9 个浏览器测试。
+  - `npm run test`：通过，9 个测试文件，44 个测试。
+  - `npm run check`：通过。
+  - `npm run lint`：通过。
