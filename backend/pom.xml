@@ -20,6 +20,8 @@
     <junit.jupiter.version>5.11.4</junit.jupiter.version>
     <spring.boot.version>3.4.13</spring.boot.version>
     <springdoc.version>2.8.13</springdoc.version>
+    <calcite.version>1.42.0</calcite.version>
+    <jt400.version>21.0.6</jt400.version>
   </properties>
 
   <modules>
@@ -30,6 +32,16 @@
 
   <dependencyManagement>
     <dependencies>
+      <dependency>
+        <groupId>org.apache.calcite</groupId>
+        <artifactId>calcite-core</artifactId>
+        <version>${calcite.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>net.sf.jt400</groupId>
+        <artifactId>jt400</artifactId>
+        <version>${jt400.version}</version>
+      </dependency>
       <dependency>
         <groupId>org.junit.jupiter</groupId>
         <artifactId>junit-jupiter</artifactId>

@@ -5,6 +5,9 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import com.company.opsagent.contracts.events.SemanticEvent;
 import com.company.opsagent.contracts.events.SemanticEventType;
 import com.company.opsagent.contracts.events.WorkflowStartedPayload;
+import com.company.opsagent.contracts.sqlworkbench.SqlQueryAction;
+import com.company.opsagent.contracts.sqlworkbench.SqlQueryLimits;
+import com.company.opsagent.contracts.sqlworkbench.SqlQueryRequest;
 import com.company.opsagent.contracts.workflow.OperatorContext;
 import com.company.opsagent.contracts.workflow.PolicyDecisionReference;
 import com.company.opsagent.contracts.workflow.ReadOnlyCommandEnvelope;
@@ -47,5 +50,24 @@ class ContractsTest {
         OffsetDateTime.now(),
         SemanticEventType.SKILL_ROUTED,
         new WorkflowStartedPayload(SemanticEventType.WORKFLOW_STARTED, "command-1", "operator-1")));
+  }
+
+  @Test
+  void rejectsProductionSqlWorkbenchRequests() {
+    assertThrows(IllegalArgumentException.class, () -> new SqlQueryRequest(
+        "1.0",
+        "as400-production",
+        "production",
+        "ORDERS",
+        SqlQueryAction.RUN_READ_ONLY,
+        "select * from orders",
+        List.of(),
+        new SqlQueryLimits(100, 1_000_000, 30),
+        "sql-query-1"));
+  }
+
+  @Test
+  void rejectsInvalidSqlQueryLimits() {
+    assertThrows(IllegalArgumentException.class, () -> new SqlQueryLimits(0, 1_000_000, 30));
   }
 }

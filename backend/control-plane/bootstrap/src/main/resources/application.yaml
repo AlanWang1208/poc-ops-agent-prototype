@@ -76,6 +76,12 @@ ops-agent:
       internal.agent.diagnostics.read:
         - ROLE_ops-reader
         - ROLE_ops-admin
+      internal.sql-workbench.connections.read:
+        - ROLE_ops-reader
+        - ROLE_ops-admin
+      internal.sql-workbench.queries.validate:
+        - ROLE_ops-reader
+        - ROLE_ops-admin
       internal.identity.password-reset:
         - ROLE_ops-admin
   worker:

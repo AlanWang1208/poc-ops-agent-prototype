@@ -18,6 +18,13 @@
 - 在运行时从公网安装依赖。
 - 将 Job Object 或 WDAC 视为完整隔离。
 
+## SQL 工作台 P1 边界
+
+- SQL 查询入口会在 Worker 内再次使用 AST 校验，只接受单条 `SELECT`。
+- JTOpen 仅用于 Db2 for i JDBC 适配，不允许控制面或浏览器直接连接 AS/400。
+- 当前默认执行器未配置真实连接和 KeyStore，收到通过校验的查询后会明确失败。
+- P1 真实联调允许管理员启动时人工解锁 Java KeyStore；P2 前必须替换为无人值守安全解锁。
+
 ## 构建结构
 
 执行 Worker 现在是标准 Maven 模块，包含 `pom.xml`、`src/main/java` 和 `src/test/java`。

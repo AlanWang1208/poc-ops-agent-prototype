@@ -70,6 +70,8 @@ import org.springframework.test.web.reactive.server.WebTestClient;
     "ops-agent.policy.required-roles-by-action.internal.routing.skills.read[1]=ROLE_ops-admin",
     "ops-agent.policy.required-roles-by-action.internal.agent.diagnostics.read[0]=ROLE_ops-reader",
     "ops-agent.policy.required-roles-by-action.internal.agent.diagnostics.read[1]=ROLE_ops-admin",
+    "ops-agent.policy.required-roles-by-action.internal.sql-workbench.connections.read[0]=ROLE_ops-reader",
+    "ops-agent.policy.required-roles-by-action.internal.sql-workbench.queries.validate[0]=ROLE_ops-reader",
     "ops-agent.skill-registry.root-path=target/test-classes/skills",
     "ops-agent.skill-registry.signature-required=true",
     "ops-agent.skill-registry.signing-secret=ops-agent-skill-signing-key-2026-06-06-0001",
@@ -362,6 +364,45 @@ class ControlPlaneApplicationTest {
         .expectStatus().isEqualTo(503)
         .expectBody()
         .jsonPath("$.code").isEqualTo("AGENT_RUNTIME_DISABLED");
+  }
+
+  @Test
+  void exposesOnlyDevelopmentAndTestSqlConnections() {
+    webTestClient.get()
+        .uri("/internal/sql-workbench/connections")
+        .headers(headers -> headers.setBearerAuth(token("alice", List.of("ops-reader"), "ops-agent-internal")))
+        .exchange()
+        .expectStatus().isOk()
+        .expectBody()
+        .jsonPath("$[0].connectionId").isEqualTo("as400-development")
+        .jsonPath("$[1].connectionId").isEqualTo("as400-test")
+        .jsonPath("$[?(@.targetEnvironment == 'production')]").isEmpty();
+  }
+
+  @Test
+  void preflightsDmlWithoutExecutingIt() {
+    webTestClient.post()
+        .uri("/internal/sql-workbench/queries/validate")
+        .headers(headers -> headers.setBearerAuth(token("alice", List.of("ops-reader"), "ops-agent-internal")))
+        .contentType(APPLICATION_JSON)
+        .bodyValue("""
+            {
+              "contractVersion": "1.0",
+              "connectionId": "as400-development",
+              "targetEnvironment": "development",
+              "schema": "ORDERS",
+              "action": "PREFLIGHT_DML",
+              "sql": "update ORDERS.ORDERS set status = 'READY' where order_id = 42",
+              "parameters": [],
+              "limits": {"maxRows": 500, "maxBytes": 5000000, "timeoutSeconds": 30},
+              "idempotencyKey": "sql-preflight-1"
+            }
+            """)
+        .exchange()
+        .expectStatus().isOk()
+        .expectBody()
+        .jsonPath("$.statementType").isEqualTo("UPDATE")
+        .jsonPath("$.validationLevel").isEqualTo("PARTIAL");
   }
 
   @Test
