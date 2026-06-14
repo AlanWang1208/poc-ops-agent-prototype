@@ -2,6 +2,7 @@ import { Navigate, Route, Routes } from "react-router-dom";
 
 import { PageHeader } from "../components/layout/PageHeader.jsx";
 import { Card } from "../components/primitives/Card.jsx";
+import { AgentWorkspacePage } from "../features/agent-workspace/AgentWorkspacePage.jsx";
 import { LoginPage } from "../features/auth/LoginPage.jsx";
 import { ProtectedRoute } from "../features/auth/ProtectedRoute.jsx";
 import { useSession } from "../features/auth/use-session.js";
@@ -42,10 +43,7 @@ export function AppRouter() {
       <Route
         element={
           <ProtectedRoute>
-            <ProtectedPlaceholder
-              description="查看只读 Skill 候选与可审计计划摘要。"
-              title="Agent 工作台"
-            />
+            <AgentWorkspacePage />
           </ProtectedRoute>
         }
         path="/agent"

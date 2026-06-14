@@ -28,3 +28,19 @@
   - `npm run check`：通过。
   - `npm run lint`：通过。
   - `npm run test`：通过，6 个测试文件，33 个测试。
+
+## Task 6：Agent 工作台
+
+- 状态：已完成。
+- 完成内容：
+  - 新增 Agent 工作台页面和候选 Skill 查询 Hook。
+  - 调用 `/internal/routing/skills/search`，请求条件固定为 P1 只读、已验证发布候选。
+  - 展示真实候选 Skill、Owner、版本、发布快照、评分和匹配规则。
+  - 任务发送入口保持禁用，并显示“通用 Agent 对话接口尚未开放”。
+  - 服务端 `403` 和真实空候选均进入明确反馈状态，不使用 Mock 成功数据。
+  - 页面不展示模型内部推理。
+- 验证证据：
+  - `npm run test -- src/features/agent-workspace/AgentWorkspacePage.test.jsx`：通过，3 个测试。
+  - `npm run check`：通过。
+  - `npm run lint`：通过。
+  - `npm run test`：通过，7 个测试文件，36 个测试。

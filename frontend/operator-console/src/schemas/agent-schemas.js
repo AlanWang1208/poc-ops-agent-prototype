@@ -7,6 +7,10 @@ import {
   skillRiskLevelSchema,
 } from "./skill-schemas.js";
 
+/**
+ * @typedef {z.infer<typeof skillRouteCandidateSchema>} SkillRouteCandidate
+ */
+
 const nonBlankString = z.string().trim().min(1);
 
 export const skillRoutingRequestSchema = z
