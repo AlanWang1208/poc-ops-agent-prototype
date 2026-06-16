@@ -3,7 +3,9 @@ import { Navigate, Route, Routes } from "react-router-dom";
 import { AppShell } from "../components/layout/AppShell.jsx";
 import { PageHeader } from "../components/layout/PageHeader.jsx";
 import { Card } from "../components/primitives/Card.jsx";
+import { AgentWorkspacePage } from "../features/agent-workspace/AgentWorkspacePage.jsx";
 import { LoginPage } from "../features/auth/LoginPage.jsx";
+import { SqlWorkbenchPage } from "../features/sql-workbench/SqlWorkbenchPage.jsx";
 
 /**
  * @param {{title: string, description: string}} props
@@ -26,10 +28,9 @@ export function AppRouter() {
       <Route element={<LoginPage />} path="/login" />
       <Route
         element={
-          <ProtectedPlaceholder
-            description="查看只读 Skill 候选与可审计计划摘要。"
-            title="Agent 工作台"
-          />
+          <AppShell>
+            <AgentWorkspacePage />
+          </AppShell>
         }
         path="/agent"
       />
@@ -43,12 +44,7 @@ export function AppRouter() {
         path="/skills"
       />
       <Route
-        element={
-          <ProtectedPlaceholder
-            description="校验开发与测试环境中的 SQL。"
-            title="SQL 工作台"
-          />
-        }
+        element={<SqlWorkbenchPage />}
         path="/sql"
       />
       <Route element={<Navigate replace to="/login" />} path="*" />

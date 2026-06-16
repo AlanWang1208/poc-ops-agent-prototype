@@ -118,11 +118,77 @@ describe("operator console routes", () => {
     );
   });
 
-  it("pins the login card to the content baseline instead of viewport center", () => {
+  it("adds a lightweight frame without changing the existing login card layout", () => {
+    const screenRule = loginCss.match(/[.]screen\s*[{][^}]+[}]/u)?.[0] ?? "";
+    const screenBackdropRule =
+      loginCss.match(/[.]screen::after\s*[{][^}]+[}]/u)?.[0] ?? "";
+    const loginHeroEffectRule =
+      loginCss.match(/[.]loginHeroEffect\s*[{][^}]+[}]/u)?.[0] ?? "";
+    const taskCardRule = loginCss.match(/[.]taskCard\s*[{][^}]+[}]/u)?.[0] ?? "";
+    const capabilityFlowRule =
+      loginCss.match(/[.]capabilityFlow\s*[{][^}]+[}]/u)?.[0] ?? "";
+    const loginShellRule =
+      loginCss.match(/[.]loginShell\s*[{][^}]+[}]/u)?.[0] ?? "";
+    const loginShellFrameRule =
+      loginCss.match(/[.]loginShell::before\s*[{][^}]+[}]/u)?.[0] ?? "";
+    const loginModeStripRule =
+      loginCss.match(/[.]loginModeStrip\s*[{][^}]+[}]/u)?.[0] ?? "";
+    const loginShellHaloRule =
+      loginCss.match(/[.]loginShell::after\s*[{][^}]+[}]/u)?.[0] ?? "";
+    const frameActiveTrackRule = loginCss.match(/[.]frameActiveTrack\b/u)?.[0] ?? "";
+    const frameIonTailRule =
+      Array.from(loginCss.matchAll(/[.]frameIonTail\s*[{][^}]+[}]/gu))
+        .map((match) => match[0])
+        .find((rule) => rule.includes("width: 72px")) ?? "";
     const loginCardRule = loginCss.match(/[.]loginCard\s*[{][^}]+[}]/u)?.[0] ?? "";
 
+    expect(loginShellRule).toContain("isolation: isolate");
+    expect(loginShellRule).toContain("grid-template-columns: 720px 560px");
+    expect(loginShellRule).toContain("align-items: start");
+    expect(loginShellRule).toContain("padding: 90px 40px 86px");
+    expect(screenRule).toContain("--login-frame-height: min(720px, calc(100vh - 132px))");
+    expect(screenRule).toContain(
+      "--login-frame-y: calc((100vh - var(--login-frame-height)) / 2 - var(--login-frame-top))",
+    );
+    expect(loginShellRule).toContain("transform: translate(-50%, var(--login-frame-y))");
+    expect(loginHeroEffectRule).toContain(
+      "top: calc(var(--login-frame-y) + var(--login-frame-top) - 2px)",
+    );
+    expect(loginHeroEffectRule).toContain("right: max(24px, calc(50% - 646px))");
+    expect(loginHeroEffectRule).toContain("transform: translateY(5px)");
+    expect(taskCardRule).toContain("left: 320px");
+    expect(taskCardRule).toContain("width: 176px");
+    expect(capabilityFlowRule).toContain("right: 51px");
+    expect(capabilityFlowRule).toContain("left: 73px");
+    expect(loginModeStripRule).toContain("transform: translateY(-2px)");
+    expect(loginShellRule).toContain("--frame-height: var(--login-frame-height)");
+    expect(loginShellFrameRule).toContain(
+      "inset: var(--frame-top) var(--frame-inset-x) auto",
+    );
+    expect(loginShellFrameRule).toContain("height: var(--frame-height)");
+    expect(loginShellFrameRule).toContain("border: 1px solid rgba(166, 64, 92, 0.26)");
+    expect(loginShellFrameRule).toContain("background: transparent");
+    expect(loginShellFrameRule).toContain("0 18px 56px rgba(31, 41, 51, 0.055)");
+    expect(loginShellFrameRule).toContain("inset 0 1px 0 rgba(255, 255, 255, 0.7)");
+    expect(loginShellFrameRule).not.toContain("no-repeat");
+    expect(loginShellFrameRule).not.toContain("outline:");
+    expect(loginShellFrameRule).not.toContain("mask-composite");
+    expect(loginShellFrameRule).toContain("border-radius: 22px");
+    expect(loginShellHaloRule).toContain("animation: frame-ion-track 16s linear infinite");
+    expect(loginShellHaloRule).toContain("width: 22px");
+    expect(loginShellHaloRule).toContain("conic-gradient");
+    expect(loginShellHaloRule).toContain("rgba(34, 126, 166, 0.72)");
+    expect(loginShellHaloRule).toContain("rgba(31, 154, 108, 0.62)");
+    expect(loginShellHaloRule).not.toContain("filter: blur");
+    expect(loginShellHaloRule).not.toContain("mask-composite");
+    expect(frameActiveTrackRule).toBe("");
+    expect(loginCss).not.toContain("frame-active-track");
+    expect(frameIonTailRule).toContain("width: 72px");
+    expect(frameIonTailRule).toContain("transform-origin: right center");
+    expect(frameIonTailRule).toContain("animation: frame-ion-tail 16s linear infinite");
+    expect(screenBackdropRule).toContain("radial-gradient");
+    expect(screenBackdropRule).toContain("linear-gradient(180deg");
     expect(loginCardRule).toContain("align-self: start");
-    expect(loginCardRule).not.toContain("align-self: center");
     expect(loginCardRule).not.toContain("transform: translateY");
   });
 });

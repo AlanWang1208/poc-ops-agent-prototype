@@ -21,6 +21,10 @@ const screenIonSpecs = [
   ["screenIonSmall", "screenIonGreen", "screenIonLaneTen"],
   ["screenIonTiny", "screenIonRed", "screenIonLaneEleven"],
   ["screenIonMedium", "screenIonBlue", "screenIonLaneTwelve"],
+  ["screenIonMedium", "screenIonBlue", "screenIonLaneThirteen", "screenIonGlow"],
+  ["screenIonSmall", "screenIonRed", "screenIonLaneFourteen", "screenIonHalo"],
+  ["screenIonTiny", "screenIonGreen", "screenIonLaneFifteen", "screenIonGlow"],
+  ["screenIonSmall", "screenIonGold", "screenIonLaneSixteen", "screenIonHalo"],
 ];
 
 /**
@@ -31,10 +35,18 @@ export function LoginPage() {
     <main className={styles.board}>
       <section className={styles.screen}>
         <div aria-hidden="true" className={styles.screenIonField}>
-          {screenIonSpecs.map(([size, tone, lane], index) => (
+          {screenIonSpecs.map(([size, tone, lane, variant], index) => (
             <i
               aria-hidden="true"
-              className={`${styles.screenIon} ${styles[size]} ${styles[tone]} ${styles[lane]}`}
+              className={[
+                styles.screenIon,
+                styles[size],
+                styles[tone],
+                styles[lane],
+                variant ? styles[variant] : "",
+              ]
+                .filter(Boolean)
+                .join(" ")}
               data-screen-ion=""
               key={`${lane}-${index}`}
             />
@@ -66,6 +78,7 @@ export function LoginPage() {
         </div>
 
         <div className={styles.loginShell}>
+          <span aria-hidden="true" className={styles.frameIonTail} />
           <div className={styles.loginCopy}>
             <span className={styles.loginKicker}>SECURE OPERATOR ENTRY</span>
             <h1>企业智能运维工作台</h1>
