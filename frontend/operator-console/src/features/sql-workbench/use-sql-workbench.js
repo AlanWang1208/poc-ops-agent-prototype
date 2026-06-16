@@ -4,10 +4,8 @@ import { listSqlConnections, validateSqlQuery } from "../../api/sql-api.js";
 
 export function useSqlConnections() {
   return useQuery({
-    queryKey: ["sql-connections"],
+    queryKey: ["sql-workbench", "connections"],
     queryFn: listSqlConnections,
-    staleTime: 30_000,
-    retry: false,
   });
 }
 
@@ -16,4 +14,3 @@ export function useValidateSqlQuery() {
     mutationFn: validateSqlQuery,
   });
 }
-

@@ -1,175 +1,160 @@
 import { http, HttpResponse } from "msw";
 import { MemoryRouter } from "react-router-dom";
-import { render, screen } from "@testing-library/react";
+import { describe, expect, test } from "vitest";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, test, vi } from "vitest";
 
 import App from "../../app/App.jsx";
 import { AppProviders } from "../../app/providers.jsx";
 import { server } from "../../test/server.js";
 
-vi.mock("@monaco-editor/react", () => ({
-  default: (/** @type {{value: string, onChange: (value: string) => void}} */ props) => {
-    const editorProps = /** @type {{value: string, onChange: (value: string) => void}} */ (props);
-    return (
-      <textarea
-        aria-label="SQL 编辑器"
-        onChange={(event) => editorProps.onChange(event.target.value)}
-        value={editorProps.value}
-      />
-    );
-  },
-}));
-
-function renderSqlWorkbench() {
+/**
+ * @param {string} path
+ */
+function renderAt(path) {
   return render(
-    <AppProviders Router={MemoryRouter} routerProps={{ initialEntries: ["/sql"] }}>
+    <AppProviders Router={MemoryRouter} routerProps={{ initialEntries: [path] }}>
       <App />
     </AppProviders>,
   );
 }
 
-function useAuthenticatedSession() {
-  server.use(
-    http.get("/auth/session", () =>
-      HttpResponse.json({
-        authenticated: true,
-        subject: "alice-id",
-        username: "alice",
-        roles: ["ROLE_ops-reader"],
-        authenticationType: "built-in",
-      }),
-    ),
-  );
-}
-
 describe("SqlWorkbenchPage", () => {
-  test("renders development and test connections with disabled AI assistant", async () => {
-    useAuthenticatedSession();
+  test("renders the SQL workbench from real connection catalog data", async () => {
     server.use(
       http.get("/internal/sql-workbench/connections", () =>
-        HttpResponse.json([developmentConnection, testConnection]),
+        HttpResponse.json(sqlConnections),
+      ),
+      http.post("/internal/sql-workbench/queries/validate", () =>
+        HttpResponse.json(validatedSelectReport),
       ),
     );
 
-    renderSqlWorkbench();
+    renderAt("/sql");
 
-    expect(await screen.findByText("as400-development")).toBeInTheDocument();
-    expect(screen.getByText("as400-test")).toBeInTheDocument();
+    expect(await screen.findByText("已连接 · 开发环境")).toBeInTheDocument();
+    expect(screen.getAllByText("as400-development").length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText("ORDERS").length).toBeGreaterThanOrEqual(1);
     expect(screen.queryByText("production")).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "校验只读执行" })).toBeEnabled();
+    expect(
+      screen.getByRole("button", { name: "校验只读执行" }),
+    ).toBeEnabled();
     expect(screen.getByRole("button", { name: "DML 预检" })).toBeEnabled();
     expect(screen.getByRole("button", { name: "询问 AI" })).toBeDisabled();
+    expect(screen.queryByText("Commit")).not.toBeInTheDocument();
+    expect(screen.queryByText("Rollback")).not.toBeInTheDocument();
   });
 
-  test("sends a versioned validation request and renders the report", async () => {
-    useAuthenticatedSession();
+  test("submits versioned SQL validation requests and renders server reports", async () => {
     const user = userEvent.setup();
     /** @type {unknown[]} */
     const requests = [];
     server.use(
       http.get("/internal/sql-workbench/connections", () =>
-        HttpResponse.json([developmentConnection]),
+        HttpResponse.json(sqlConnections),
       ),
       http.post("/internal/sql-workbench/queries/validate", async ({ request }) => {
         requests.push(await request.json());
-        return HttpResponse.json(validationReport);
+        return HttpResponse.json(rejectedDmlReport);
       }),
     );
 
-    renderSqlWorkbench();
+    renderAt("/sql");
 
-    await screen.findByText("as400-development");
-    await user.click(screen.getByRole("button", { name: "校验只读执行" }));
+    await screen.findByText("已连接 · 开发环境");
+    await user.click(screen.getByRole("button", { name: "DML 预检" }));
 
-    expect(await screen.findByText("VALIDATED")).toBeInTheDocument();
-    expect(await screen.findByText("sha256:query")).toBeInTheDocument();
-    expect(requests).toHaveLength(1);
+    await screen.findByText("REJECTED");
+    expect(screen.getByText("UPDATE_WITHOUT_BOUND_IMPACT")).toBeInTheDocument();
+    expect(screen.getAllByText("ORDERS.ORDERS").length).toBeGreaterThanOrEqual(1);
+    await waitFor(() => expect(requests).toHaveLength(1));
     expect(requests[0]).toMatchObject({
       contractVersion: "1.0",
       connectionId: "as400-development",
       targetEnvironment: "development",
       schema: "ORDERS",
-      action: "RUN_READ_ONLY",
+      action: "PREFLIGHT_DML",
+      parameters: [],
+      limits: { maxRows: 500, maxBytes: 5000000, timeoutSeconds: 30 },
     });
   });
 
-  test("does not render a production connection returned by an invalid contract", async () => {
-    useAuthenticatedSession();
+  test("blocks invalid production connection data at the contract boundary", async () => {
     server.use(
       http.get("/internal/sql-workbench/connections", () =>
         HttpResponse.json([
           {
-            ...developmentConnection,
+            ...sqlConnections[0],
             connectionId: "as400-production",
+            displayName: "AS/400 Production",
             targetEnvironment: "production",
           },
         ]),
       ),
     );
 
-    renderSqlWorkbench();
+    renderAt("/sql");
 
-    expect(
-      await screen.findByRole("alert", { name: "SQL 连接契约不兼容" }),
-    ).toBeInTheDocument();
+    expect(await screen.findByText("SQL 连接契约不兼容")).toBeInTheDocument();
     expect(screen.queryByText("as400-production")).not.toBeInTheDocument();
+    expect(screen.queryByText("AS/400 Production")).not.toBeInTheDocument();
   });
 
-  test("renders server rejection reasons without executing SQL", async () => {
-    useAuthenticatedSession();
-    const user = userEvent.setup();
+  test("keeps the AI assistant visibly disabled", async () => {
     server.use(
       http.get("/internal/sql-workbench/connections", () =>
-        HttpResponse.json([developmentConnection]),
-      ),
-      http.post("/internal/sql-workbench/queries/validate", () =>
-        HttpResponse.json({
-          ...validationReport,
-          validationLevel: "REJECTED",
-          rejectionReasons: ["DML execution is not allowed in P1"],
-          risks: ["WRITE_OPERATION"],
-          unverifiedItems: ["Target row count"],
-        }),
+        HttpResponse.json(sqlConnections),
       ),
     );
 
-    renderSqlWorkbench();
+    renderAt("/sql");
 
-    await screen.findByText("as400-development");
-    await user.click(screen.getByRole("button", { name: "DML 预检" }));
-
-    expect(await screen.findByText("REJECTED")).toBeInTheDocument();
-    expect(screen.getByText("DML execution is not allowed in P1")).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Commit" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Rollback" })).not.toBeInTheDocument();
+    await screen.findByText("AI SQL 助手");
+    expect(screen.getByRole("button", { name: "询问 AI" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "查看建议修改" })).toBeDisabled();
+    expect(screen.getByText("潜在逻辑错误")).toBeInTheDocument();
   });
 });
 
-const developmentConnection = {
-  contractVersion: "1.0",
-  connectionId: "as400-development",
-  displayName: "AS/400 Development",
-  targetEnvironment: "development",
-  platformType: "DB2_FOR_I",
-  allowedSchemas: ["ORDERS"],
-  capabilities: ["VALIDATE", "RUN_READ_ONLY", "PREFLIGHT_DML"],
-};
+const sqlConnections = [
+  {
+    contractVersion: "1.0",
+    connectionId: "as400-development",
+    displayName: "AS/400 Development",
+    targetEnvironment: "development",
+    platformType: "DB2_FOR_I",
+    allowedSchemas: ["ORDERS", "INVENTORY"],
+    capabilities: ["VALIDATE", "RUN_READ_ONLY", "PREFLIGHT_DML"],
+  },
+  {
+    contractVersion: "1.0",
+    connectionId: "as400-test",
+    displayName: "AS/400 Test",
+    targetEnvironment: "test",
+    platformType: "DB2_FOR_I",
+    allowedSchemas: ["ORDERS_QA"],
+    capabilities: ["VALIDATE", "RUN_READ_ONLY", "PREFLIGHT_DML"],
+  },
+];
 
-const testConnection = {
-  ...developmentConnection,
-  connectionId: "as400-test",
-  displayName: "AS/400 Test",
-  targetEnvironment: "test",
-};
-
-const validationReport = {
+const validatedSelectReport = {
   contractVersion: "1.0",
   statementType: "SELECT",
   validationLevel: "VALIDATED",
-  sqlHash: "sha256:query",
+  sqlHash: "sha256:select-pending-orders",
   referencedObjects: ["ORDERS.ORDERS"],
   risks: [],
   rejectionReasons: [],
   unverifiedItems: [],
+};
+
+const rejectedDmlReport = {
+  contractVersion: "1.0",
+  statementType: "UPDATE",
+  validationLevel: "REJECTED",
+  sqlHash: "sha256:update-review-required",
+  referencedObjects: ["ORDERS.ORDERS"],
+  risks: ["DML_PRECHECK_ONLY"],
+  rejectionReasons: ["UPDATE_WITHOUT_BOUND_IMPACT"],
+  unverifiedItems: ["affectedRows"],
 };

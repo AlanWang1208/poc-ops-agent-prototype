@@ -1,29 +1,12 @@
 import { render, screen } from "@testing-library/react";
-import { http, HttpResponse } from "msw";
 import { describe, expect, it } from "vitest";
 import { MemoryRouter } from "react-router-dom";
 
 import App from "./App.jsx";
 import { AppProviders } from "./providers.jsx";
-import { server } from "../test/server.js";
 
 describe("App", () => {
-  it("mounts with the application providers and an injected memory router", async () => {
-    server.use(
-      http.get("/auth/session", () =>
-        HttpResponse.json(
-          {
-            authenticated: false,
-            subject: null,
-            username: null,
-            roles: [],
-            authenticationType: "anonymous",
-          },
-          { status: 401 },
-        ),
-      ),
-    );
-
+  it("mounts with the application providers and an injected memory router", () => {
     render(
       <AppProviders
         Router={MemoryRouter}
@@ -34,7 +17,8 @@ describe("App", () => {
     );
 
     expect(
-      await screen.findByRole("heading", { name: "操作员登录" }),
+      screen.getByRole("heading", { name: "企业智能运维工作台" }),
     ).toBeInTheDocument();
+    expect(screen.getByText("SECURE OPERATOR ENTRY")).toBeInTheDocument();
   });
 });

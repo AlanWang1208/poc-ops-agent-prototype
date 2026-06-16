@@ -1,346 +1,614 @@
 import { useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 
 import { ApiError } from "../../api/client.js";
-import { StatusPill } from "../../components/data-display/StatusPill.jsx";
-import { FeedbackState } from "../../components/feedback/FeedbackState.jsx";
-import { PageHeader } from "../../components/layout/PageHeader.jsx";
-import { Button } from "../../components/primitives/Button.jsx";
-import { SqlEditor } from "./SqlEditor.jsx";
 import { useSqlConnections, useValidateSqlQuery } from "./use-sql-workbench.js";
 import styles from "./SqlWorkbenchPage.module.css";
 
-const defaultSql = "SELECT *\nFROM ORDERS.ORDERS\nFETCH FIRST 100 ROWS ONLY";
-/** @type {import("../../schemas/sql-schemas.js").SqlConnectionSummary[]} */
-const emptyConnections = [];
+const DEFAULT_SQL = `SELECT o.order_id, o.status, o.amount, o.customer_id, o.created_at
+FROM ORDERS.ORDERS o
+WHERE o.status = 'PENDING'
+  AND o.created_at > CURRENT_DATE - 7 DAYS
+ORDER BY o.created_at DESC
+FETCH FIRST 100 ROWS ONLY;
+
+UPDATE ORDERS.ORDERS
+SET status = 'REVIEW_REQUIRED'
+WHERE user_id = :userId;`;
+
+const DEFAULT_CONNECTION = {
+  contractVersion: "1.0",
+  connectionId: "as400-development",
+  displayName: "AS/400 Development",
+  targetEnvironment: "development",
+  platformType: "DB2_FOR_I",
+  allowedSchemas: ["ORDERS", "INVENTORY"],
+  capabilities: ["VALIDATE", "RUN_READ_ONLY", "PREFLIGHT_DML"],
+};
+
+const QUERY_LIMITS = {
+  maxRows: 500,
+  maxBytes: 5_000_000,
+  timeoutSeconds: 30,
+};
+
+const sampleRows = [
+  ["1", "OD-10482", "PENDING", "428.00", "C-***921", "2026-06-13 10:42"],
+  ["2", "OD-10483", "PENDING", "1,280.00", "C-***104", "2026-06-13 10:38"],
+  ["3", "OD-10491", "PENDING", "86.50", "C-***672", "2026-06-13 10:31"],
+  ["4", "OD-10496", "PENDING", "709.00", "C-***338", "2026-06-13 10:24"],
+  ["5", "OD-10502", "PENDING", "219.90", "C-***517", "2026-06-13 10:18"],
+  ["6", "OD-10507", "PENDING", "3,460.00", "C-***286", "2026-06-13 10:11"],
+  ["7", "OD-10511", "PENDING", "156.80", "C-***843", "2026-06-13 10:05"],
+  ["8", "OD-10518", "PENDING", "982.00", "C-***459", "2026-06-13 09:57"],
+  ["9", "OD-10523", "PENDING", "64.50", "C-***730", "2026-06-13 09:49"],
+  ["10", "OD-10529", "PENDING", "1,875.20", "C-***195", "2026-06-13 09:42"],
+];
+
+const navItems = [
+  { label: "总览", accent: "var(--red)" },
+  { label: "Agent 工作区", href: "/agent", accent: "var(--blue)" },
+  { label: "RAG 问答", accent: "#2d8aa5" },
+  { label: "SQL 工作台", href: "/sql", accent: "#256f86", active: true },
+  { label: "诊断工作台", accent: "var(--yellow)" },
+  { label: "Skill 注册中心", href: "/skills", accent: "var(--green)" },
+  { label: "工作流事件", accent: "#7b8fa7" },
+  { label: "审计记录", accent: "var(--dark)" },
+];
+
+const aiFindings = [
+  {
+    action: "查看建议修改",
+    body: "UPDATE 仅按 user_id 过滤，可能修改该用户全部历史订单。建议增加 status 与时间范围条件。",
+    title: "潜在逻辑错误",
+    tone: "var(--red)",
+  },
+  {
+    action: "生成索引建议",
+    body: "查询按 status、created_at 过滤并排序。当前索引仅覆盖 status，可能产生额外排序。",
+    title: "性能风险",
+    tone: "var(--yellow)",
+  },
+  {
+    action: "对比优化前后",
+    body: "预计扫描 18,420 行，返回 86 行。建议复合索引 (status, created_at DESC)。",
+    title: "执行计划摘要",
+    tone: "var(--blue)",
+  },
+  {
+    body: "未发现空值异常；amount 分布与过去 7 天基线一致。",
+    title: "结果检查",
+    tone: "var(--green)",
+  },
+];
 
 export function SqlWorkbenchPage() {
-  const connections = useSqlConnections();
-  const validation = useValidateSqlQuery();
-  const safeConnections = connections.data ?? emptyConnections;
-  const [connectionId, setConnectionId] = useState("");
+  const connectionsQuery = useSqlConnections();
+  const validateMutation = useValidateSqlQuery();
+  const connections = useMemo(
+    () => connectionsQuery.data ?? [],
+    [connectionsQuery.data],
+  );
+  const [selectedConnectionOverride, setSelectedConnectionOverride] =
+    useState("");
+  const [sql] = useState(DEFAULT_SQL);
+
+  const selectedConnectionId =
+    selectedConnectionOverride || connections[0]?.connectionId || "";
   const selectedConnection = useMemo(
     () =>
-      safeConnections.find((connection) => connection.connectionId === connectionId) ??
-      safeConnections[0] ??
-      null,
-    [connectionId, safeConnections],
+      connections.find(
+        (connection) => connection.connectionId === selectedConnectionId,
+      ) ?? connections[0],
+    [connections, selectedConnectionId],
   );
-  const [schema, setSchema] = useState("");
-  const selectedSchema =
-    selectedConnection?.allowedSchemas.includes(schema)
-      ? schema
-      : (selectedConnection?.allowedSchemas[0] ?? "");
-  const canRunReadOnly =
-    selectedConnection?.capabilities.includes("RUN_READ_ONLY") ?? false;
+
+  if (connectionsQuery.error) {
+    const title =
+      connectionsQuery.error instanceof ApiError &&
+      connectionsQuery.error.kind === "contract"
+        ? "SQL 连接契约不兼容"
+        : "SQL 连接加载失败";
+
+    return (
+      <PrototypeScreen>
+        <Notice
+          detail="页面已阻止异常连接数据进入工作台，请检查控制面返回契约。"
+          title={title}
+        />
+      </PrototypeScreen>
+    );
+  }
+
+  const activeConnection = selectedConnection ?? DEFAULT_CONNECTION;
+  const selectedSchema = activeConnection.allowedSchemas[0] || "ORDERS";
+  const canValidateReadOnly =
+    activeConnection.capabilities.includes("RUN_READ_ONLY");
   const canPreflightDml =
-    selectedConnection?.capabilities.includes("PREFLIGHT_DML") ?? false;
-  const [sql, setSql] = useState(defaultSql);
+    activeConnection.capabilities.includes("PREFLIGHT_DML");
 
   /**
    * @param {"RUN_READ_ONLY" | "PREFLIGHT_DML"} action
    */
   function submitValidation(action) {
-    if (!selectedConnection || !selectedSchema) {
-      return;
-    }
-    if (!selectedConnection.capabilities.includes(action)) {
+    if (!selectedConnection) {
       return;
     }
 
-    validation.mutate({
+    validateMutation.mutate({
       contractVersion: "1.0",
-      connectionId: selectedConnection.connectionId,
-      targetEnvironment: selectedConnection.targetEnvironment,
+      connectionId: activeConnection.connectionId,
+      targetEnvironment: activeConnection.targetEnvironment,
       schema: selectedSchema,
       action,
       sql,
       parameters: [],
-      limits: {
-        maxRows: 500,
-        maxBytes: 5_000_000,
-        timeoutSeconds: 30,
-      },
-      idempotencyKey: buildIdempotencyKey(action),
+      limits: QUERY_LIMITS,
+      idempotencyKey: createSqlIdempotencyKey(action),
     });
   }
 
   return (
-    <div className={styles.page}>
-      <PageHeader
-        description="面向开发与测试环境的 SQL 校验入口。页面只提交版本化校验请求，不提供生产连接和写执行控制。"
-        title="SQL 工作台"
-      />
-      <SqlConnectionState query={connections}>
-        <div className={styles.layout}>
-          <section aria-label="SQL 连接" className={styles.panel}>
-            <h2>连接</h2>
-            <ConnectionList
-              connections={safeConnections}
-              selectedConnectionId={selectedConnection?.connectionId ?? ""}
-              onSelect={(nextConnection) => {
-                setConnectionId(nextConnection.connectionId);
-                setSchema(nextConnection.allowedSchemas[0]);
-              }}
-            />
-          </section>
-          <section aria-label="SQL 编辑与校验" className={styles.editorPanel}>
-            <h2>查询</h2>
-            <div className={styles.form}>
-              <label>
-                Schema
-                <select
-                  disabled={!selectedConnection}
-                  onChange={(event) => setSchema(event.target.value)}
-                  value={selectedSchema}
-                >
-                  {(selectedConnection?.allowedSchemas ?? []).map((allowedSchema) => (
-                    <option key={allowedSchema} value={allowedSchema}>
-                      {allowedSchema}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <div className={styles.editorFrame}>
-                <SqlEditor onChange={setSql} value={sql} />
+    <PrototypeScreen
+      connectionId={activeConnection.connectionId}
+      environment={activeConnection.targetEnvironment}
+      isLoading={connectionsQuery.isLoading}
+      onConnectionChange={setSelectedConnectionOverride}
+    >
+      <section className={styles.sqlLayout}>
+        <div className={`${styles.sqlCard} ${styles.mainCard}`}>
+          <div className={styles.dbWorkbench}>
+            <DatabaseObjectsPanel connection={activeConnection} />
+
+            <section aria-label="查询编辑器" className={styles.dbMain}>
+              <div className={styles.dbFileTabs}>
+                <span className={styles.dbObjectRestore} title="展开数据库对象">
+                  →
+                </span>
+                <span className={styles.active}>orders_pending.sql ×</span>
+                <span>order_fix.sql ×</span>
+                <span>＋</span>
+                <i>Ln 7, Col 18 · UTF-8</i>
               </div>
-              <div className={styles.actions}>
-                <Button
-                  disabled={!canRunReadOnly || validation.isPending}
+              <div className={styles.dbEditorToolbar}>
+                <button
+                  aria-label="校验只读执行"
+                  className={styles.run}
+                  disabled={!canValidateReadOnly || validateMutation.isPending}
                   onClick={() => submitValidation("RUN_READ_ONLY")}
+                  type="button"
                 >
-                  校验只读执行
-                </Button>
-                <Button
-                  disabled={!canPreflightDml || validation.isPending}
+                  ▶ 执行当前语句
+                </button>
+                <button
+                  aria-label="DML 预检"
+                  disabled={!canPreflightDml || validateMutation.isPending}
                   onClick={() => submitValidation("PREFLIGHT_DML")}
-                  variant="secondary"
+                  type="button"
                 >
-                  DML 预检
-                </Button>
-                <Button disabled variant="secondary">
-                  询问 AI
-                </Button>
+                  ▷ 执行脚本
+                </button>
+                <span className={styles.stop}>■ 停止</span>
+                <span>Explain</span>
+                <span>格式化</span>
+                <span>保存</span>
+                <em>Ctrl+Enter 执行当前语句</em>
               </div>
-            </div>
-            <ValidationState mutation={validation} />
-          </section>
+
+              <SqlCodeBlock />
+
+              <QueryResultPanel
+                error={validateMutation.error}
+                isPending={validateMutation.isPending}
+                report={validateMutation.data}
+              />
+            </section>
+
+            <AiAssistantPanel />
+          </div>
         </div>
-      </SqlConnectionState>
-    </div>
+      </section>
+    </PrototypeScreen>
   );
 }
 
 /**
  * @param {{
- *   query: ReturnType<typeof useSqlConnections>,
- *   children: import("react").ReactNode
+ *   children?: import("react").ReactNode,
+ *   connectionId?: string,
+ *   environment?: string,
+ *   isLoading?: boolean,
+ *   onConnectionChange?: (connectionId: string) => void,
  * }} props
  */
-function SqlConnectionState({ query, children }) {
-  if (query.isPending) {
-    return (
-      <FeedbackState
-        message="正在读取控制面允许的 SQL 连接。"
-        state="loading"
-        title="SQL 连接读取中"
-      />
-    );
-  }
-
-  if (query.isError) {
-    const isForbidden = query.error instanceof ApiError && query.error.kind === "forbidden";
-    const isContract = query.error instanceof ApiError && query.error.kind === "contract";
-    return (
-      <FeedbackState
-        message={
-          isForbidden
-            ? "服务端策略拒绝读取 SQL 工作台连接。"
-            : "SQL 连接响应无法被操作台安全解析。"
-        }
-        state="error"
-        title={
-          isForbidden
-            ? "SQL 连接读取被拒绝"
-            : isContract
-              ? "SQL 连接契约不兼容"
-              : "SQL 连接读取失败"
-        }
-      />
-    );
-  }
-
-  if (!query.data?.length) {
-    return (
-      <FeedbackState
-        message="控制面当前没有返回开发或测试环境连接。"
-        state="empty"
-        title="没有可用 SQL 连接"
-      />
-    );
-  }
-
-  return children;
-}
-
-/**
- * @param {{
- *   connections: import("../../schemas/sql-schemas.js").SqlConnectionSummary[],
- *   selectedConnectionId: string,
- *   onSelect: (connection: import("../../schemas/sql-schemas.js").SqlConnectionSummary) => void
- * }} props
- */
-function ConnectionList({ connections, selectedConnectionId, onSelect }) {
+function PrototypeScreen({
+  children,
+  connectionId = "as400-development",
+  environment = "development",
+  isLoading = false,
+  onConnectionChange,
+}) {
   return (
-    <div className={styles.connectionList}>
-      {connections.map((connection) => (
-        <label className={styles.connectionOption} key={connection.connectionId}>
-          <input
-            checked={connection.connectionId === selectedConnectionId}
-            name="sql-connection"
-            onChange={() => onSelect(connection)}
-            type="radio"
-          />
-          <span>
-            <span className={styles.connectionTitle}>
-              <strong>{connection.connectionId}</strong>
-              <StatusPill tone="info">{connection.targetEnvironment}</StatusPill>
-            </span>
-            <span className={styles.muted}>{connection.displayName}</span>
-            <span className={styles.muted}>
-              {connection.platformType} · {connection.allowedSchemas.join(", ")}
-            </span>
+    <main className={styles.board}>
+      <section className={styles.screen} id="sql-workbench-screen">
+        <h1 className={styles.srOnly}>SQL 工作台</h1>
+        <PrototypeNav />
+        <AppCapsule />
+        <section aria-label="SQL 工作台连接状态" className={styles.sqlToolbar}>
+          <button
+            className={styles.filterSelect}
+            onClick={() => onConnectionChange?.(connectionId)}
+            title="开发环境连接目录"
+            type="button"
+          >
+            <b>连接</b>
+            <span>{connectionId}</span>
+          </button>
+          <div className={styles.filterSelect}>
+            <b>环境</b>
+            <span>{environment}</span>
+          </div>
+          <div className={styles.filterSelect}>
+            <b>事务</b>
+            <span>自动提交</span>
+          </div>
+          <span className={styles.workspaceExpand}>展开工作区</span>
+          <span className={styles.sqlRunState}>
+            {isLoading ? "正在连接 · 开发环境" : "已连接 · 开发环境"}
           </span>
-        </label>
-      ))}
+        </section>
+        {children}
+      </section>
+    </main>
+  );
+}
+
+function PrototypeNav() {
+  return (
+    <nav aria-label="SQL 工作台导航" className={styles.nav}>
+      {navItems.map((item) =>
+        item.href ? (
+          <Link
+            aria-current={item.active ? "page" : undefined}
+            className={item.active ? styles.navActive : undefined}
+            key={item.label}
+            to={item.href}
+            style={cssVars({ "--nav-accent": item.accent })}
+          >
+            {item.label}
+          </Link>
+        ) : (
+          <span
+            aria-disabled="true"
+            className={`${styles.navLink} ${item.active ? styles.navActive : ""}`}
+            key={item.label}
+            style={cssVars({ "--nav-accent": item.accent })}
+          >
+            {item.label}
+          </span>
+        ),
+      )}
+      <div aria-hidden="true" className={styles.navSpacer}>
+        <span />
+        <span />
+        <span />
+      </div>
+      <div className={styles.navTools}>
+        <div className={styles.search}>搜索连接 / 表 / SQL 指纹</div>
+        <div className={styles.navActions}>
+          <span className={styles.badge}>SQL 控制台</span>
+          <span className={styles.button}>新建会话</span>
+        </div>
+      </div>
+    </nav>
+  );
+}
+
+function AppCapsule() {
+  return (
+    <div className={styles.appCapsule}>
+      <div className={styles.logo}>EA</div>
+      <div className={styles.brandLockup}>
+        <span>企业智能 Agent</span>
+      </div>
+      <div className={styles.capsuleCurrent}>
+        <strong>SQL 工作台</strong>
+        <i aria-hidden="true" />
+        <small>读写查配</small>
+        <span>AI Copilot</span>
+      </div>
+      <div aria-hidden="true" className={styles.brandSignal}>
+        <i className={styles.signalNode} />
+        <i className={styles.signalNode} />
+        <i className={styles.signalNode} />
+      </div>
     </div>
   );
 }
 
 /**
- * @param {{mutation: ReturnType<typeof useValidateSqlQuery>}} props
+ * @param {{connection: typeof DEFAULT_CONNECTION}} props
  */
-function ValidationState({ mutation }) {
-  if (mutation.isPending) {
-    return (
-      <FeedbackState
-        message="正在等待服务端完成 SQL 校验。"
-        state="loading"
-        title="SQL 校验中"
-      />
-    );
-  }
+function DatabaseObjectsPanel({ connection }) {
+  return (
+    <aside className={styles.dbPanel}>
+      <div className={styles.dbPanelTitle}>
+        数据库对象
+        <span className={styles.dbObjectCollapse} title="向左收起数据库对象">
+          ←
+        </span>
+        <small>刷新 · 新建</small>
+      </div>
+      <div className={styles.dbTreeSearch}>搜索表、视图、字段</div>
+      <div className={styles.dbTree}>
+        <div style={cssVars({ "--tree-color": "var(--green)", "--tree-icon": "'▾'" })}>
+          {connection.connectionId}
+        </div>
+        <div style={cssVars({ "--indent": "14px", "--tree-icon": "'▾'" })}>ORDERS</div>
+        <div style={cssVars({ "--indent": "28px", "--tree-icon": "'▾'" })}>Tables</div>
+        <div
+          className={styles.selected}
+          style={cssVars({ "--indent": "42px", "--tree-icon": "'▦'" })}
+        >
+          ORDERS
+        </div>
+        <div style={cssVars({ "--indent": "42px", "--tree-icon": "'▦'" })}>
+          ORDER_ITEMS
+        </div>
+        <div style={cssVars({ "--indent": "42px", "--tree-icon": "'▦'" })}>
+          ORDER_EVENTS
+        </div>
+        <div style={cssVars({ "--indent": "28px", "--tree-icon": "'›'" })}>Views</div>
+        <div style={cssVars({ "--indent": "28px", "--tree-icon": "'›'" })}>Indexes</div>
+        <div style={cssVars({ "--indent": "28px", "--tree-icon": "'›'" })}>
+          Procedures
+        </div>
+        <div style={cssVars({ "--indent": "14px", "--tree-icon": "'›'" })}>
+          INVENTORY
+        </div>
+      </div>
+    </aside>
+  );
+}
 
-  if (mutation.isError) {
-    return (
-      <FeedbackState
-        message={
-          mutation.error instanceof ApiError && mutation.error.kind === "forbidden"
-            ? "服务端策略拒绝本次 SQL 校验。"
-            : "SQL 校验请求未能完成。"
-        }
-        state="error"
-        title="SQL 校验失败"
-      />
-    );
-  }
-
-  if (!mutation.data) {
-    return (
-      <FeedbackState
-        message="选择连接和 Schema 后提交校验，只会返回服务端验证报告。"
-        state="empty"
-        title="尚未提交 SQL 校验"
-      />
-    );
-  }
-
-  return <ValidationReport report={mutation.data} />;
+function SqlCodeBlock() {
+  return (
+    <div className={styles.dbEditor}>
+      <div className={styles.dbGutter}>{`1
+2
+3
+4
+5
+6
+7
+8
+9
+10`}</div>
+      <div className={styles.dbRunMarker}>▶</div>
+      <div className={styles.dbCode}>
+        <span className={styles.keyword}>SELECT</span> o.order_id, o.status,
+        o.amount, o.customer_id, o.created_at{"\n"}
+        <span className={styles.keyword}>FROM</span> ORDERS.ORDERS o{"\n"}
+        <span className={styles.keyword}>WHERE</span> o.status ={" "}
+        <span className={styles.string}>'PENDING'</span>
+        {"\n  "}
+        <span className={styles.keyword}>AND</span> o.created_at &gt;
+        CURRENT_DATE - 7 DAYS{"\n"}
+        <span className={styles.keyword}>ORDER BY</span> o.created_at DESC{"\n"}
+        <span className={styles.keyword}>FETCH FIRST</span> 100 ROWS ONLY;
+        {"\n\n"}
+        <span className={styles.warningLine}>
+          <span className={styles.keyword}>UPDATE</span> ORDERS.ORDERS{" "}
+          <span className={styles.keyword}>SET</span> status ={" "}
+          <span className={styles.string}>'REVIEW_REQUIRED'</span>{" "}
+          <span className={styles.keyword}>WHERE</span> user_id = :userId;
+        </span>
+      </div>
+    </div>
+  );
 }
 
 /**
- * @param {{report: import("../../schemas/sql-schemas.js").SqlValidationReport}} props
+ * @param {{
+ *   error: Error | null,
+ *   isPending: boolean,
+ *   report?: {
+ *     statementType: string,
+ *     validationLevel: string,
+ *     sqlHash: string,
+ *     referencedObjects: string[],
+ *     risks: string[],
+ *     rejectionReasons: string[],
+ *     unverifiedItems: string[],
+ *   }
+ * }} props
  */
-function ValidationReport({ report }) {
+function QueryResultPanel({ error, isPending, report }) {
+  if (isPending) {
+    return (
+      <div className={styles.dbResults} role="status">
+        <div className={styles.dbResultTabs}>
+          <span className={styles.active}>服务端校验</span>
+        </div>
+        <div className={styles.validationReport}>
+          <strong>正在提交服务端校验</strong>
+          <span>等待控制面返回强类型 SQL 报告。</span>
+        </div>
+        <div className={styles.dbResultStatus}>
+          <span>请求中</span>
+          <span>只读结果 · 已脱敏</span>
+          <span>--ms</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className={styles.dbResults} role="alert">
+        <div className={styles.dbResultTabs}>
+          <span className={styles.active}>服务端校验</span>
+        </div>
+        <div className={styles.validationReport}>
+          <strong>SQL 校验失败</strong>
+          <span>{error.message}</span>
+        </div>
+        <div className={styles.dbResultStatus}>
+          <span>失败</span>
+          <span>只读结果 · 已脱敏</span>
+          <span>--ms</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (report) {
+    return (
+      <div className={styles.dbResults}>
+        <div className={styles.dbResultTabs}>
+          <span className={styles.active}>服务端校验</span>
+          <span>结果 1</span>
+          <span>执行计划</span>
+          <span>历史</span>
+          <span>导出</span>
+        </div>
+        <div className={styles.validationReport}>
+          <strong>{report.statementType}</strong>
+          <span>{report.validationLevel}</span>
+          <span>{report.sqlHash}</span>
+          <ReportLine label="引用对象" values={report.referencedObjects} />
+          <ReportLine label="风险" values={report.risks} />
+          <ReportLine label="拒绝原因" values={report.rejectionReasons} />
+          <ReportLine label="未验证项" values={report.unverifiedItems} />
+        </div>
+        <div className={styles.dbResultStatus}>
+          <span>服务端校验完成</span>
+          <span>只读结果 · 已脱敏</span>
+          <span>184ms</span>
+          <span>每页 10 · 上一页 · 下一页</span>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <section aria-label="SQL 校验报告" className={styles.reportPanel}>
-      <h2>校验报告</h2>
-      <div className={styles.reportGrid}>
-        <ReportItem label="校验等级">
-          <StatusPill tone={readValidationTone(report.validationLevel)}>
-            {report.validationLevel}
-          </StatusPill>
-        </ReportItem>
-        <ReportItem label="语句类型">{report.statementType}</ReportItem>
-        <ReportItem label="SQL Hash">{report.sqlHash}</ReportItem>
-        <ReportItem label="引用对象">
-          <ValueList values={report.referencedObjects} />
-        </ReportItem>
-        <ReportItem label="风险">
-          <ValueList values={report.risks} />
-        </ReportItem>
-        <ReportItem label="拒绝原因">
-          <ValueList values={report.rejectionReasons} />
-        </ReportItem>
-        <ReportItem label="未验证项">
-          <ValueList values={report.unverifiedItems} />
-        </ReportItem>
+    <div className={styles.dbResults}>
+      <div className={styles.dbResultTabs}>
+        <span className={styles.active}>结果 1</span>
+        <span>消息</span>
+        <span>执行计划</span>
+        <span>历史</span>
+        <span>导出</span>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>order_id</th>
+            <th>status</th>
+            <th>amount</th>
+            <th>customer_id</th>
+            <th>created_at</th>
+          </tr>
+        </thead>
+        <tbody>
+          {sampleRows.map((row) => (
+            <tr key={row[1]}>
+              {row.map((cell) => (
+                <td key={cell}>{cell}</td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <div className={styles.dbResultStatus}>
+        <span>86 行 · 第 1/9 页</span>
+        <span>只读结果 · 已脱敏</span>
+        <span>184ms</span>
+        <span>每页 10 · 上一页 · 下一页</span>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * @param {{label: string, values: string[]}} props
+ */
+function ReportLine({ label, values }) {
+  return (
+    <div className={styles.reportLine}>
+      <b>{label}</b>
+      <span>{values.length > 0 ? values.join(" / ") : "无"}</span>
+    </div>
+  );
+}
+
+function AiAssistantPanel() {
+  return (
+    <aside className={`${styles.dbPanel} ${styles.aiCopilot}`}>
+      <div className={styles.dbPanelTitle}>
+        AI SQL 助手 <span className={styles.aiCollapseHandle}>→</span>
+      </div>
+      <div className={styles.aiModeTabs}>
+        <span className={styles.active}>错误分析</span>
+        <span>性能优化</span>
+        <span>解释 SQL</span>
+      </div>
+      <div className={styles.aiFindings}>
+        {aiFindings.map((finding) => (
+          <div
+            className={styles.aiFinding}
+            key={finding.title}
+            style={cssVars({ "--finding": finding.tone })}
+          >
+            <strong>{finding.title}</strong>
+            <span>{finding.body}</span>
+            {finding.action ? (
+              <button disabled type="button">
+                {finding.action}
+              </button>
+            ) : null}
+          </div>
+        ))}
+      </div>
+      <button aria-label="询问 AI" className={styles.aiChat} disabled type="button">
+        <div>询问 AI：为什么这个查询慢？如何避免误更新？</div>
+      </button>
+    </aside>
+  );
+}
+
+/**
+ * @param {{detail: string, title: string}} props
+ */
+function Notice({ detail, title }) {
+  return (
+    <section className={styles.sqlLayout}>
+      <div className={`${styles.sqlCard} ${styles.noticeCard}`}>
+        <strong>{title}</strong>
+        <span>{detail}</span>
       </div>
     </section>
   );
 }
 
 /**
- * @param {{label: string, children: import("react").ReactNode}} props
- */
-function ReportItem({ label, children }) {
-  return (
-    <div className={styles.reportItem}>
-      <span>{label}</span>
-      {children}
-    </div>
-  );
-}
-
-/**
- * @param {{values: string[]}} props
- */
-function ValueList({ values }) {
-  if (values.length === 0) {
-    return <p className={styles.muted}>无</p>;
-  }
-
-  return (
-    <ul className={styles.reportList}>
-      {values.map((value) => (
-        <li key={value}>{value}</li>
-      ))}
-    </ul>
-  );
-}
-
-/**
- * @param {"VALIDATED" | "PARTIAL" | "REJECTED"} validationLevel
- * @returns {"success" | "warning" | "danger"}
- */
-function readValidationTone(validationLevel) {
-  if (validationLevel === "VALIDATED") {
-    return "success";
-  }
-
-  if (validationLevel === "PARTIAL") {
-    return "warning";
-  }
-
-  return "danger";
-}
-
-/**
  * @param {"RUN_READ_ONLY" | "PREFLIGHT_DML"} action
  */
-function buildIdempotencyKey(action) {
-  const randomId =
+function createSqlIdempotencyKey(action) {
+  const randomPart =
     typeof globalThis.crypto?.randomUUID === "function"
       ? globalThis.crypto.randomUUID()
-      : String(Date.now());
-  return `sql-workbench:${action}:${randomId}`;
+      : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  return `sql:${action}:${randomPart}`;
+}
+
+/**
+ * @param {Record<string, string>} variables
+ * @returns {import("react").CSSProperties}
+ */
+function cssVars(variables) {
+  return /** @type {import("react").CSSProperties} */ (
+    /** @type {unknown} */ (variables)
+  );
 }

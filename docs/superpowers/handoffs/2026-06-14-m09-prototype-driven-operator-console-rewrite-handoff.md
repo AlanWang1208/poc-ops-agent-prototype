@@ -73,7 +73,7 @@
 - TanStack Query
 - Zod
 - Lucide React
-- Monaco Editor
+- CSS Modules 页面级原型还原
 - CSS Modules 与 CSS Variables
 - Vitest、React Testing Library、Mock Service Worker
 - Playwright
@@ -146,6 +146,15 @@
 - 建立 Button、Badge、Card、PageHeader、FeedbackState、DisabledFeature 等共享组件。
 - 补充共享组件和路由测试。
 
+2026-06-14 Git 提交复核补充：
+
+- `main` / `origin/main` 已包含 `ab57a00 登录页转react`，新增 `frontend/operator-console/src/features/auth/LoginPage.jsx` 和 `LoginPage.module.css`，并把 `/login` 从 `LoginPlaceholder` 切换为 `LoginPage`。
+- 当前 `codex/operator-console-rewrite` 工作分支仍停在 `02b5ef5`，尚未同步 `ab57a00`，因此本分支工作树里仍会看到登录占位页。
+- `ab57a00` 已完成原型化登录视觉、SSO 登录按钮和对应路由测试；按钮通过 `redirectToLogin()` 跳转到 `/auth/login`。
+- `auth-api.js` 仍只封装 `/auth/session`、`/auth/login` 跳转地址和 `POST /logout`，尚未封装内建身份模式需要的 `POST /auth/login` 和 `POST /auth/password`。
+- `AppShell` 的会话区域仍是静态文案，没有读取真实会话主体，也没有退出入口。
+- `/agent`、`/skills` 和 `/sql` 仍不是会话保护路由，匿名访问不会被 React 层拦截到登录页。
+
 ### 6.5 主分支同步处理
 
 实施期间用户提示新代码已同步且可能合入 `main`。已检查并将当前分支从 `0684077` 快进同步至 `f74f795`，随后继续提交 Task 2 和 Task 3。同步时未发现前端重写冲突。
@@ -216,22 +225,43 @@ Task 4 恢复后必须完成：
 
 ### Task 5：登录页和受保护路由
 
-尚未开始。需要：
+源码复核结论：`ab57a00` 后登录页视觉 React 化约完成 65%，登录相关前端闭环约完成 35%。已具备 React 登录页、会话查询 Schema、OIDC 登录跳转地址和视觉回归测试，但尚未形成完整会话读取、匿名保护、内建身份登录、改密和退出闭环。
 
-- 对接 `/auth/session`、`/auth/login` 和 `/logout`。
+已由 `ab57a00` 部分完成：
+
 - 实现原型登录页。
+- 将 `/login` 路由接入 `LoginPage`。
+- 登录按钮接入 `/auth/login` 跳转入口。
+- 补充登录页视觉与安全边界测试。
+
+需要：
+
+- 在当前工作分支同步 `main` 上的 `ab57a00`。
+- 用 `/auth/session` 驱动已登录、未登录和加载状态。
+- 对接内建身份模式的 `POST /auth/login`、`POST /auth/password` 和后端实际登出入口。
 - 实现匿名访问受保护页面时跳转登录页。
 - 登录成功后跳转 `/agent`。
 - 在 AppShell 显示会话主体和退出入口。
 
 ### Task 6：Agent 工作台
 
-尚未开始。需要：
+2026-06-14 已开始并完成首轮 Agent 工作台原型转 React：
 
-- 使用真实 Skill 路由搜索接口展示候选能力。
-- 显示真实候选 Skill、评分和匹配规则。
-- 任务发送与执行按钮保持禁用并显示原因。
-- 不展示模型内部推理。
+- 新增 `frontend/operator-console/src/features/agent-workspace/AgentWorkspacePage.jsx`、`AgentWorkspacePage.module.css`、`use-agent-candidates.js` 和页面测试。
+- `/agent` 已从 `ProtectedPlaceholder` 切换为 `AppShell + AgentWorkspacePage`。
+- 页面布局参考 `figma-prototype/ops-agent-aia-prototype.html` 的 Agent 工作区片段，已按原型还原顶部胶囊栏、会话工具栏、工作会话主窗、双 workflow 卡片、输入区、选中任务详情、Skill 与事件、会话上下文侧栏。
+- 已对接 `POST /internal/routing/skills/search`，候选 Skill、评分和匹配规则来自服务端响应，并统一经过 `src/api/agent-api.js` 与 Zod Schema。
+- 首轮固定请求 `READ_ONLY` 与 `VALIDATED` 候选能力；该筛选只是请求条件，授权结果仍以服务端策略为准。
+- 通用 Agent 对话、任务发送和执行接口尚未开放，发送按钮保持禁用并显示原因，不模拟任务发送或执行成功。
+- 页面不展示模型内部推理，只展示可审计计划摘要。
+- 新增测试覆盖候选 Skill 成功渲染、服务端 `403` 拒绝、空候选状态、发送按钮禁用和内部推理文案缺失。
+- 已使用本机 Chrome + Playwright 截取 `1440x1080` 对比截图：`.artifacts/agent-reference-screen.png` 和 `.artifacts/agent-react-screen.png`。当前 React 页高度为 1080，无横向溢出，核心工作区落入首屏。
+
+仍需后续完成：
+
+- 接入真实浏览器会话后，将静态会话提示替换为 `/auth/session` 返回的主体信息。
+- 在后端开放版本化任务接口、工作流和审计链路后，再启用任务提交。
+- 继续在 Skill 注册中心完成后执行整套页面的浏览器截图验收，并补齐正式 Playwright E2E。
 
 ### Task 7：Skill 注册中心
 
@@ -244,13 +274,22 @@ Task 4 恢复后必须完成：
 
 ### Task 8：SQL 工作台
 
-尚未开始。需要：
+2026-06-14 已开始并完成 SQL 原型转 React，并根据用户反馈完成视觉返工：
 
-- 对接真实连接目录和 SQL 校验接口。
-- 懒加载 Monaco Editor。
-- 只显示开发和测试连接。
-- 展示验证报告、风险、拒绝原因和未验证项。
-- 保持 AI SQL 助手和所有越界执行能力禁用。
+- 新增 `frontend/operator-console/src/features/sql-workbench/SqlWorkbenchPage.jsx`、`SqlWorkbenchPage.module.css`、`use-sql-workbench.js` 和页面测试。
+- `/sql` 已从 `ProtectedPlaceholder` 切换为独立 `SqlWorkbenchPage`，不再套用通用 `AppShell`，以匹配原型固定 screen 坐标。
+- 页面布局参考 `D:\poc-ops-agent\figma-prototype\ops-agent-aia-prototype.html` 的 `id="sql-workbench-screen"` 片段，落地左侧胶囊导航、顶部 EA 胶囊、连接工具条、数据库对象浏览、多 SQL 文件标签、查询编辑器视觉区、服务端报告、结果区和右侧 AI SQL 助手禁用区。
+- 已对接 `GET /internal/sql-workbench/connections` 和 `POST /internal/sql-workbench/queries/validate`，请求仍统一经过 `src/api/sql-api.js` 与 Zod Schema。
+- SQL 编辑区采用原型同结构代码展示，以保证像素还原；可触发动作仍只映射到服务端只读校验或 DML 预检契约。
+- P1 边界保持：不展示生产连接，不提供真实 DML 执行、交互事务、Commit、Rollback 或任意脚本执行；AI SQL 助手按钮保持禁用。
+- 新增测试覆盖连接目录渲染、版本化 SQL 校验请求、服务端拒绝报告、生产连接契约拒绝和 AI 助手禁用。
+- 视觉 QA 文档为 `design-qa.md`，参考截图为 `frontend/operator-console/.artifacts/sql-reference-screen.png`，React 截图为 `frontend/operator-console/.artifacts/sql-react-screen.png`。
+
+仍需后续完成：
+
+- 使用真实控制面和 Worker 联调 SQL 连接目录与校验报告。
+- 与真实控制面联调后重新截取浏览器截图，确认接口数据不会破坏原型布局。
+- 在 Task 9 中补 Playwright 桌面端验收。
 
 ### Task 9：浏览器流程和桌面视觉验收
 
@@ -283,6 +322,29 @@ npm run check  -> PASS
 npm run lint   -> PASS
 npm run test   -> PASS，5 个测试文件，28 个测试
 ```
+
+2026-06-14 SQL 工作台 React 转换后新增验证：
+
+```text
+npm run test -- src/features/sql-workbench/SqlWorkbenchPage.test.jsx
+  -> PASS，1 个测试文件，4 个测试
+npm run check
+  -> PASS
+npm run lint
+  -> PASS
+npm run test -- src/app/router.test.jsx src/features/sql-workbench/SqlWorkbenchPage.test.jsx
+  -> PASS，2 个测试文件，12 个测试
+npm run test
+  -> PASS，7 个测试文件，40 个测试
+npm run build
+  -> PASS，生成 dist/index.html、index CSS 和 index JS chunk
+Chrome headless browser check at http://127.0.0.1:5174/sql
+  -> PASS，连接数据可见，DML 预检可触发，未出现 Commit/Rollback，参考截图：frontend/operator-console/.artifacts/sql-reference-screen.png，React 截图：frontend/operator-console/.artifacts/sql-react-screen.png
+git diff --check
+  -> PASS
+```
+
+浏览器检查期间使用 Playwright 拦截 `/internal/sql-workbench/connections` 和 `/internal/sql-workbench/queries/validate`，未替换或关闭本机 `8080` 上已有的其他 mock 服务。Vite 开发服务器仍在 `http://127.0.0.1:5174/` 运行；真实联调需要启动控制面 `http://127.0.0.1:8080`。
 
 已知非阻塞警告：
 

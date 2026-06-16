@@ -40,7 +40,7 @@ public class CalciteSqlValidationService implements SqlValidationService {
       if (statements.size() != 1) {
         return rejected(SqlStatementType.UNSUPPORTED, sqlHash, "exactly one SQL statement is required");
       }
-      statement = statements.get(0);
+      statement = statements.getFirst();
     } catch (SqlParseException exception) {
       return rejected(SqlStatementType.UNSUPPORTED, sqlHash, "SQL syntax is not supported");
     }
@@ -102,19 +102,23 @@ public class CalciteSqlValidationService implements SqlValidationService {
   }
 
   private void collectFrom(SqlNode node, List<String> referencedObjects) {
-    if (node == null) {
-      return;
-    }
-    if (node instanceof SqlIdentifier identifier) {
-      referencedObjects.add(String.join(".", identifier.names));
-      return;
-    }
-    if (node instanceof SqlJoin join) {
-      collectFrom(join.getLeft(), referencedObjects);
-      collectFrom(join.getRight(), referencedObjects);
-      return;
-    }
-    if (node instanceof SqlSelect || node instanceof SqlOrderBy || node instanceof SqlWith) {
+      switch (node) {
+          case null -> {
+              return;
+          }
+          case SqlIdentifier identifier -> {
+              referencedObjects.add(String.join(".", identifier.names));
+              return;
+          }
+          case SqlJoin join -> {
+              collectFrom(join.getLeft(), referencedObjects);
+              collectFrom(join.getRight(), referencedObjects);
+              return;
+          }
+          default -> {
+          }
+      }
+      if (node instanceof SqlSelect || node instanceof SqlOrderBy || node instanceof SqlWith) {
       collectReferencedObjects(node, referencedObjects);
       return;
     }

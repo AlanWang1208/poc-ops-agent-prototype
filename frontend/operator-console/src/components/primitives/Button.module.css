@@ -6,7 +6,9 @@
   font-weight: 700;
   transition:
     background-color 160ms ease,
-    border-color 160ms ease;
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    transform 160ms ease;
 }
 
 .primary {
@@ -16,6 +18,8 @@
 
 .primary:hover:not(:disabled) {
   background: var(--color-accent-hover);
+  box-shadow: 0 12px 24px rgba(216, 11, 70, 0.18);
+  transform: translateY(-1px);
 }
 
 .secondary {
@@ -24,9 +28,26 @@
   color: var(--color-text);
 }
 
+.secondary:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--color-info) 30%, var(--color-border));
+  box-shadow: 0 10px 20px rgba(31, 41, 51, 0.07);
+  transform: translateY(-1px);
+}
+
 .danger {
   background: var(--color-danger);
   color: white;
+}
+
+.danger:hover:not(:disabled) {
+  filter: brightness(1.04);
+  box-shadow: 0 12px 24px rgba(200, 59, 69, 0.18);
+  transform: translateY(-1px);
+}
+
+.button:active:not(:disabled) {
+  box-shadow: 0 5px 12px rgba(31, 41, 51, 0.08);
+  transform: translateY(1px) scale(0.98);
 }
 
 .button:disabled {

@@ -1,130 +1,161 @@
-import { Navigate } from "react-router-dom";
-
-import { getLoginUrl } from "../../api/auth-api.js";
-import { FeedbackState } from "../../components/feedback/FeedbackState.jsx";
-import { useSession } from "./use-session.js";
+import { redirectToLogin } from "../../api/auth-api.js";
 import styles from "./LoginPage.module.css";
 
+const safetyModes = ["P1 只读模式", "服务端策略授权", "全程审计留痕"];
+const nodeIonSpecs = [
+  { emphasis: "", path: "identityDot", route: "identity", size: "nodeIonSmall" },
+  { emphasis: "", path: "policyDot", route: "policy", size: "nodeIonSmall" },
+  { emphasis: "primary", path: "skillDot", route: "skill", size: "nodeIonPrimary" },
+  { emphasis: "", path: "workerDot", route: "worker", size: "nodeIonSmall" },
+];
+const screenIonSpecs = [
+  ["screenIonTiny", "screenIonBlue", "screenIonLaneOne"],
+  ["screenIonSmall", "screenIonRed", "screenIonLaneTwo"],
+  ["screenIonMedium", "screenIonGreen", "screenIonLaneThree"],
+  ["screenIonTiny", "screenIonGold", "screenIonLaneFour"],
+  ["screenIonSmall", "screenIonBlue", "screenIonLaneFive"],
+  ["screenIonTiny", "screenIonGreen", "screenIonLaneSix"],
+  ["screenIonMedium", "screenIonRed", "screenIonLaneSeven"],
+  ["screenIonSmall", "screenIonGold", "screenIonLaneEight"],
+  ["screenIonTiny", "screenIonBlue", "screenIonLaneNine"],
+  ["screenIonSmall", "screenIonGreen", "screenIonLaneTen"],
+  ["screenIonTiny", "screenIonRed", "screenIonLaneEleven"],
+  ["screenIonMedium", "screenIonBlue", "screenIonLaneTwelve"],
+  ["screenIonMedium", "screenIonBlue", "screenIonLaneThirteen", "screenIonGlow"],
+  ["screenIonSmall", "screenIonRed", "screenIonLaneFourteen", "screenIonHalo"],
+  ["screenIonTiny", "screenIonGreen", "screenIonLaneFifteen", "screenIonGlow"],
+  ["screenIonSmall", "screenIonGold", "screenIonLaneSixteen", "screenIonHalo"],
+];
+
+/**
+ * Latest prototype-driven login page.
+ */
 export function LoginPage() {
-  const session = useSession();
-
-  if (session.isPending) {
-    return (
-      <main className={styles.page}>
-        <section className={styles.brandPanel}>
-          <BrandHeader />
-          <HeroCopy />
-          <StatusStrip />
-        </section>
-        <section className={styles.loginPanel}>
-          <div className={styles.loginCard}>
-            <FeedbackState
-              message="正在读取控制面浏览器会话。"
-              state="loading"
-              title="会话读取中"
+  return (
+    <main className={styles.board}>
+      <section className={styles.screen}>
+        <div aria-hidden="true" className={styles.screenIonField}>
+          {screenIonSpecs.map(([size, tone, lane, variant], index) => (
+            <i
+              aria-hidden="true"
+              className={[
+                styles.screenIon,
+                styles[size],
+                styles[tone],
+                styles[lane],
+                variant ? styles[variant] : "",
+              ]
+                .filter(Boolean)
+                .join(" ")}
+              data-screen-ion=""
+              key={`${lane}-${index}`}
             />
-          </div>
-        </section>
-      </main>
-    );
-  }
+          ))}
+        </div>
 
-  if (session.isError) {
-    return (
-      <main className={styles.page}>
-        <section className={styles.brandPanel}>
-          <BrandHeader />
-          <HeroCopy />
-          <StatusStrip />
-        </section>
-        <section className={styles.loginPanel}>
-          <div className={styles.loginCard}>
-            <div className={styles.feedback}>
-              <FeedbackState
-                message="控制面返回的会话契约无法被操作台安全解析。"
-                state="error"
-                title="会话状态暂不可用"
-              />
+        <div aria-hidden="true" className={styles.loginHeroEffect}>
+          <div className={styles.effectOrbitOne} />
+          <div className={styles.effectOrbitTwo} />
+          <div className={styles.effectCore} />
+          <div className={`${styles.taskCard} ${styles.taskCardCode}`}>
+            <strong>研发排障</strong>
+          </div>
+          <div className={`${styles.taskCard} ${styles.taskCardDb}`}>
+            <strong>DBA 巡检</strong>
+          </div>
+          <div className={`${styles.taskCard} ${styles.taskCardAlert}`}>
+            <strong>告警分析</strong>
+          </div>
+          <div className={styles.capabilityFlow}>
+            <span>提任务</span>
+            <i />
+            <span>选 Skill</span>
+            <i />
+            <span>执行</span>
+            <i />
+            <span>留痕</span>
+          </div>
+        </div>
+
+        <div className={styles.loginShell}>
+          <span aria-hidden="true" className={styles.frameIonTail} />
+          <div className={styles.loginCopy}>
+            <span className={styles.loginKicker}>SECURE OPERATOR ENTRY</span>
+            <h1>企业智能运维工作台</h1>
+            <p>
+              面向研发、DBA 与运维团队，通过受控的只读诊断链路定位服务、数据库与基础设施问题。
+            </p>
+            <div aria-label="平台安全能力" className={styles.loginModeStrip}>
+              {safetyModes.map((mode) => (
+                <span key={mode}>{mode}</span>
+              ))}
+            </div>
+
+            <div className={styles.opsVisual}>
+              <div className={`${styles.agentCore} ${styles.opsAgentCore}`}>
+                <span />
+              </div>
+              <div className={`${styles.opsNode} ${styles.identityNode}`}>
+                <strong>Identity</strong>
+                会话确权
+              </div>
+              <div className={`${styles.opsNode} ${styles.policyNode}`}>
+                <strong>Policy</strong>
+                服务端授权
+              </div>
+              <div className={`${styles.opsNode} ${styles.skillNode}`}>
+                <strong>Skill</strong>
+                只读候选
+              </div>
+              <div className={`${styles.opsNode} ${styles.workerNode}`}>
+                <strong>Worker</strong>
+                受限执行
+              </div>
+              {nodeIonSpecs.map(({ emphasis, path, route, size }) => (
+                <i
+                  aria-hidden="true"
+                  className={`${styles.opsOrbitDot} ${styles[path]} ${styles[size]}`}
+                  data-ion-emphasis={emphasis}
+                  data-node-ion={route}
+                  key={route}
+                />
+              ))}
+              <div className={styles.opsCaption}>
+                <strong>受控诊断链路</strong>
+                Operator → Agent → Policy → Skill → Worker → Event Stream
+              </div>
             </div>
           </div>
-        </section>
-      </main>
-    );
-  }
 
-  if (session.data.authenticated) {
-    return <Navigate replace to="/agent" />;
-  }
-
-  return (
-    <main className={styles.page}>
-      <section className={styles.brandPanel}>
-        <BrandHeader />
-        <HeroCopy />
-        <StatusStrip />
-      </section>
-      <section aria-labelledby="login-title" className={styles.loginPanel}>
-        <div className={styles.loginCard}>
-          <span className="badge badge--info">P1 只读诊断 MVP</span>
-          <h2 id="login-title">操作员登录</h2>
-          <p>
-            登录后可进入只读操作台，查看受控 Skill、候选路由和 SQL 校验结果。
-            操作台只读取控制面返回的会话和策略状态。
-          </p>
-          <a className={styles.loginAction} href={getLoginUrl()}>
-            使用控制面登录
-          </a>
-          <ul className={styles.boundaryList}>
-            <li>浏览器不承载授权决策。</li>
-            <li>生产写执行与任意脚本执行在 P1 保持关闭。</li>
-            <li>所有外部响应必须通过契约校验后进入页面。</li>
-          </ul>
+          <form className={styles.loginCard}>
+            <h2>操作员登录</h2>
+            <div className={styles.loginField}>
+              <input
+                className={styles.loginInput}
+                id="operator-account"
+                defaultValue="ops.reader@company.internal"
+              />
+            </div>
+            <div className={styles.loginOptions}>
+              <div className={styles.loginOption}>
+                <span aria-hidden="true" className={styles.loginOptionIcon} />
+                <span className={styles.loginOptionCopy}>
+                  <strong>企业单点登录</strong>
+                  <span>身份确认后，权限仍由服务端策略独立判定。</span>
+                </span>
+              </div>
+            </div>
+            <button
+              className={`${styles.button} ${styles.loginButton} ${styles.primaryEntry}`}
+              onClick={redirectToLogin}
+              type="button"
+            >
+              <span className={styles.entryText}>使用企业 SSO 登录</span>
+              <span aria-hidden="true" className={styles.entryPulse} />
+            </button>
+          </form>
         </div>
       </section>
     </main>
   );
 }
-
-function BrandHeader() {
-  return (
-    <div className={styles.brandMark}>
-      <span aria-hidden="true" className={styles.brandIcon}>
-        EA
-      </span>
-      <span>企业智能 Agent 开放底座</span>
-    </div>
-  );
-}
-
-function HeroCopy() {
-  return (
-    <div className={styles.hero}>
-      <span className={styles.eyebrow}>Operator Console</span>
-      <h1>只读运维控制面</h1>
-      <p>
-        面向内部运维团队的诊断入口。会话、策略、审计和执行事实均由服务端控制面提供，
-        页面只呈现经过验证的状态。
-      </p>
-    </div>
-  );
-}
-
-function StatusStrip() {
-  return (
-    <div className={styles.statusStrip} aria-label="安全边界">
-      <div className={styles.statusCard}>
-        <strong>身份</strong>
-        <span>读取浏览器会话</span>
-      </div>
-      <div className={styles.statusCard}>
-        <strong>策略</strong>
-        <span>服务端唯一决策</span>
-      </div>
-      <div className={styles.statusCard}>
-        <strong>执行</strong>
-        <span>P1 只读诊断</span>
-      </div>
-    </div>
-  );
-}
-
