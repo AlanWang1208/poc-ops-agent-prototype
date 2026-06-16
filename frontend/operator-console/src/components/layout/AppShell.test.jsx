@@ -9,11 +9,25 @@ const appShellCss = readFileSync(
 const appShellSource = readFileSync("src/components/layout/AppShell.jsx", "utf8");
 
 describe("AppShell styles", () => {
-  it("keeps the sidebar in a solid workbench style without glass effects", () => {
-    expect(appShellCss).not.toContain("backdrop-filter");
-    expect(appShellCss).not.toContain("nav-item-sheen");
-    expect(appShellCss).not.toContain("filter: saturate");
-    expect(appShellCss).not.toContain("blur(");
+  it("renders sidebar menu buttons with login-aligned glass highlights", () => {
+    const navLinkRule = appShellCss.match(/[.]navLink\s*[{][^}]+[}]/u)?.[0] ?? "";
+    const navLinkSheenRule = appShellCss.match(/[.]navLink::after\s*[{][^}]+[}]/u)?.[0] ?? "";
+    const activeRule = appShellCss.match(/[.]active\s*[{][^}]+[}]/u)?.[0] ?? "";
+    const hoverRule = appShellCss.match(/[.]navLink:hover\s*[{][^}]+[}]/u)?.[0] ?? "";
+
+    expect(navLinkRule).toContain("overflow: hidden");
+    expect(navLinkRule).toContain("isolation: isolate");
+    expect(navLinkRule).toContain("rgba(255, 255, 255, 0.68)");
+    expect(navLinkRule).toContain("rgba(211, 17, 69, 0.05)");
+    expect(navLinkRule).toContain("backdrop-filter: blur(12px)");
+    expect(appShellCss).toContain(".navLink::after");
+    expect(navLinkSheenRule).toContain("linear-gradient(120deg");
+    expect(navLinkSheenRule).toContain("rgba(255, 255, 255, 0.7)");
+    expect(navLinkSheenRule).toContain("pointer-events: none");
+    expect(activeRule).toContain("rgba(211, 17, 69, 0.1)");
+    expect(activeRule).toContain("inset 0 1px 0 rgba(255, 255, 255, 0.88)");
+    expect(hoverRule).toContain("rgba(255, 255, 255, 0.82)");
+    expect(hoverRule).toContain("0 14px 26px rgba(31, 45, 61, 0.08)");
   });
 
   it("uses larger tactile navigation icons with refined symbol layers", () => {
@@ -44,15 +58,37 @@ describe("AppShell styles", () => {
     expect(symbolRule).toContain("background: var(--nav-mark)");
     expect(symbolBeforeRule).toContain("border:");
     expect(symbolAfterRule).toContain("box-shadow:");
-    expect(appShellCss.match(/--nav-mark:/gu)?.length ?? 0).toBeGreaterThanOrEqual(7);
+    expect(appShellCss.match(/--nav-mark:/gu)?.length ?? 0).toBeGreaterThanOrEqual(10);
     expect(glyphRule).toContain("width: 22px");
     expect(glyphRule).toContain("height: 22px");
     expect(glyphRule).toContain("z-index: 2");
+    expect(appShellSource.indexOf('label: "总览"')).toBeLessThan(
+      appShellSource.indexOf('label: "Agent 工作区"'),
+    );
+    expect(appShellSource.indexOf('label: "Agent 工作区"')).toBeLessThan(
+      appShellSource.indexOf('label: "RAG 问答"'),
+    );
+    expect(appShellSource.indexOf('label: "RAG 问答"')).toBeLessThan(
+      appShellSource.indexOf('label: "SQL 工作区"'),
+    );
+    expect(appShellSource.indexOf('label: "SQL 工作区"')).toBeLessThan(
+      appShellSource.indexOf('label: "Skill 注册中心"'),
+    );
+    expect(appShellSource).toContain('label: "Agent 工作区"');
+    expect(appShellSource).toContain('label: "RAG 问答"');
+    expect(appShellSource).toContain('label: "SQL 工作区"');
+    expect(appShellSource).toContain('label: "Skill 注册中心"');
+    expect(appShellSource).toContain("会议录制纪要");
+    expect(appShellSource).toContain("AS400改建表");
+    expect(appShellSource).toContain("快捷连接");
   });
 
-  it("keeps the sidebar footer signal preview animated", () => {
+  it("keeps the sidebar footer preview aligned to the navigation stack", () => {
     const previewRule =
       appShellCss.match(/[.]sidebarPreview\s*[{][^}]+[}]/u)?.[0] ?? "";
+    const previewRailRule =
+      appShellCss.match(/[.]sidebarPreview::before,[\s\S]*?[.]sidebarPreview::after\s*[{][^}]+[}]/u)?.[0] ??
+      "";
     const previewFieldRule =
       appShellCss.match(/[.]sidebarPreview::before\s*[{][^}]+[}]/u)?.[0] ?? "";
     const previewSweepRule =
@@ -72,27 +108,24 @@ describe("AppShell styles", () => {
     expect(appShellSource).toContain("className={styles.sidebarPreviewCore}");
     expect(appShellSource).toContain("styles.sidebarPreviewMenuNode");
     expect(appShellSource).toContain("styles.sidebarPreviewMenuNodeActive");
+    expect(appShellSource).not.toContain("styles.sidebarSearch");
+    expect(appShellSource).not.toContain("styles.sidebarActions");
     expect(previewRule).toContain("display: grid");
-    expect(previewRule).toContain("place-items: center");
+    expect(previewRule).toContain("min-height: 110px");
     expect(previewRule).toContain("isolation: isolate");
     expect(previewRule).toContain("overflow: hidden");
     expect(previewRule).not.toContain("--preview-signal-start");
-    expect(previewOrbitRule).toContain("grid-template-columns: repeat(7, 1fr)");
-    expect(previewOrbitRule).toContain("animation: sidebar-orbit-drift");
-    expect(previewCoreRule).toContain("animation: sidebar-core-breathe");
+    expect(previewOrbitRule).toContain("grid-template-columns: repeat(5, minmax(0, 1fr))");
+    expect(previewOrbitRule).toContain("gap: 12px 10px");
+    expect(previewCoreRule).toContain("transform: translateY(-50%)");
     expect(previewMenuNodeRule).toContain("background: color-mix(in srgb, var(--nav-color)");
-    expect(previewMenuNodeRule).toContain("animation: sidebar-node-twinkle");
-    expect(previewActiveNodeRule).toContain("animation: sidebar-active-node-breathe");
-    expect(previewFieldRule).toContain("border-radius: 999px");
-    expect(previewFieldRule).toContain("animation: sidebar-field-glow");
-    expect(previewSweepRule).toContain("conic-gradient");
-    expect(previewSweepRule).toContain("animation: sidebar-radar-sweep");
-    expect(appShellCss).toContain("@keyframes sidebar-field-glow");
-    expect(appShellCss).toContain("@keyframes sidebar-radar-sweep");
-    expect(appShellCss).toContain("@keyframes sidebar-orbit-drift");
-    expect(appShellCss).toContain("@keyframes sidebar-core-breathe");
-    expect(appShellCss).toContain("@keyframes sidebar-node-twinkle");
-    expect(appShellCss).toContain("@keyframes sidebar-active-node-breathe");
+    expect(previewMenuNodeRule).toContain("animation: sidebar-preview-node");
+    expect(previewActiveNodeRule).toContain("border-color: color-mix");
+    expect(previewRailRule).toContain("height: 1px");
+    expect(previewFieldRule).toContain("top: 16px");
+    expect(previewSweepRule).not.toContain("conic-gradient");
+    expect(appShellCss).toContain("@keyframes sidebar-preview-node");
+    expect(appShellCss).not.toContain("@keyframes sidebar-radar-sweep");
     expect(appShellCss).not.toContain("sidebarPreviewMenuRail");
     expect(appShellCss).not.toContain("sidebar-menu-sync");
   });

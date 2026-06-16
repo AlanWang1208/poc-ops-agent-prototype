@@ -37,7 +37,8 @@ describe("AgentWorkspacePage", () => {
     expect(await screen.findByText(/node-health-read/u)).toBeInTheDocument();
     expect(screen.getByText("ROLE_agent-reader · policy-v1 · READ_ONLY")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "发送任务" })).toBeDisabled();
-    expect(screen.getByText("通用 Agent 对话接口尚未开放")).toBeInTheDocument();
+    expect(screen.queryByText("任务会话")).not.toBeInTheDocument();
+    expect(screen.queryByText("只读模式")).not.toBeInTheDocument();
     expect(screen.queryByText("模型内部推理")).not.toBeInTheDocument();
   });
 
@@ -46,6 +47,53 @@ describe("AgentWorkspacePage", () => {
 
     expect(await screen.findByText("ops.reader")).toBeInTheDocument();
     expect(container.querySelectorAll('[class*="messageRoleIcon"] svg')).toHaveLength(2);
+  });
+
+  test("keeps long operator IDs contained and inspectable in the operator dock", async () => {
+    const longOperatorId =
+      "operator-central-observability-readonly-user-20260616-abcdef1234567890";
+    server.use(
+      http.get("/auth/session", () =>
+        HttpResponse.json({
+          authenticated: true,
+          subject: longOperatorId,
+          username: "ops.reader",
+          roles: ["ROLE_agent-reader"],
+          authenticationType: "built-in",
+        }),
+      ),
+    );
+
+    renderPage();
+
+    const operatorIdText = await screen.findByTitle(`ID ${longOperatorId}`);
+    const operatorDockRule =
+      agentWorkspaceCss.match(/[.]operatorDock\s*[{][^}]+[}]/u)?.[0] ?? "";
+    const operatorIdentityRule =
+      agentWorkspaceCss.match(/[.]operatorIdentity\s*[{][^}]+[}]/u)?.[0] ?? "";
+    const operatorIdentityTextRule =
+      agentWorkspaceCss.match(/[.]operatorIdentity strong,\s*\n[.]operatorIdentity small\s*[{][^}]+[}]/u)?.[0] ?? "";
+
+    expect(operatorIdText).toHaveTextContent(`ID ${longOperatorId}`);
+    expect(operatorDockRule).toContain("min-width: clamp(430px, 31vw, 520px)");
+    expect(operatorDockRule).toContain("grid-template-columns: 42px minmax(128px, 1fr) auto auto");
+    expect(operatorIdentityRule).toContain("min-width: 128px");
+    expect(operatorIdentityRule).toContain("max-width: clamp(136px, 12vw, 230px)");
+    expect(operatorIdentityTextRule).toContain("text-overflow: ellipsis");
+  });
+
+  test("keeps the outer glass frame separated from inner card borders", async () => {
+    renderPage();
+
+    expect(await screen.findByText("Agent 工作区")).toBeInTheDocument();
+
+    const agentCanvasRule =
+      agentWorkspaceCss.match(/[.]agentCanvas\s*[{][^}]+[}]/u)?.[0] ?? "";
+
+    expect(agentCanvasRule).toContain("box-sizing: border-box");
+    expect(agentCanvasRule).toContain("padding: 12px");
+    expect(agentCanvasRule).toContain("border: 1px solid rgba(166, 64, 92, 0.18)");
+    expect(agentCanvasRule).toContain("border-radius: 24px");
   });
 
   test("renders unified badge icons for side panel headings", async () => {
@@ -104,134 +152,65 @@ describe("AgentWorkspacePage", () => {
     expect(screen.getByRole("button", { name: "发送任务" })).toBeDisabled();
   });
 
-  test("keeps animated brand accents without returning to glass styling", () => {
-    const logoRule = agentWorkspaceCss.match(/[.]logo\s*[{][^}]+[}]/u)?.[0] ?? "";
-    const logoRingRule = agentWorkspaceCss.match(/[.]logo::before\s*[{][^}]+[}]/u)?.[0] ?? "";
-    const logoPulseRule =
-      [...agentWorkspaceCss.matchAll(/[.]logo::after\s*[{][^}]+[}]/gu)].at(-1)?.[0] ?? "";
+  test("renders a login-aligned glass treatment as an alternate Agent page", async () => {
+    const { container } = renderPage();
+
+    expect(await screen.findByText("工作会话")).toBeInTheDocument();
+    expect(container.querySelectorAll("[data-agent-ion]")).toHaveLength(12);
+    expect(container.querySelector("[class*='agentIonField']")).toHaveAttribute("aria-hidden", "true");
+
     const appCapsuleRule =
       agentWorkspaceCss.match(/[.]appCapsule\s*[{][^}]+[}]/u)?.[0] ?? "";
-    const brandScanRule =
-      agentWorkspaceCss.match(/[.]brandSignal::after\s*[{][^}]+[}]/u)?.[0] ?? "";
-    const signalNodeRule =
-      agentWorkspaceCss.match(/[.]brandSignal i\s*[{][^}]+[}]/u)?.[0] ?? "";
-    const brandLockupRule =
-      agentWorkspaceCss.match(/[.]brandLockup\s*[{][^}]+[}]/u)?.[0] ?? "";
-    const brandNameRule =
-      agentWorkspaceCss.match(/[.]brandName\s*[{][^}]+[}]/u)?.[0] ?? "";
-    const brandNameAgentRule =
-      agentWorkspaceCss.match(/[.]brandName strong\s*[{][^}]+[}]/u)?.[0] ?? "";
-    const brandNameDetailRule =
-      [...agentWorkspaceCss.matchAll(/[.]brandName::after\s*[{][^}]+[}]/gu)].at(-1)?.[0] ?? "";
-    const userBadgeRule =
-      agentWorkspaceCss.match(/[.]operatorAvatar\s*[{][^}]+[}]/u)?.[0] ?? "";
-    const logoutButtonRule =
-      agentWorkspaceCss.match(/[.]logoutButton\s*[{][^}]+[}]/u)?.[0] ?? "";
-    const logoutIconBadgeRule =
-      agentWorkspaceCss.match(/[.]logoutIconBadge\s*[{][^}]+[}]/u)?.[0] ?? "";
-    const primaryActionRule =
-      agentWorkspaceCss.match(/[.]primaryAction\s*[{][^}]+[}]/u)?.[0] ?? "";
-    const primaryActionHoverRule =
-      agentWorkspaceCss.match(/[.]primaryAction:hover\s*[{][^}]+[}]/u)?.[0] ?? "";
-    const exchangeHeadingRule =
-      agentWorkspaceCss.match(/[.]exchangeHead h2\s*[{][^}]+[}]/u)?.[0] ?? "";
+    const agentCanvasRule =
+      agentWorkspaceCss.match(/[.]agentCanvas\s*[{][^}]+[}]/u)?.[0] ?? "";
     const capsuleHeadingRule =
       agentWorkspaceCss.match(/[.]capsuleHeading\s*[{][^}]+[}]/u)?.[0] ?? "";
-    const capsuleStatusRule =
-      agentWorkspaceCss.match(/[.]capsuleCurrent small,[\s\S]*?[.]capsuleCurrent span\s*[{][^}]+[}]/u)?.[0] ??
-      "";
-    const messageRoleIconRule =
-      agentWorkspaceCss.match(/[.]messageRoleIcon\s*[{][^}]+[}]/u)?.[0] ?? "";
-    const agentMessageRoleIconRule =
-      agentWorkspaceCss.match(/[.]agent\s+[.]messageRoleIcon\s*[{][^}]+[}]/u)?.[0] ?? "";
-    const sidePanelHeadingRule =
-      agentWorkspaceCss.match(/[.]agentPanel h3\s*[{][^}]+[}]/u)?.[0] ?? "";
-    const panelIconRule =
-      agentWorkspaceCss.match(/[.]panelIcon\s*[{][^}]+[}]/u)?.[0] ?? "";
-    const panelIconTaskRule =
-      agentWorkspaceCss.match(/[.]panelIconTask\s*[{][^}]+[}]/u)?.[0] ?? "";
-    const panelIconSkillRule =
-      agentWorkspaceCss.match(/[.]panelIconSkill\s*[{][^}]+[}]/u)?.[0] ?? "";
-    const panelIconSessionRule =
-      agentWorkspaceCss.match(/[.]panelIconSession\s*[{][^}]+[}]/u)?.[0] ?? "";
+    const capsuleHeadingAccentRule =
+      agentWorkspaceCss.match(/[.]capsuleHeading::after\s*[{][^}]+[}]/u)?.[0] ?? "";
+    const exchangeWindowRule =
+      agentWorkspaceCss.match(/[.]exchangeWindow\s*[{][^}]+[}]/u)?.[0] ?? "";
+    const agentPanelRule =
+      agentWorkspaceCss.match(/[.]agentPanel\s*[{][^}]+[}]/u)?.[0] ?? "";
+    const composerBoxRule =
+      agentWorkspaceCss.match(/[.]composerBox\s*[{][^}]+[}]/u)?.[0] ?? "";
+    const agentIonFieldRule =
+      agentWorkspaceCss.match(/[.]agentIonField\s*[{][^}]+[}]/u)?.[0] ?? "";
+    const primaryActionRule =
+      agentWorkspaceCss.match(/[.]primaryAction\s*[{][^}]+[}]/u)?.[0] ?? "";
+    const sendButtonRule =
+      agentWorkspaceCss.match(/[.]sendButton\s*[{][^}]+[}]/u)?.[0] ?? "";
 
-    expect(agentWorkspaceCss).not.toContain("backdrop-filter");
-    expect(agentWorkspaceCss).not.toContain("blur(");
-    expect(appCapsuleRule).toContain("height: 76px");
-    expect(appCapsuleRule).toContain("border-radius: 22px");
-    expect(appCapsuleRule).toContain("background: linear-gradient");
-    expect(appCapsuleRule).not.toContain("border-radius: 999px");
-    expect(logoRule).toContain("animation: brand-logo-float");
-    expect(logoRingRule).toContain("radial-gradient");
-    expect(logoRingRule).toContain("animation: brand-orbit");
-    expect(logoRingRule).not.toContain("display: none");
-    expect(logoPulseRule).toContain("radial-gradient");
-    expect(logoPulseRule).toContain("animation: pulse-ring");
-    expect(brandScanRule).toContain("linear-gradient");
-    expect(brandScanRule).toContain("animation: brand-scan");
-    expect(signalNodeRule).toContain("animation: brand-node-pulse");
-    expect(agentWorkspaceCss).toContain("@keyframes brand-logo-float");
-    expect(agentWorkspaceCss).toContain("@keyframes brand-orbit");
-    expect(agentWorkspaceCss).toContain("@keyframes pulse-ring");
-    expect(agentWorkspaceCss).toContain("@keyframes brand-scan");
-    expect(agentWorkspaceCss).toContain("@keyframes brand-node-pulse");
-    expect(brandLockupRule).toContain("margin-left: 18px");
-    expect(brandNameRule).toContain("color: #25445d");
-    expect(brandNameRule).toContain("text-shadow: 0 1px 0 #fff");
-    expect(brandNameAgentRule).toContain("color: var(--agent-blue)");
-    expect(brandNameAgentRule).toContain("background: #eef8fb");
-    expect(brandNameDetailRule).toContain("linear-gradient");
-    expect(userBadgeRule).toContain("width: 42px");
-    expect(userBadgeRule).toContain("background: var(--agent-blue)");
-    expect(agentWorkspaceCss).toContain(".operatorAvatar::before,\n.operatorAvatar::after");
-    expect(agentWorkspaceCss).toContain("content: \"\"");
-    expect(logoutButtonRule).toContain("border-radius: 999px");
-    expect(logoutButtonRule).toContain("box-shadow:");
-    expect(logoutIconBadgeRule).toContain("width: 24px");
-    expect(logoutIconBadgeRule).toContain("background: var(--agent-red)");
-    expect(agentWorkspaceCss).toContain(".logoutIconBadge::before,\n.logoutIconBadge::after");
-    expect(agentWorkspaceCss).toContain(".logoutIconBadge svg");
-    expect(primaryActionRule).toContain("border-color: rgba(216, 11, 70, 0.2)");
-    expect(primaryActionRule).toContain("background: #fff3f7");
-    expect(primaryActionRule).toContain("color: var(--agent-red)");
-    expect(primaryActionRule).not.toContain("background: var(--agent-red)");
-    expect(primaryActionHoverRule).toContain("background: #ffeaf1");
-    expect(primaryActionHoverRule).toContain("box-shadow: 0 10px 18px rgba(216, 11, 70, 0.1)");
-    expect(capsuleHeadingRule).toContain("border-radius: 12px");
-    expect(capsuleHeadingRule).toContain("color: #25445d");
-    expect(capsuleHeadingRule).toContain("font-weight: 850");
-    expect(capsuleHeadingRule).toContain("text-shadow: 0 1px 0 #fff");
-    expect(capsuleHeadingRule).not.toContain("border-radius: 999px");
-    expect(capsuleHeadingRule).not.toContain("color: var(--color-text)");
-    expect(capsuleStatusRule).toContain("border-radius: 11px");
-    expect(exchangeHeadingRule).toContain("font-size: 18px");
-    expect(exchangeHeadingRule).toContain("line-height: 1.15");
-    expect(messageRoleIconRule).toContain("display: grid");
-    expect(messageRoleIconRule).toContain("width: 28px");
-    expect(messageRoleIconRule).toContain("background: var(--agent-red)");
-    expect(messageRoleIconRule).toContain("color: #fff");
-    expect(agentMessageRoleIconRule).toContain("border-radius: 10px");
-    expect(agentMessageRoleIconRule).toContain("background: var(--agent-blue)");
-    expect(agentWorkspaceCss).toContain(".messageRoleIcon::before,\n.messageRoleIcon::after");
-    expect(agentWorkspaceCss).toContain(".messageRoleIcon svg");
-    expect(sidePanelHeadingRule).toContain("font-size: 15px");
-    expect(sidePanelHeadingRule).toContain("font-weight: 760");
-    expect(sidePanelHeadingRule).toContain("color: #1f6f8a");
-    expect(sidePanelHeadingRule).toContain("line-height: 1.25");
-    expect(sidePanelHeadingRule).toContain("text-shadow: none");
-    expect(sidePanelHeadingRule).toContain("-webkit-font-smoothing: antialiased");
-    expect(sidePanelHeadingRule).not.toContain("color: var(--color-text)");
-    expect(sidePanelHeadingRule).not.toContain("text-shadow: 0 1px 0 #fff");
-    expect(panelIconRule).toContain("display: grid");
-    expect(panelIconRule).toContain("width: 26px");
-    expect(panelIconRule).toContain("border-radius: 10px");
-    expect(panelIconRule).toContain("color: #fff");
-    expect(panelIconTaskRule).toContain("--panel-accent: var(--agent-red)");
-    expect(panelIconSkillRule).toContain("--panel-accent: var(--agent-blue)");
-    expect(panelIconSessionRule).toContain("--panel-accent: var(--agent-green)");
-    expect(panelIconSessionRule).not.toContain("border-radius: 999px");
-    expect(agentWorkspaceCss).toContain(".panelIcon::before,\n.panelIcon::after");
-    expect(agentWorkspaceCss).toContain(".panelIcon svg");
+    expect(agentWorkspaceCss).toContain("--agent-bg-base: #f6f7f9;");
+    expect(agentWorkspaceCss).toContain("--agent-red: #d31145;");
+    expect(agentWorkspaceCss).not.toContain("--agent-lime");
+    expect(agentWorkspaceCss).toContain("backdrop-filter: blur(18px)");
+    expect(agentWorkspaceCss).toContain("@keyframes agent-ion-drift");
+    expect(agentWorkspaceCss).toContain("@keyframes frame-glass-sheen");
+    expect(agentWorkspaceCss).toContain("radial-gradient(circle at 78% 14%, rgba(14, 165, 183, 0.14), transparent 18rem)");
+    expect(agentCanvasRule).toContain("border: 1px solid rgba(166, 64, 92, 0.18)");
+    expect(agentCanvasRule).toContain("border-radius: 24px");
+    expect(agentCanvasRule).toContain("overflow: hidden");
+    expect(agentCanvasRule).toContain("background: var(--agent-bg-base)");
+    expect(agentCanvasRule).toContain("font-family: var(--agent-font-sans)");
+    expect(agentCanvasRule).toContain("0 18px 56px rgba(31, 41, 51, 0.055)");
+    expect(agentIonFieldRule).toContain("pointer-events: none");
+    expect(appCapsuleRule).toContain("rgba(166, 64, 92, 0.26)");
+    expect(appCapsuleRule).toContain("rgba(255, 255, 255, 0.78)");
+    expect(appCapsuleRule).toContain("backdrop-filter: blur(18px)");
+    expect(capsuleHeadingRule).toContain("font-family: var(--agent-font-display)");
+    expect(capsuleHeadingAccentRule).toContain("width: clamp(16px, 3vw, 62px)");
+    expect(capsuleHeadingAccentRule).toContain("border: 2px solid var(--agent-red)");
+    expect(capsuleHeadingAccentRule).toContain("radial-gradient(circle, var(--agent-red) 0 3px, transparent 4px)");
+    expect(primaryActionRule).toContain("linear-gradient(90deg, var(--agent-red), #e01851 48%, var(--agent-red-dark))");
+    expect(exchangeWindowRule).toContain("rgba(255, 255, 255, 0.68)");
+    expect(exchangeWindowRule).toContain("backdrop-filter: blur(18px)");
+    expect(agentPanelRule).toContain("rgba(255, 255, 255, 0.66)");
+    expect(agentPanelRule).toContain("backdrop-filter: blur(18px)");
+    expect(composerBoxRule).toContain("background: #fff");
+    expect(composerBoxRule).toContain("border-radius: 8px");
+    expect(composerBoxRule).toContain("backdrop-filter: blur(14px)");
+    expect(sendButtonRule).toContain("linear-gradient(90deg, var(--agent-red), #e01851 48%, var(--agent-red-dark))");
+    expect(sendButtonRule).toContain("border-radius: 999px");
   });
 });
 

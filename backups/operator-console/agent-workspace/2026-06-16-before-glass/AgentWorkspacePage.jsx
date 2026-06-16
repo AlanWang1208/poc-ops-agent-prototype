@@ -21,20 +21,6 @@ import styles from "./AgentWorkspacePage.module.css";
 
 const secondaryConversationActions = ["分享", "接管状态"];
 const composerTags = ["+ 服务", "+ 告警", "+ 工单", "+ 历史 workflow"];
-const agentIonSpecs = [
-  ["agentIonTiny", "agentIonBlue", "agentIonLaneOne"],
-  ["agentIonSmall", "agentIonRed", "agentIonLaneTwo"],
-  ["agentIonMedium", "agentIonGreen", "agentIonLaneThree"],
-  ["agentIonTiny", "agentIonGold", "agentIonLaneFour"],
-  ["agentIonSmall", "agentIonBlue", "agentIonLaneFive"],
-  ["agentIonTiny", "agentIonGreen", "agentIonLaneSix"],
-  ["agentIonMedium", "agentIonRed", "agentIonLaneSeven"],
-  ["agentIonSmall", "agentIonGold", "agentIonLaneEight"],
-  ["agentIonTiny", "agentIonBlue", "agentIonLaneNine"],
-  ["agentIonSmall", "agentIonGreen", "agentIonLaneTen"],
-  ["agentIonTiny", "agentIonRed", "agentIonLaneEleven"],
-  ["agentIonMedium", "agentIonBlue", "agentIonLaneTwelve"],
-];
 const OFF_WORK_HOUR = 18;
 const WORKDAY_START_HOUR = 9;
 
@@ -68,18 +54,6 @@ export function AgentWorkspacePage() {
     <div
       className={`${styles.agentCanvas} ${isWorkspaceExpanded ? styles.workspaceFullscreen : ""}`}
     >
-      <div aria-hidden="true" className={styles.agentIonField}>
-        {agentIonSpecs.map(([size, tone, lane], index) => (
-          <i
-            aria-hidden="true"
-            className={[styles.agentIon, styles[size], styles[tone], styles[lane]]
-              .filter(Boolean)
-              .join(" ")}
-            data-agent-ion=""
-            key={`${lane}-${index}`}
-          />
-        ))}
-      </div>
       <TopCapsule />
 
       <ConversationToolbar
@@ -162,8 +136,8 @@ function TopCapsule() {
   });
   const session = sessionQuery.data;
   const isAuthenticated = session?.authenticated === true;
-  const username = isAuthenticated ? (session.username ?? "未登录") : "未登录";
-  const operatorId = isAuthenticated ? (session.subject ?? "unavailable") : "unavailable";
+  const username = isAuthenticated ? session.username : "未登录";
+  const operatorId = isAuthenticated ? session.subject : "unavailable";
   const avatarText = getAvatarText(username);
 
   return (
@@ -179,6 +153,10 @@ function TopCapsule() {
       </div>
       <div className={styles.capsuleCurrent}>
         <h1 className={styles.capsuleHeading}>Agent 工作区</h1>
+        <i aria-hidden="true" />
+        <small>任务会话</small>
+        <i aria-hidden="true" />
+        <span>只读模式</span>
       </div>
       <div aria-hidden="true" className={styles.brandSignal}>
         <i />
@@ -206,18 +184,14 @@ function TopCapsule() {
  * }} props
  */
 function OperatorDock({ avatarText, isLogoutPending, onLogout, operatorId, username }) {
-  const operatorIdLabel = `ID ${operatorId}`;
-
   return (
     <section aria-label="当前登录人" className={styles.operatorDock}>
       <span aria-hidden="true" className={styles.operatorAvatar}>
         {avatarText}
       </span>
       <span className={styles.operatorIdentity}>
-        <strong title={username}>{username}</strong>
-        <small aria-label={operatorIdLabel} title={operatorIdLabel}>
-          {operatorIdLabel}
-        </small>
+        <strong>{username}</strong>
+        <small>ID {operatorId}</small>
       </span>
       <WorkdayCountdown />
       <button

@@ -1,7 +1,10 @@
 import {
+  AudioLines,
   Bot,
   Boxes,
   CircleDot,
+  DatabaseZap,
+  ExternalLink,
   FileClock,
   Network,
   SearchCheck,
@@ -21,8 +24,11 @@ const navigation = [
   },
   { icon: Bot, label: "Agent 工作区", tone: "info", to: "/agent" },
   { icon: Network, label: "RAG 问答", tone: "teal", to: "/agent?view=rag", view: "rag" },
-  { icon: SearchCheck, label: "诊断工作台", tone: "deep", to: "/sql" },
+  { icon: SearchCheck, label: "SQL 工作区", tone: "deep", to: "/sql" },
   { icon: Boxes, label: "Skill 注册中心", tone: "warning", to: "/skills" },
+  { icon: AudioLines, label: "会议录制纪要", tone: "meeting", to: "/meeting-notes" },
+  { icon: DatabaseZap, label: "AS400改建表", tone: "as400", to: "/as400-ddl" },
+  { icon: ExternalLink, label: "快捷连接", tone: "quick", to: "/quick-links" },
   { icon: Workflow, label: "工作流事件", tone: "green", to: "/agent?view=workflow", view: "workflow" },
   { icon: FileClock, label: "审计记录", tone: "slate", to: "/agent?view=audit", view: "audit" },
 ];
@@ -94,15 +100,6 @@ export function AppShell({ children }) {
               })}
             </span>
             <span className={styles.sidebarPreviewCore} />
-          </div>
-          <div className={styles.sidebarSearch}>搜索服务 / 数据库 / 工单</div>
-          <div className={styles.sidebarActions}>
-            <button className={styles.safetyAction} type="button">
-              安全模式
-            </button>
-            <button className={styles.sessionAction} type="button">
-              新建任务
-            </button>
           </div>
         </div>
       </aside>
