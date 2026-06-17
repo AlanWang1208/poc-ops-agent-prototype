@@ -3,6 +3,7 @@ import { describe, expect, test, vi } from "vitest";
 import { z } from "zod";
 
 import {
+  getLogoutUrl,
   getBrowserSession,
   getLoginUrl,
   logout,
@@ -136,12 +137,13 @@ describe("feature API modules", () => {
           authenticationType: "built-in",
         }),
       ),
-      http.post("/logout", () => new HttpResponse(null, { status: 204 })),
+      http.get("/auth/logout", () => new HttpResponse(null, { status: 204 })),
     );
 
     await expect(getBrowserSession()).resolves.toMatchObject({ username: "alice" });
     await expect(logout()).resolves.toBeUndefined();
     expect(getLoginUrl()).toBe("/auth/login");
+    expect(getLogoutUrl()).toBe("/auth/logout");
   });
 
   test("maps skill, routing, and SQL endpoints to their real control-plane paths", async () => {

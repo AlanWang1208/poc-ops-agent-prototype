@@ -1,5 +1,10 @@
 import { z } from "zod";
 
+/**
+ * @typedef {z.infer<typeof sqlConnectionSchema>} SqlConnectionSummary
+ * @typedef {z.infer<typeof sqlValidationReportSchema>} SqlValidationReport
+ */
+
 const nonBlankString = z.string().trim().min(1);
 const targetEnvironmentSchema = z.enum(["development", "test"]);
 const sqlQueryActionSchema = z.enum([

@@ -1,5 +1,9 @@
 import { z } from "zod";
 
+/**
+ * @typedef {z.infer<typeof browserSessionSchema>} BrowserSession
+ */
+
 const nonBlankString = z.string().trim().min(1);
 const nullableNonBlankString = nonBlankString.nullable();
 

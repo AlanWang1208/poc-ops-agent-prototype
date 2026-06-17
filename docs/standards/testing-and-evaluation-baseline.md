@@ -21,6 +21,7 @@
 | 契约测试 | 验证 API、事件、Skill Schema 和执行命令格式 | 契约变更必须带兼容性校验 |
 | 安全测试 | 验证授权拒绝、输入校验、只读边界和错误泄露 | P1 必须覆盖拒绝路径 |
 | 评测测试 | 验证只读 Skill 路由、计划生成和拒绝行为 | 每次模型/路由策略变更必须回归 |
+| 前端浏览器验收 | 验证操作台真实导航、桌面视口、禁用状态和关键交互可达性 | M09 页面变更必须覆盖 Playwright 验收 |
 
 ## 开发工作流
 
@@ -38,6 +39,8 @@
 ## P1 最低门禁
 
 - `backend` Maven `verify` 通过。
+- `frontend/operator-console` 必须通过 `npm run check`、`npm run lint`、`npm run test`、`npm run build` 和高危依赖审计。
+- M09 操作台页面变更必须通过 `npm run test:e2e`；当前覆盖 `1280px`、`1440px`、`1920px` 桌面视口。
 - 控制面基础接口必须覆盖：
   - 健康检查
   - API 文档
@@ -97,6 +100,7 @@ Set-Location ..
 CI 必须执行：
 
 - Maven Verify
+- 前端 `checkJs`、ESLint、Vitest、Vite Build、Playwright 浏览器验收和高危依赖审计
 - 仓库规范检查
 - 密钥扫描
 - 制品归档

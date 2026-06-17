@@ -64,8 +64,30 @@ jobs:
           cache-dependency-path: frontend/operator-console/package-lock.json
       - name: 安装前端依赖
         run: npm ci
+      - name: 前端严格类型检查
+        run: npm run check
+      - name: 前端静态检查
+        run: npm run lint
+      - name: 前端单元测试
+        run: npm run test
       - name: 构建只读操作台
         run: npm run build
+      - name: 前端高危依赖审计
+        run: npm audit --audit-level=high
+      - name: 安装 Playwright Chromium
+        run: npx playwright install --with-deps chromium
+      - name: 操作台浏览器验收
+        run: npm run test:e2e
+      - name: 上传 Playwright 报告
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: operator-console-playwright-${{ github.sha }}
+          path: |
+            frontend/operator-console/playwright-report
+            frontend/operator-console/test-results
+          if-no-files-found: ignore
+          retention-days: 14
 
   secret-scan:
     name: 密钥扫描
