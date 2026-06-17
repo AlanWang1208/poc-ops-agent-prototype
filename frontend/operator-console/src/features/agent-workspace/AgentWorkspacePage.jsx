@@ -164,7 +164,6 @@ function TopCapsule() {
   const isAuthenticated = session?.authenticated === true;
   const username = isAuthenticated ? (session.username ?? "未登录") : "未登录";
   const operatorId = isAuthenticated ? (session.subject ?? "unavailable") : "unavailable";
-  const avatarText = getAvatarText(username);
 
   return (
     <section aria-label="当前工作台" className={styles.appCapsule}>
@@ -186,7 +185,6 @@ function TopCapsule() {
         <i />
       </div>
       <OperatorDock
-        avatarText={avatarText}
         isLogoutPending={logoutMutation.isPending}
         onLogout={() => logoutMutation.mutate()}
         operatorId={operatorId}
@@ -198,27 +196,29 @@ function TopCapsule() {
 
 /**
  * @param {{
- *   avatarText: string,
  *   isLogoutPending: boolean,
  *   onLogout: () => void,
  *   operatorId: string,
  *   username: string,
  * }} props
  */
-function OperatorDock({ avatarText, isLogoutPending, onLogout, operatorId, username }) {
+function OperatorDock({ isLogoutPending, onLogout, operatorId, username }) {
   const operatorIdLabel = `ID ${operatorId}`;
 
   return (
     <section aria-label="当前登录人" className={styles.operatorDock}>
-      <span aria-hidden="true" className={styles.operatorAvatar}>
-        {avatarText}
-      </span>
-      <span className={styles.operatorIdentity}>
-        <strong title={username}>{username}</strong>
-        <small aria-label={operatorIdLabel} title={operatorIdLabel}>
-          {operatorIdLabel}
-        </small>
-      </span>
+      <div className={styles.operatorProfile} data-operator-profile="">
+        <span aria-hidden="true" className={styles.operatorAvatar} data-creative-avatar="operator">
+          <span className={styles.operatorAvatarCore} />
+          <span className={styles.operatorAvatarOrbit} />
+        </span>
+        <span className={styles.operatorIdentity}>
+          <strong title={username}>{username}</strong>
+          <small aria-label={operatorIdLabel} title={operatorIdLabel}>
+            {operatorIdLabel}
+          </small>
+        </span>
+      </div>
       <WorkdayCountdown />
       <button
         aria-label="登出当前账号"
@@ -237,21 +237,6 @@ function OperatorDock({ avatarText, isLogoutPending, onLogout, operatorId, usern
 }
 
 /**
- * @param {string | null | undefined} username
- */
-function getAvatarText(username) {
-  if (!username) {
-    return "OP";
-  }
-  const parts = username
-    .replace(/@.*/u, "")
-    .split(/[._\-\s]+/u)
-    .filter(Boolean);
-  const initials = parts.map((part) => part[0]).join("").slice(0, 2);
-  return initials.toUpperCase() || "OP";
-}
-
-/**
  * @param {Date} now
  */
 function getOffWorkCountdown(now) {
@@ -261,36 +246,22 @@ function getOffWorkCountdown(now) {
   const target = new Date(now);
   target.setHours(OFF_WORK_HOUR, 0, 0, 0);
 
-  const remainingMs = target.getTime() - now.getTime();
+  const remainingMs = Math.max(target.getTime() - now.getTime(), 0);
   const workdayMs = target.getTime() - start.getTime();
   const elapsedMs = Math.min(Math.max(now.getTime() - start.getTime(), 0), workdayMs);
-  const progress = Math.round((elapsedMs / workdayMs) * 100);
-
-  if (remainingMs <= 0) {
-    return {
-      label: "下班倒计时",
-      meta: "今日已收工",
-      progress: 100,
-      timeText: "00:00:00",
-    };
-  }
+  const progress = workdayMs > 0 ? Math.round((elapsedMs / workdayMs) * 100) : 100;
 
   const hours = Math.floor(remainingMs / 3_600_000);
   const minutes = Math.floor((remainingMs % 3_600_000) / 60_000);
   const seconds = Math.floor((remainingMs % 60_000) / 1_000);
 
   return {
-    label: "下班倒计时",
-    meta: "18:00 下班",
     progress,
     timeText: [hours, minutes, seconds].map((part) => String(part).padStart(2, "0")).join(":"),
   };
 }
 
-/**
- * @param {{compact?: boolean}} props
- */
-function WorkdayCountdown({ compact = false }) {
+function WorkdayCountdown() {
   const [now, setNow] = useState(() => new Date());
   const countdown = getOffWorkCountdown(now);
 
@@ -303,16 +274,16 @@ function WorkdayCountdown({ compact = false }) {
   return (
     <div
       aria-label={`下班倒计时：${countdown.timeText}`}
-      className={`${styles.workdayCountdown} ${compact ? styles.workdayCountdownCompact : ""}`}
+      className={styles.workdayCountdown}
+      data-creative-timer="workday-countdown"
       role="timer"
     >
-      <span aria-hidden="true" className={styles.countdownBadge}>
-        <TimerReset size={15} strokeWidth={2.6} />
+      <span aria-hidden="true" className={styles.countdownGlyph}>
+        <TimerReset size={14} strokeWidth={2.6} />
       </span>
       <span className={styles.countdownContent}>
-        <span>{countdown.label}</span>
+        <span>下班倒计时</span>
         <strong>{countdown.timeText}</strong>
-        <small>{countdown.meta}</small>
       </span>
       <span aria-hidden="true" className={styles.countdownTrack}>
         <span style={{ width: `${countdown.progress}%` }} />
@@ -340,7 +311,6 @@ function ConversationToolbar({ isWorkspaceExpanded, onToggleWorkspace }) {
         <small>2 个 workflow · 1 分钟前更新</small>
       </div>
       <div className={styles.conversationToolbarActions}>
-        <WorkdayCountdown compact />
         <button
           aria-pressed={isWorkspaceExpanded}
           className={styles.workspaceExpand}

@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import { http, HttpResponse } from "msw";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { beforeEach, describe, expect, test } from "vitest";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
 import { AppProviders } from "../../app/providers.jsx";
 import { server } from "../../test/server.js";
@@ -16,6 +16,10 @@ const agentWorkspaceCss = readFileSync(
 
 beforeEach(() => {
   server.use(...defaultHandlers);
+});
+
+afterEach(() => {
+  vi.useRealTimers();
 });
 
 function renderPage() {
@@ -49,6 +53,25 @@ describe("AgentWorkspacePage", () => {
     expect(container.querySelectorAll('[class*="messageRoleIcon"] svg')).toHaveLength(2);
   });
 
+  test("renders the workday countdown as a compact creative timer", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-06-16T19:00:00+08:00"));
+
+    renderPage();
+
+    const workdayCountdown = screen.getByRole("timer", { name: "下班倒计时：00:00:00" });
+
+    expect(screen.queryByRole("img", { name: "下班倒计时创意头像" })).not.toBeInTheDocument();
+    expect(workdayCountdown).toHaveAttribute("data-creative-timer", "workday-countdown");
+    expect(workdayCountdown).toHaveTextContent("下班倒计时");
+    expect(workdayCountdown).toHaveTextContent("00:00:00");
+    expect(workdayCountdown.children).toHaveLength(3);
+    expect(agentWorkspaceCss).toContain(".workdayCountdown");
+    expect(agentWorkspaceCss).toContain(".countdownGlyph");
+    expect(agentWorkspaceCss).toContain(".countdownTrack");
+    expect(agentWorkspaceCss).not.toContain(".workdayCountdownAvatar");
+  });
+
   test("keeps long operator IDs contained and inspectable in the operator dock", async () => {
     const longOperatorId =
       "operator-central-observability-readonly-user-20260616-abcdef1234567890";
@@ -64,22 +87,48 @@ describe("AgentWorkspacePage", () => {
       ),
     );
 
-    renderPage();
+    const { container } = renderPage();
 
     const operatorIdText = await screen.findByTitle(`ID ${longOperatorId}`);
+    const operatorProfile = container.querySelector("[data-operator-profile]");
     const operatorDockRule =
       agentWorkspaceCss.match(/[.]operatorDock\s*[{][^}]+[}]/u)?.[0] ?? "";
+    const operatorProfileRule =
+      agentWorkspaceCss.match(/[.]operatorProfile\s*[{][^}]+[}]/u)?.[0] ?? "";
     const operatorIdentityRule =
       agentWorkspaceCss.match(/[.]operatorIdentity\s*[{][^}]+[}]/u)?.[0] ?? "";
     const operatorIdentityTextRule =
       agentWorkspaceCss.match(/[.]operatorIdentity strong,\s*\n[.]operatorIdentity small\s*[{][^}]+[}]/u)?.[0] ?? "";
 
     expect(operatorIdText).toHaveTextContent(`ID ${longOperatorId}`);
+    expect(operatorProfile).toBeInTheDocument();
     expect(operatorDockRule).toContain("min-width: clamp(430px, 31vw, 520px)");
-    expect(operatorDockRule).toContain("grid-template-columns: 42px minmax(128px, 1fr) auto auto");
-    expect(operatorIdentityRule).toContain("min-width: 128px");
+    expect(operatorDockRule).toContain("grid-template-columns: minmax(190px, auto) auto auto");
+    expect(operatorDockRule).toContain("gap: 10px");
+    expect(operatorDockRule).toContain("background: transparent");
+    expect(operatorDockRule).toContain("box-shadow: none");
+    expect(operatorDockRule).not.toContain("backdrop-filter");
+    expect(operatorProfileRule).toContain("grid-template-columns: 42px minmax(0, 1fr)");
+    expect(operatorProfileRule).toContain("border: 1px solid rgba(37, 132, 169, 0.14)");
+    expect(operatorProfileRule).toContain("border-radius: 14px");
+    expect(operatorIdentityRule).toContain("min-width: 0");
     expect(operatorIdentityRule).toContain("max-width: clamp(136px, 12vw, 230px)");
+    expect(operatorIdentityRule).not.toContain("border-right");
     expect(operatorIdentityTextRule).toContain("text-overflow: ellipsis");
+  });
+
+  test("renders the operator avatar as a creative mark instead of text initials", async () => {
+    const { container } = renderPage();
+
+    expect(await screen.findByText("ops.reader")).toBeInTheDocument();
+
+    const operatorAvatar = container.querySelector("[data-creative-avatar='operator']");
+
+    expect(operatorAvatar).toBeInTheDocument();
+    expect(operatorAvatar?.textContent).toBe("");
+    expect(operatorAvatar?.children).toHaveLength(2);
+    expect(agentWorkspaceCss).toContain(".operatorAvatarCore");
+    expect(agentWorkspaceCss).toContain(".operatorAvatarOrbit");
   });
 
   test("keeps the outer glass frame separated from inner card borders", async () => {
@@ -161,6 +210,18 @@ describe("AgentWorkspacePage", () => {
 
     const appCapsuleRule =
       agentWorkspaceCss.match(/[.]appCapsule\s*[{][^}]+[}]/u)?.[0] ?? "";
+    const brandLockupRule =
+      agentWorkspaceCss.match(/[.]brandLockup\s*[{][^}]+[}]/u)?.[0] ?? "";
+    const brandNameRule =
+      agentWorkspaceCss.match(/[.]brandName\s*[{][^}]+[}]/u)?.[0] ?? "";
+    const brandNameBeforeRule =
+      [...agentWorkspaceCss.matchAll(/[.]brandName::before\s*[{][^}]+[}]/gu)].at(-1)?.[0] ??
+      "";
+    const brandNameAfterRule =
+      [...agentWorkspaceCss.matchAll(/[.]brandName::after\s*[{][^}]+[}]/gu)].at(-1)?.[0] ??
+      "";
+    const brandAgentPillRule =
+      agentWorkspaceCss.match(/[.]brandName strong\s*[{][^}]+[}]/u)?.[0] ?? "";
     const agentCanvasRule =
       agentWorkspaceCss.match(/[.]agentCanvas\s*[{][^}]+[}]/u)?.[0] ?? "";
     const capsuleHeadingRule =
@@ -173,6 +234,10 @@ describe("AgentWorkspacePage", () => {
       agentWorkspaceCss.match(/[.]agentPanel\s*[{][^}]+[}]/u)?.[0] ?? "";
     const composerBoxRule =
       agentWorkspaceCss.match(/[.]composerBox\s*[{][^}]+[}]/u)?.[0] ?? "";
+    const composerFooterRule =
+      agentWorkspaceCss.match(/[.]composerFooter\s*[{][^}]+[}]/u)?.[0] ?? "";
+    const composerTagsRule =
+      agentWorkspaceCss.match(/[.]composerTags\s*[{][^}]+[}]/u)?.[0] ?? "";
     const agentIonFieldRule =
       agentWorkspaceCss.match(/[.]agentIonField\s*[{][^}]+[}]/u)?.[0] ?? "";
     const primaryActionRule =
@@ -197,7 +262,25 @@ describe("AgentWorkspacePage", () => {
     expect(appCapsuleRule).toContain("rgba(166, 64, 92, 0.26)");
     expect(appCapsuleRule).toContain("rgba(255, 255, 255, 0.78)");
     expect(appCapsuleRule).toContain("backdrop-filter: blur(18px)");
+    expect(brandLockupRule).toContain("border: 1px solid rgba(37, 132, 169, 0.14)");
+    expect(brandLockupRule).toContain("background:");
+    expect(brandLockupRule).toContain("rgba(255, 255, 255, 0.48)");
+    expect(brandLockupRule).toContain("border-radius: 999px");
+    expect(brandNameRule).toContain("font-size: 15px");
+    expect(brandNameRule).toContain("font-weight: 820");
+    expect(brandNameRule).toContain("color: color-mix(in srgb, var(--agent-blue) 58%, var(--agent-ink))");
+    expect(brandNameRule).not.toContain("font-weight: 950");
+    expect(brandNameBeforeRule).toContain("linear-gradient(180deg, var(--agent-red), var(--agent-blue))");
+    expect(brandNameAfterRule).toMatch(
+      /linear-gradient[(]\s*90deg,\s*transparent,\s*rgba[(]216,\s*11,\s*70,\s*0[.]42[)],\s*rgba[(]37,\s*132,\s*169,\s*0[.]35[)],\s*transparent\s*[)]/u,
+    );
+    expect(brandAgentPillRule).toContain("background: rgba(255, 255, 255, 0.68)");
+    expect(brandAgentPillRule).toContain("color: var(--agent-red)");
     expect(capsuleHeadingRule).toContain("font-family: var(--agent-font-display)");
+    expect(capsuleHeadingRule).toContain("color: color-mix(in srgb, var(--agent-blue) 52%, var(--agent-ink))");
+    expect(capsuleHeadingRule).toContain("font-weight: 760");
+    expect(capsuleHeadingRule).not.toContain("color: var(--agent-ink)");
+    expect(capsuleHeadingRule).not.toContain("font-weight: 850");
     expect(capsuleHeadingAccentRule).toContain("width: clamp(16px, 3vw, 62px)");
     expect(capsuleHeadingAccentRule).toContain("border: 2px solid var(--agent-red)");
     expect(capsuleHeadingAccentRule).toContain("radial-gradient(circle, var(--agent-red) 0 3px, transparent 4px)");
@@ -209,6 +292,12 @@ describe("AgentWorkspacePage", () => {
     expect(composerBoxRule).toContain("background: #fff");
     expect(composerBoxRule).toContain("border-radius: 8px");
     expect(composerBoxRule).toContain("backdrop-filter: blur(14px)");
+    expect(composerBoxRule).toContain("grid-template-rows: minmax(0, 1fr) auto");
+    expect(composerFooterRule).toContain("align-self: end");
+    expect(composerFooterRule).toContain("align-items: end");
+    expect(composerTagsRule).toContain("flex-wrap: nowrap");
+    expect(composerTagsRule).toContain("align-self: end");
+    expect(composerTagsRule).toContain("overflow-x: auto");
     expect(sendButtonRule).toContain("linear-gradient(90deg, var(--agent-red), #e01851 48%, var(--agent-red-dark))");
     expect(sendButtonRule).toContain("border-radius: 999px");
   });

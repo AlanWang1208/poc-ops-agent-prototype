@@ -10,11 +10,18 @@ const appShellSource = readFileSync("src/components/layout/AppShell.jsx", "utf8"
 
 describe("AppShell styles", () => {
   it("renders sidebar menu buttons with login-aligned glass highlights", () => {
+    const sidebarRule = appShellCss.match(/[.]sidebar\s*[{][^}]+[}]/u)?.[0] ?? "";
     const navLinkRule = appShellCss.match(/[.]navLink\s*[{][^}]+[}]/u)?.[0] ?? "";
     const navLinkSheenRule = appShellCss.match(/[.]navLink::after\s*[{][^}]+[}]/u)?.[0] ?? "";
     const activeRule = appShellCss.match(/[.]active\s*[{][^}]+[}]/u)?.[0] ?? "";
     const hoverRule = appShellCss.match(/[.]navLink:hover\s*[{][^}]+[}]/u)?.[0] ?? "";
 
+    expect(sidebarRule).toContain("radial-gradient(circle at 18% 8%, rgba(211, 17, 69, 0.13), transparent 10rem)");
+    expect(sidebarRule).toContain("radial-gradient(circle at 88% 86%, rgba(166, 64, 92, 0.1), transparent 11rem)");
+    expect(sidebarRule).toContain("linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(247, 250, 252, 0.74))");
+    expect(sidebarRule).toContain("border: 1px solid rgba(166, 64, 92, 0.18)");
+    expect(sidebarRule).toContain("0 18px 38px rgba(166, 64, 92, 0.08)");
+    expect(sidebarRule).not.toContain("background: var(--color-surface)");
     expect(navLinkRule).toContain("overflow: hidden");
     expect(navLinkRule).toContain("isolation: isolate");
     expect(navLinkRule).toContain("rgba(255, 255, 255, 0.68)");
