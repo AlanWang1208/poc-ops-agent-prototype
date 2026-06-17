@@ -285,9 +285,6 @@ function WorkdayCountdown() {
         <span>下班倒计时</span>
         <strong>{countdown.timeText}</strong>
       </span>
-      <span aria-hidden="true" className={styles.countdownTrack}>
-        <span style={{ width: `${countdown.progress}%` }} />
-      </span>
     </div>
   );
 }

@@ -65,10 +65,12 @@ describe("AgentWorkspacePage", () => {
     expect(workdayCountdown).toHaveAttribute("data-creative-timer", "workday-countdown");
     expect(workdayCountdown).toHaveTextContent("下班倒计时");
     expect(workdayCountdown).toHaveTextContent("00:00:00");
-    expect(workdayCountdown.children).toHaveLength(3);
+    expect(workdayCountdown.children).toHaveLength(2);
     expect(agentWorkspaceCss).toContain(".workdayCountdown");
     expect(agentWorkspaceCss).toContain(".countdownGlyph");
-    expect(agentWorkspaceCss).toContain(".countdownTrack");
+    expect(agentWorkspaceCss).not.toContain(".countdownTrack");
+    expect(agentWorkspaceCss).not.toContain(".workdayCountdown::before");
+    expect(agentWorkspaceCss).not.toContain(".workdayCountdown::after");
     expect(agentWorkspaceCss).not.toContain(".workdayCountdownAvatar");
   });
 
@@ -95,8 +97,14 @@ describe("AgentWorkspacePage", () => {
       agentWorkspaceCss.match(/[.]operatorDock\s*[{][^}]+[}]/u)?.[0] ?? "";
     const operatorProfileRule =
       agentWorkspaceCss.match(/[.]operatorProfile\s*[{][^}]+[}]/u)?.[0] ?? "";
+    const operatorAvatarRule =
+      agentWorkspaceCss.match(/[.]operatorAvatar\s*[{][^}]+[}]/u)?.[0] ?? "";
     const operatorIdentityRule =
       agentWorkspaceCss.match(/[.]operatorIdentity\s*[{][^}]+[}]/u)?.[0] ?? "";
+    const workdayCountdownRule =
+      agentWorkspaceCss.match(/[.]workdayCountdown\s*[{][^}]+[}]/u)?.[0] ?? "";
+    const countdownGlyphRule =
+      agentWorkspaceCss.match(/[.]countdownGlyph\s*[{][^}]+[}]/u)?.[0] ?? "";
     const operatorIdentityTextRule =
       agentWorkspaceCss.match(/[.]operatorIdentity strong,\s*\n[.]operatorIdentity small\s*[{][^}]+[}]/u)?.[0] ?? "";
 
@@ -109,11 +117,17 @@ describe("AgentWorkspacePage", () => {
     expect(operatorDockRule).toContain("box-shadow: none");
     expect(operatorDockRule).not.toContain("backdrop-filter");
     expect(operatorProfileRule).toContain("grid-template-columns: 42px minmax(0, 1fr)");
+    expect(operatorProfileRule).toContain("height: 42px");
     expect(operatorProfileRule).toContain("border: 1px solid rgba(37, 132, 169, 0.14)");
     expect(operatorProfileRule).toContain("border-radius: 14px");
+    expect(operatorAvatarRule).toContain("width: 32px");
+    expect(operatorAvatarRule).toContain("height: 32px");
     expect(operatorIdentityRule).toContain("min-width: 0");
     expect(operatorIdentityRule).toContain("max-width: clamp(136px, 12vw, 230px)");
     expect(operatorIdentityRule).not.toContain("border-right");
+    expect(workdayCountdownRule).toContain("height: 42px");
+    expect(countdownGlyphRule).toContain("width: 32px");
+    expect(countdownGlyphRule).toContain("height: 32px");
     expect(operatorIdentityTextRule).toContain("text-overflow: ellipsis");
   });
 
