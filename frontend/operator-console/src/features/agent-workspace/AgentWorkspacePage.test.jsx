@@ -65,10 +65,12 @@ describe("AgentWorkspacePage", () => {
     expect(workdayCountdown).toHaveAttribute("data-creative-timer", "workday-countdown");
     expect(workdayCountdown).toHaveTextContent("下班倒计时");
     expect(workdayCountdown).toHaveTextContent("00:00:00");
-    expect(workdayCountdown.children).toHaveLength(3);
+    expect(workdayCountdown.children).toHaveLength(2);
     expect(agentWorkspaceCss).toContain(".workdayCountdown");
     expect(agentWorkspaceCss).toContain(".countdownGlyph");
-    expect(agentWorkspaceCss).toContain(".countdownTrack");
+    expect(agentWorkspaceCss).not.toContain(".countdownTrack");
+    expect(agentWorkspaceCss).not.toContain(".workdayCountdown::before");
+    expect(agentWorkspaceCss).not.toContain(".workdayCountdown::after");
     expect(agentWorkspaceCss).not.toContain(".workdayCountdownAvatar");
   });
 
@@ -95,25 +97,53 @@ describe("AgentWorkspacePage", () => {
       agentWorkspaceCss.match(/[.]operatorDock\s*[{][^}]+[}]/u)?.[0] ?? "";
     const operatorProfileRule =
       agentWorkspaceCss.match(/[.]operatorProfile\s*[{][^}]+[}]/u)?.[0] ?? "";
+    const operatorAvatarRule =
+      agentWorkspaceCss.match(/[.]operatorAvatar\s*[{][^}]+[}]/u)?.[0] ?? "";
     const operatorIdentityRule =
       agentWorkspaceCss.match(/[.]operatorIdentity\s*[{][^}]+[}]/u)?.[0] ?? "";
+    const workdayCountdownRule =
+      agentWorkspaceCss.match(/[.]workdayCountdown\s*[{][^}]+[}]/u)?.[0] ?? "";
+    const countdownGlyphRule =
+      agentWorkspaceCss.match(/[.]countdownGlyph\s*[{][^}]+[}]/u)?.[0] ?? "";
+    const logoutButtonRule =
+      agentWorkspaceCss.match(/[.]logoutButton\s*[{][^}]+[}]/u)?.[0] ?? "";
+    const logoutIconBadgeRule =
+      agentWorkspaceCss.match(/[.]logoutIconBadge\s*[{][^}]+[}]/u)?.[0] ?? "";
     const operatorIdentityTextRule =
       agentWorkspaceCss.match(/[.]operatorIdentity strong,\s*\n[.]operatorIdentity small\s*[{][^}]+[}]/u)?.[0] ?? "";
 
     expect(operatorIdText).toHaveTextContent(`ID ${longOperatorId}`);
     expect(operatorProfile).toBeInTheDocument();
-    expect(operatorDockRule).toContain("min-width: clamp(430px, 31vw, 520px)");
-    expect(operatorDockRule).toContain("grid-template-columns: minmax(190px, auto) auto auto");
-    expect(operatorDockRule).toContain("gap: 10px");
+    expect(operatorDockRule).toContain("width: max-content");
+    expect(operatorDockRule).toContain("min-width: 0");
+    expect(operatorDockRule).toContain("grid-template-columns: 198px 128px 92px");
+    expect(operatorDockRule).toContain("column-gap: 12px");
     expect(operatorDockRule).toContain("background: transparent");
     expect(operatorDockRule).toContain("box-shadow: none");
     expect(operatorDockRule).not.toContain("backdrop-filter");
+    expect(operatorProfileRule).toContain("width: 198px");
     expect(operatorProfileRule).toContain("grid-template-columns: 42px minmax(0, 1fr)");
+    expect(operatorProfileRule).toContain("height: 42px");
     expect(operatorProfileRule).toContain("border: 1px solid rgba(37, 132, 169, 0.14)");
     expect(operatorProfileRule).toContain("border-radius: 14px");
+    expect(operatorAvatarRule).toContain("width: 32px");
+    expect(operatorAvatarRule).toContain("height: 32px");
     expect(operatorIdentityRule).toContain("min-width: 0");
     expect(operatorIdentityRule).toContain("max-width: clamp(136px, 12vw, 230px)");
     expect(operatorIdentityRule).not.toContain("border-right");
+    expect(workdayCountdownRule).toContain("width: 128px");
+    expect(workdayCountdownRule).toContain("height: 42px");
+    expect(logoutButtonRule).toContain("width: 92px");
+    expect(logoutButtonRule).toContain("height: 42px");
+    expect(logoutButtonRule).toContain("border: 1px solid rgba(216, 11, 70, 0.18)");
+    expect(logoutButtonRule).toContain("border-radius: 14px");
+    expect(logoutButtonRule).toContain("radial-gradient(circle at 88% 22%, rgba(216, 11, 70, 0.16), transparent 2.4rem)");
+    expect(logoutButtonRule).toContain("box-shadow:");
+    expect(countdownGlyphRule).toContain("width: 32px");
+    expect(countdownGlyphRule).toContain("height: 32px");
+    expect(logoutIconBadgeRule).toContain("width: 32px");
+    expect(logoutIconBadgeRule).toContain("height: 32px");
+    expect(logoutIconBadgeRule).toContain("border-radius: 11px");
     expect(operatorIdentityTextRule).toContain("text-overflow: ellipsis");
   });
 
