@@ -44,3 +44,4 @@ credentials/
 .pytest_cache/
 .cache/
 .scannerwork/
+frontend/operator-console/test-results/

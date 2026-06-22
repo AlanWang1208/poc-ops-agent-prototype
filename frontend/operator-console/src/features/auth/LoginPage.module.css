@@ -886,11 +886,11 @@
 
 .loginCard {
   position: relative;
+  box-sizing: border-box;
   align-self: start;
   justify-self: start;
   width: 560px;
   height: 344px;
-  min-height: 344px;
   margin: 328px 0 0;
   padding: 30px 36px;
   border: 1px solid rgba(34, 126, 166, 0.2);
@@ -901,6 +901,10 @@
     0 0 76px rgba(34, 126, 166, 0.035);
   backdrop-filter: blur(18px);
   transform: translateY(2px);
+}
+
+.loginCardWithError {
+  padding: 28px 36px 24px;
 }
 
 .loginCard::before {
@@ -940,7 +944,31 @@
 }
 
 .loginField {
+  display: grid;
+  gap: 8px;
   margin-top: 18px;
+}
+
+.loginField + .loginField {
+  margin-top: 12px;
+}
+
+.loginCardWithError .loginField {
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.loginCardWithError .loginField + .loginField {
+  margin-top: 8px;
+}
+
+.loginLabel {
+  display: flex;
+  align-items: center;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 760;
+  line-height: 1.2;
 }
 
 .loginInput {
@@ -959,72 +987,71 @@
   outline: none;
 }
 
+.loginCardWithError .loginInput {
+  height: 42px;
+}
+
+.passwordInputShell {
+  position: relative;
+  display: flex;
+  min-width: 0;
+}
+
+.passwordInput {
+  padding-right: 48px;
+}
+
+.passwordToggle {
+  position: absolute;
+  top: 50%;
+  right: 8px;
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  transform: translateY(-50%);
+}
+
+.passwordToggle:hover {
+  border-color: rgba(34, 126, 166, 0.2);
+  background: rgba(34, 126, 166, 0.07);
+  color: var(--blue);
+}
+
 .loginInput[readonly] {
   cursor: default;
 }
 
-.loginOptions {
-  display: grid;
-  gap: 12px;
-  margin: 18px 0 16px;
-}
-
-.loginOption {
+.loginError {
   display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  gap: 14px;
-  padding: 13px 14px;
-  border: 1px solid rgba(34, 126, 166, 0.18);
+  align-items: flex-start;
+  gap: 8px;
+  width: 100%;
+  margin: 12px 0 0;
+  padding: 7px 12px;
+  border: 1px solid rgba(211, 17, 69, 0.28);
   border-radius: 8px;
-  background: #f8fbfc;
-}
-
-.loginOptionIcon {
-  position: relative;
-  display: grid;
-  width: 32px;
-  height: 32px;
-  flex: 0 0 auto;
-  place-items: center;
-  border: 1px solid rgba(34, 126, 166, 0.2);
-  border-radius: 10px;
-  background: rgba(34, 126, 166, 0.045);
-}
-
-.loginOptionIcon::before {
-  content: "";
-  width: 12px;
-  height: 12px;
-  border: 1.5px solid rgba(34, 126, 166, 0.58);
-  border-radius: 999px;
-  box-shadow: 0 0 0 4px rgba(34, 126, 166, 0.06);
-}
-
-.loginOptionIcon::after {
-  content: "";
-  position: absolute;
-  bottom: 6px;
-  width: 14px;
-  height: 6px;
-  border: 1.5px solid rgba(34, 126, 166, 0.58);
-  border-top: 0;
-  border-radius: 0 0 8px 8px;
-}
-
-.loginOptionCopy {
-  display: grid;
-  gap: 3px;
-}
-
-.loginOptionCopy strong {
-  font-size: 14px;
-}
-
-.loginOptionCopy span {
-  color: var(--muted);
+  background: rgba(211, 17, 69, 0.055);
+  color: var(--red-dark);
   font-size: 12px;
-  line-height: 1.4;
+  font-weight: 720;
+  line-height: 1.35;
+}
+
+.loginError::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  flex: 0 0 auto;
+  margin-top: 5px;
+  border-radius: 999px;
+  background: var(--red);
+  box-shadow: 0 0 0 4px rgba(211, 17, 69, 0.1);
 }
 
 .button {
@@ -1047,10 +1074,20 @@
 .loginButton {
   width: 100%;
   height: 48px;
-  margin-top: 4px;
+  margin-top: 27px;
   border-radius: 10px;
   font-family: inherit;
   cursor: pointer;
+}
+
+.loginCardWithError .loginButton {
+  height: 46px;
+  margin-top: 14px;
+}
+
+.loginButton:disabled {
+  cursor: wait;
+  opacity: 0.78;
 }
 
 .primaryEntry {
@@ -1108,7 +1145,8 @@
 }
 
 .loginButton:focus-visible,
-.loginInput:focus-visible {
+.loginInput:focus-visible,
+.passwordToggle:focus-visible {
   outline: 3px solid rgba(34, 126, 166, 0.32);
   outline-offset: 3px;
 }

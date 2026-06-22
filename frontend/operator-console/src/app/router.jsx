@@ -1,10 +1,14 @@
-import { Navigate, Route, Routes } from "react-router-dom";
+import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 
 import { AppShell } from "../components/layout/AppShell.jsx";
-import { PageHeader } from "../components/layout/PageHeader.jsx";
+import { WorkspacePageFrame } from "../components/layout/WorkspacePageFrame.jsx";
+import { WorkspaceStatusBar } from "../components/layout/WorkspaceStatusBar.jsx";
 import { Card } from "../components/primitives/Card.jsx";
 import { AgentWorkspacePage } from "../features/agent-workspace/AgentWorkspacePage.jsx";
 import { LoginPage } from "../features/auth/LoginPage.jsx";
+import { OverviewPage } from "../features/overview/OverviewPage.jsx";
+import { RagQuestionPage } from "../features/rag-question/RagQuestionPage.jsx";
+import { SkillRegistryPage } from "../features/skill-registry/SkillRegistryPage.jsx";
 import { SqlWorkbenchPage } from "../features/sql-workbench/SqlWorkbenchPage.jsx";
 
 /**
@@ -13,12 +17,39 @@ import { SqlWorkbenchPage } from "../features/sql-workbench/SqlWorkbenchPage.jsx
 function ProtectedPlaceholder({ title, description }) {
   return (
     <AppShell>
-      <PageHeader description={description} title={title} />
-      <Card ariaLabel={`${title}内容`}>
-        <p>页面将在后续任务中接入真实接口。</p>
-      </Card>
+      <WorkspacePageFrame>
+        <WorkspaceStatusBar title={title} />
+        <Card ariaLabel={`${title}内容`}>
+          <h2>{title}入口</h2>
+          <p>{description}</p>
+          <p>当前页面只展示 P1 只读范围内的占位入口，后续任务再接入真实接口。</p>
+        </Card>
+      </WorkspacePageFrame>
     </AppShell>
   );
+}
+
+const legacyAgentViewRoutes = {
+  audit: "/audit",
+  overview: "/overview",
+  rag: "/rag",
+  workflow: "/workflow-events",
+};
+
+function AgentRoute() {
+  const location = useLocation();
+  const currentView = new URLSearchParams(location.search).get("view");
+
+  if (currentView && Object.hasOwn(legacyAgentViewRoutes, currentView)) {
+    return (
+      <Navigate
+        replace
+        to={legacyAgentViewRoutes[/** @type {keyof typeof legacyAgentViewRoutes} */ (currentView)]}
+      />
+    );
+  }
+
+  return <AgentWorkspacePage />;
 }
 
 export function AppRouter() {
@@ -29,17 +60,50 @@ export function AppRouter() {
       <Route
         element={
           <AppShell>
-            <AgentWorkspacePage />
+            <OverviewPage />
+          </AppShell>
+        }
+        path="/overview"
+      />
+      <Route
+        element={
+          <AppShell>
+            <AgentRoute />
           </AppShell>
         }
         path="/agent"
       />
       <Route
         element={
+          <AppShell>
+            <RagQuestionPage />
+          </AppShell>
+        }
+        path="/rag"
+      />
+      <Route
+        element={
           <ProtectedPlaceholder
-            description="浏览已注册并发布的只读 Skill。"
-            title="Skill 注册中心"
+            description="围绕 workflowId、sequence、恢复和终态事件的只读观察面。"
+            title="工作流事件"
           />
+        }
+        path="/workflow-events"
+      />
+      <Route
+        element={
+          <ProtectedPlaceholder
+            description="授权、拒绝、执行请求和结果证据链的只读审计入口。"
+            title="审计记录"
+          />
+        }
+        path="/audit"
+      />
+      <Route
+        element={
+          <AppShell>
+            <SkillRegistryPage />
+          </AppShell>
         }
         path="/skills"
       />
@@ -71,7 +135,11 @@ export function AppRouter() {
         path="/quick-links"
       />
       <Route
-        element={<SqlWorkbenchPage />}
+        element={
+          <AppShell>
+            <SqlWorkbenchPage />
+          </AppShell>
+        }
         path="/sql"
       />
       <Route element={<Navigate replace to="/login" />} path="*" />

@@ -6,6 +6,7 @@ import {
   getLogoutUrl,
   getBrowserSession,
   getLoginUrl,
+  loginWithPassword,
   logout,
 } from "./auth-api.js";
 import { searchSkillCandidates } from "./agent-api.js";
@@ -126,7 +127,9 @@ describe("requestJson", () => {
 });
 
 describe("feature API modules", () => {
-  test("maps authentication endpoints without adding an unexposed session API", async () => {
+  test("maps authentication endpoints to the browser session and built-in login contract", async () => {
+    /** @type {unknown[]} */
+    const loginRequests = [];
     server.use(
       http.get("/auth/session", () =>
         HttpResponse.json({
@@ -137,13 +140,39 @@ describe("feature API modules", () => {
           authenticationType: "built-in",
         }),
       ),
+      http.post("/auth/login", async ({ request }) => {
+        loginRequests.push(await request.json());
+        return HttpResponse.json({
+          authenticated: true,
+          subject: "alice-id",
+          username: "alice",
+          roles: ["ROLE_ops-reader"],
+          passwordChangeRequired: false,
+        });
+      }),
       http.get("/auth/logout", () => new HttpResponse(null, { status: 204 })),
     );
 
     await expect(getBrowserSession()).resolves.toMatchObject({ username: "alice" });
+    await expect(
+      loginWithPassword({ username: "alice", password: "Start#2026" }),
+    ).resolves.toMatchObject({ username: "alice" });
     await expect(logout()).resolves.toBeUndefined();
+    expect(loginRequests).toEqual([{ username: "alice", password: "Start#2026" }]);
     expect(getLoginUrl()).toBe("/auth/login");
     expect(getLogoutUrl()).toBe("/auth/logout");
+  });
+
+  test("treats redirected browser logout HTML as a completed logout", async () => {
+    server.use(
+      http.get("/auth/logout", () =>
+        HttpResponse.text("<!doctype html><title>Operator console</title>", {
+          headers: { "Content-Type": "text/html" },
+        }),
+      ),
+    );
+
+    await expect(logout()).resolves.toBeUndefined();
   });
 
   test("maps skill, routing, and SQL endpoints to their real control-plane paths", async () => {

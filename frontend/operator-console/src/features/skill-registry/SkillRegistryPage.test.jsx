@@ -30,7 +30,7 @@ function useAuthenticatedSession() {
 }
 
 describe("SkillRegistryPage", () => {
-  test("renders real read-only skills and keeps change actions disabled", async () => {
+  test("renders real read-only skills in the shared shell with the prototype workspace body", async () => {
     useAuthenticatedSession();
     server.use(
       http.get("/internal/skills", () =>
@@ -40,12 +40,26 @@ describe("SkillRegistryPage", () => {
 
     renderSkillRegistry();
 
+    expect(await screen.findByLabelText("当前工作台")).toBeInTheDocument();
+    expect(screen.getByRole("navigation", { name: "主导航" })).toBeInTheDocument();
+    expect(
+      screen.queryByRole("navigation", { name: "Skill 注册中心导航" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByText("查看 P1 只读诊断 Skill 的版本、风险、角色、签名和治理拦截器。"),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("region", { name: "Skill 分类筛选" })).toBeInTheDocument();
+    expect(screen.queryByText("搜索 Skill / Owner")).not.toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "内置 Skill" })).toBeInTheDocument();
     expect(await screen.findByText("node-health-read")).toBeInTheDocument();
-    expect(screen.getByText("READ_ONLY")).toBeInTheDocument();
-    expect(screen.getByText("platform-observability")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "安装" })).toBeDisabled();
-    expect(screen.getByRole("button", { name: "升级" })).toBeDisabled();
-    expect(screen.getByRole("button", { name: "卸载" })).toBeDisabled();
+    expect(screen.getAllByText("READ_ONLY").length).toBeGreaterThan(0);
+    expect(screen.getByText("ops-reader")).toBeInTheDocument();
+    expect(screen.queryByText("ROLE_ops-reader")).not.toBeInTheDocument();
+    expect(screen.getByText("选中项详情： Node health")).toBeInTheDocument();
+    expect(screen.getByText(/Owner: platform-observability/u)).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "安装" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "升级" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "卸载" })).not.toBeInTheDocument();
     expect(screen.getByText("服务端未提供受控变更接口")).toBeInTheDocument();
   });
 
@@ -123,4 +137,3 @@ const registeredSkill = {
   publicationStatus: "VALIDATED",
   manifestPath: "node-health/manifest.json",
 };
-

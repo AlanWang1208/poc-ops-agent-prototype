@@ -1,83 +1,81 @@
 import { useMemo, useState } from "react";
 
 import { ApiError } from "../../api/client.js";
-import { DataTable } from "../../components/data-display/DataTable.jsx";
-import { StatusPill } from "../../components/data-display/StatusPill.jsx";
 import { FeedbackState } from "../../components/feedback/FeedbackState.jsx";
-import { PageHeader } from "../../components/layout/PageHeader.jsx";
-import { Button } from "../../components/primitives/Button.jsx";
+import { WorkspacePageFrame } from "../../components/layout/WorkspacePageFrame.jsx";
+import { WorkspaceStatusBar } from "../../components/layout/WorkspaceStatusBar.jsx";
 import { useSkills } from "./use-skills.js";
 import styles from "./SkillRegistryPage.module.css";
 
+/** @typedef {import("../../schemas/skill-schemas.js").RegisteredSkill} RegisteredSkill */
+
+const filterOptions = [
+  { label: "全部", value: "ALL" },
+  { label: "INFRASTRUCTURE", value: "INFRASTRUCTURE_DIAGNOSTICS" },
+  { label: "APPLICATION", value: "APPLICATION_DIAGNOSTICS" },
+  { label: "OBSERVABILITY", value: "PLATFORM_OBSERVABILITY" },
+  { label: "READ_ONLY", value: "READ_ONLY" },
+  { label: "已签名", value: "VALIDATED" },
+];
+
 export function SkillRegistryPage() {
   const skills = useSkills();
-  const [query, setQuery] = useState("");
-  const [risk, setRisk] = useState("ALL");
-  const [category, setCategory] = useState("ALL");
+  const [activeFilter, setActiveFilter] = useState("ALL");
 
   const filteredSkills = useMemo(() => {
     const catalog = skills.data?.skills ?? [];
     return catalog.filter((skill) => {
       const descriptor = skill.descriptor;
-      const matchesQuery =
-        !query.trim() ||
-        descriptor.skillId.toLowerCase().includes(query.trim().toLowerCase()) ||
-        descriptor.owner.toLowerCase().includes(query.trim().toLowerCase());
-      const matchesRisk = risk === "ALL" || descriptor.riskLevel === risk;
-      const matchesCategory = category === "ALL" || descriptor.category === category;
-      return matchesQuery && matchesRisk && matchesCategory;
+      return (
+        activeFilter === "ALL" ||
+        descriptor.category === activeFilter ||
+        descriptor.riskLevel === activeFilter ||
+        skill.publicationStatus === activeFilter
+      );
     });
-  }, [category, query, risk, skills.data?.skills]);
+  }, [activeFilter, skills.data?.skills]);
 
   const selectedSkill = filteredSkills[0] ?? null;
 
   return (
-    <div className={styles.page}>
-      <PageHeader
-        description="浏览控制面注册并发布的 Skill。变更类操作必须等待服务端受控接口、策略和审计链路开放。"
-        title="Skill 注册中心"
-      />
-      <section className={styles.toolbar} aria-label="Skill 筛选">
-        <label>
-          搜索
-          <input
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="Skill ID 或 Owner"
-            value={query}
-          />
-        </label>
-        <label>
-          分类
-          <select onChange={(event) => setCategory(event.target.value)} value={category}>
-            <option value="ALL">全部分类</option>
-            <option value="INFRASTRUCTURE_DIAGNOSTICS">基础设施诊断</option>
-            <option value="APPLICATION_DIAGNOSTICS">应用诊断</option>
-            <option value="PLATFORM_OBSERVABILITY">平台可观测</option>
-          </select>
-        </label>
-        <label>
-          风险
-          <select onChange={(event) => setRisk(event.target.value)} value={risk}>
-            <option value="ALL">全部风险</option>
-            <option value="READ_ONLY">只读</option>
-            <option value="LOW">低风险</option>
-            <option value="MEDIUM">中风险</option>
-            <option value="HIGH">高风险</option>
-          </select>
-        </label>
-      </section>
-      <div className={styles.layout}>
-        <section className={styles.panel}>
+    <WorkspacePageFrame className={styles.registryCanvas}>
+      <WorkspaceStatusBar title="Skill 注册中心" />
+
+      <main className={styles.workspaceBody}>
+        <header className={styles.title}>
+          <p className={styles.workspaceTitle}>Skill 注册中心</p>
+          <p>查看 P1 只读诊断 Skill 的版本、风险、角色、签名和治理拦截器。</p>
+        </header>
+
+        <section className={styles.filters} aria-label="Skill 分类筛选">
+          <div className={styles.filterChips}>
+            {filterOptions.map((option) => (
+              <button
+                aria-pressed={activeFilter === option.value}
+                className={activeFilter === option.value ? styles.activeChip : ""}
+                key={option.value}
+                onClick={() => setActiveFilter(option.value)}
+                type="button"
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+        </section>
+
+        <section className={styles.registryTable} aria-label="内置 Skill 目录">
+          <h2>内置 Skill</h2>
           <SkillCatalogState query={skills} rows={filteredSkills} />
         </section>
+
         <SkillDetail skill={selectedSkill} />
-      </div>
-    </div>
+      </main>
+    </WorkspacePageFrame>
   );
 }
 
 /**
- * @param {{query: ReturnType<typeof useSkills>, rows: unknown[]}} props
+ * @param {{query: ReturnType<typeof useSkills>, rows: RegisteredSkill[]}} props
  */
 function SkillCatalogState({ query, rows }) {
   if (query.isPending) {
@@ -123,79 +121,108 @@ function SkillCatalogState({ query, rows }) {
   }
 
   return (
-    <DataTable
-      ariaLabel="Skill 目录"
-      columns={skillColumns}
-      rows={rows}
-    />
+    <table className={styles.table}>
+      <thead>
+        <tr>
+          <th>Skill ID</th>
+          <th>显示名</th>
+          <th>分类</th>
+          <th>版本</th>
+          <th>风险</th>
+          <th>必要角色</th>
+          <th>状态</th>
+        </tr>
+      </thead>
+      <tbody>
+        {rows.map((skill) => (
+          <tr key={`${skill.descriptor.skillId}:${skill.descriptor.version}`}>
+            <td>
+              <strong className={styles.skillId}>{skill.descriptor.skillId}</strong>
+            </td>
+            <td>{skill.descriptor.displayName}</td>
+            <td>{formatCategory(skill.descriptor.category)}</td>
+            <td>{skill.descriptor.version}</td>
+            <td className={styles.riskCell}>{skill.descriptor.riskLevel}</td>
+            <td>{formatRequiredRoles(skill.descriptor.requiredRoles)}</td>
+            <td>{formatPublicationStatus(skill.publicationStatus)}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
   );
 }
 
-const skillColumns = [
-  {
-    key: "skill",
-    header: "Skill",
-    render: (/** @type {unknown} */ row) => {
-      const skill = /** @type {import("../../schemas/skill-schemas.js").RegisteredSkill} */ (row);
-      return (
-        <div>
-          <strong>{skill.descriptor.skillId}</strong>
-          <div className={styles.muted}>{skill.descriptor.displayName}</div>
-        </div>
-      );
-    },
-  },
-  {
-    key: "risk",
-    header: "Risk",
-    render: (/** @type {unknown} */ row) => {
-      const skill = /** @type {import("../../schemas/skill-schemas.js").RegisteredSkill} */ (row);
-      return <StatusPill tone="success">{skill.descriptor.riskLevel}</StatusPill>;
-    },
-  },
-  {
-    key: "owner",
-    header: "Owner",
-    render: (/** @type {unknown} */ row) => {
-      const skill = /** @type {import("../../schemas/skill-schemas.js").RegisteredSkill} */ (row);
-      return skill.descriptor.owner;
-    },
-  },
-  {
-    key: "status",
-    header: "Status",
-    render: (/** @type {unknown} */ row) => {
-      const skill = /** @type {import("../../schemas/skill-schemas.js").RegisteredSkill} */ (row);
-      return <StatusPill tone="info">{skill.publicationStatus}</StatusPill>;
-    },
-  },
-];
-
 /**
- * @param {{skill: import("../../schemas/skill-schemas.js").RegisteredSkill | null}} props
+ * @param {{skill: RegisteredSkill | null}} props
  */
 function SkillDetail({ skill }) {
   return (
     <aside className={styles.detail}>
-      <h2>Skill 详情</h2>
       {skill ? (
         <>
-          <p>{skill.descriptor.description}</p>
-          <div className={styles.tagList}>
-            <span>{skill.descriptor.category}</span>
-            <span>{skill.descriptor.executor}</span>
-            <span>{skill.descriptor.outputType}</span>
-          </div>
+          <h2>选中项详情： {skill.descriptor.displayName}</h2>
+          <p className={styles.detailSummary}>
+            Owner: {skill.descriptor.owner} · Executor: {skill.descriptor.executor} ·
+            Interceptors: {formatValues(skill.descriptor.interceptors)} · 参数:{" "}
+            {formatParameters(skill)} · 输出: {skill.descriptor.outputType}
+          </p>
         </>
       ) : (
-        <p>选择列表中的 Skill 查看详情。</p>
+        <>
+          <h2>选中项详情</h2>
+          <p>选择列表中的 Skill 查看详情。</p>
+        </>
       )}
       <p className={styles.muted}>服务端未提供受控变更接口</p>
-      <div className={styles.actionStack}>
-        <Button disabled variant="secondary">安装</Button>
-        <Button disabled variant="secondary">升级</Button>
-        <Button disabled variant="danger">卸载</Button>
-      </div>
     </aside>
   );
+}
+
+/**
+ * @param {string} category
+ */
+function formatCategory(category) {
+  if (category === "INFRASTRUCTURE_DIAGNOSTICS") {
+    return "INFRA";
+  }
+  if (category === "APPLICATION_DIAGNOSTICS") {
+    return "APP";
+  }
+  return "OBS";
+}
+
+/**
+ * @param {string} status
+ */
+function formatPublicationStatus(status) {
+  if (status === "VALIDATED") {
+    return "已签名";
+  }
+  if (status === "DRAFT") {
+    return "草稿";
+  }
+  return "已拒绝";
+}
+
+/**
+ * @param {string[]} values
+ */
+function formatValues(values) {
+  return values.length > 0 ? values.join(" / ") : "无";
+}
+
+/**
+ * @param {string[]} values
+ */
+function formatRequiredRoles(values) {
+  const displayValues = values.map((value) => value.replace(/^ROLE_/u, ""));
+  return formatValues(displayValues);
+}
+
+/**
+ * @param {RegisteredSkill} skill
+ */
+function formatParameters(skill) {
+  const names = skill.descriptor.parameters.map((parameter) => parameter.name);
+  return names.length > 0 ? names.join(" / ") : "无参数";
 }

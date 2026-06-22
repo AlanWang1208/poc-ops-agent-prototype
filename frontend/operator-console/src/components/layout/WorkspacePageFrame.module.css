@@ -1,0 +1,99 @@
+.workspaceFrame {
+  --agent-bg-base: #f6f7f9;
+  --agent-ink: #16202a;
+  --agent-red: #d31145;
+  --agent-red-dark: #a60f36;
+  --agent-blue: #227ea6;
+  --agent-green: #16875a;
+  --agent-border: #d7e4ec;
+  --agent-muted: #6f7c8b;
+  --agent-font-sans: var(--font-sans);
+  --agent-font-display: var(--font-display, Outfit, Inter, "Segoe UI", "Microsoft YaHei", sans-serif);
+  --workspace-layout-gap: 24px;
+  --workspace-shell-left: 284px;
+  --workspace-shell-inline: clamp(32px, 4vw, 72px);
+  --workspace-sidebar-left: var(--workspace-layout-gap);
+  --workspace-sidebar-width: 250px;
+  --workspace-vertical-align-offset: 16px;
+  --workspace-canvas-left: calc(var(--workspace-sidebar-left) + var(--workspace-sidebar-width) + var(--workspace-layout-gap));
+  --workspace-canvas-offset: calc(var(--workspace-shell-left) + var(--workspace-shell-inline) - var(--workspace-canvas-left));
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  box-sizing: border-box;
+  width: calc(100vw - var(--workspace-canvas-left) - var(--workspace-layout-gap));
+  min-height: calc(100vh - 48px);
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: var(--workspace-layout-gap);
+  align-content: stretch;
+  margin-left: calc(0px - var(--workspace-canvas-offset));
+  margin-top: calc(0px - var(--workspace-vertical-align-offset));
+  margin-bottom: calc(0px - var(--workspace-vertical-align-offset));
+  min-width: 0;
+  overflow: hidden;
+  padding: 12px;
+  border: 1px solid rgba(166, 64, 92, 0.18);
+  border-radius: 24px;
+  background: var(--agent-bg-base);
+  font-family: var(--agent-font-sans);
+  box-shadow:
+    0 18px 56px rgba(31, 41, 51, 0.055),
+    0 0 30px rgba(166, 64, 92, 0.035),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.62);
+}
+
+.workspaceFrame::before,
+.workspaceFrame::after {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  content: "";
+  pointer-events: none;
+}
+
+.workspaceFrame::before {
+  background:
+    radial-gradient(circle at 78% 14%, rgba(14, 165, 183, 0.14), transparent 18rem),
+    radial-gradient(circle at 84% 76%, rgba(211, 17, 69, 0.08), transparent 15rem),
+    radial-gradient(circle at 18% 86%, rgba(211, 17, 69, 0.11), transparent 18rem),
+    radial-gradient(circle at 30% 78%, rgba(183, 119, 31, 0.055), transparent 14rem);
+  mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.82), rgba(0, 0, 0, 0.74) 62%, transparent 96%);
+}
+
+.workspaceFrame::after {
+  background:
+    radial-gradient(ellipse at 50% 24%, rgba(255, 255, 255, 0.92), transparent 34rem),
+    radial-gradient(ellipse at 50% 8%, rgba(34, 126, 166, 0.1), transparent 42rem),
+    radial-gradient(circle at 8% 18%, rgba(211, 17, 69, 0.08), transparent 22rem),
+    radial-gradient(circle at 92% 16%, rgba(14, 165, 183, 0.1), transparent 24rem),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.46), transparent 36%, rgba(34, 126, 166, 0.045));
+}
+
+.workspaceFrame > * {
+  position: relative;
+  z-index: 1;
+}
+
+@media (min-width: 1680px) {
+  .workspaceFrame {
+    --workspace-shell-left: 300px;
+  }
+}
+
+@media (max-width: 820px) {
+  .workspaceFrame {
+    width: 100%;
+    margin-left: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .workspaceFrame *,
+  .workspaceFrame *::before,
+  .workspaceFrame *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}

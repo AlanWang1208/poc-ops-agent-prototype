@@ -19,34 +19,31 @@ const navigation = [
     icon: CircleDot,
     label: "总览",
     tone: "accent",
-    to: "/agent?view=overview",
-    view: "overview",
+    to: "/overview",
   },
   { icon: Bot, label: "Agent 工作区", tone: "info", to: "/agent" },
-  { icon: Network, label: "RAG 问答", tone: "teal", to: "/agent?view=rag", view: "rag" },
+  { icon: Network, label: "RAG 问答", tone: "teal", to: "/rag" },
   { icon: SearchCheck, label: "SQL 工作区", tone: "deep", to: "/sql" },
   { icon: Boxes, label: "Skill 注册中心", tone: "warning", to: "/skills" },
   { icon: AudioLines, label: "会议录制纪要", tone: "meeting", to: "/meeting-notes" },
   { icon: DatabaseZap, label: "AS400改建表", tone: "as400", to: "/as400-ddl" },
   { icon: ExternalLink, label: "快捷连接", tone: "quick", to: "/quick-links" },
-  { icon: Workflow, label: "工作流事件", tone: "green", to: "/agent?view=workflow", view: "workflow" },
-  { icon: FileClock, label: "审计记录", tone: "slate", to: "/agent?view=audit", view: "audit" },
+  { icon: Workflow, label: "工作流事件", tone: "green", to: "/workflow-events" },
+  { icon: FileClock, label: "审计记录", tone: "slate", to: "/audit" },
 ];
 
 /**
  * @param {(typeof navigation)[number]} item
  * @param {ReturnType<typeof useLocation>} location
- * @param {string | null} currentView
  */
-function isNavigationItemActive(item, location, currentView) {
-  return item.view
-    ? location.pathname === "/agent" && currentView === item.view
-    : location.pathname === item.to && !currentView;
+function isNavigationItemActive(item, location) {
+  return location.pathname === item.to;
 }
 
 /**
  * @typedef {object} AppShellProps
  * @property {import("react").ReactNode} children
+ * @property {unknown} [session]
  */
 
 /**
@@ -54,7 +51,6 @@ function isNavigationItemActive(item, location, currentView) {
  */
 export function AppShell({ children }) {
   const location = useLocation();
-  const currentView = new URLSearchParams(location.search).get("view");
 
   return (
     <div className={styles.shell}>
@@ -62,7 +58,7 @@ export function AppShell({ children }) {
         <nav aria-label="主导航" className={styles.nav}>
           {navigation.map((item) => {
             const Icon = item.icon;
-            const isActive = isNavigationItemActive(item, location, currentView);
+            const isActive = isNavigationItemActive(item, location);
 
             return (
               <Link
@@ -87,7 +83,7 @@ export function AppShell({ children }) {
           <div aria-hidden="true" className={styles.sidebarPreview}>
             <span className={styles.sidebarPreviewOrbit}>
               {navigation.map((item) => {
-                const isPreviewActive = isNavigationItemActive(item, location, currentView);
+                const isPreviewActive = isNavigationItemActive(item, location);
 
                 return (
                   <span

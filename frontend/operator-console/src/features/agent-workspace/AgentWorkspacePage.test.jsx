@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 
 import { http, HttpResponse } from "msw";
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
@@ -13,7 +13,14 @@ const agentWorkspaceCss = readFileSync(
   "src/features/agent-workspace/AgentWorkspacePage.module.css",
   "utf8",
 );
-
+const workspaceStatusBarCss = readFileSync(
+  "src/components/layout/WorkspaceStatusBar.module.css",
+  "utf8",
+);
+const agentWorkspaceSource = readFileSync(
+  "src/features/agent-workspace/AgentWorkspacePage.jsx",
+  "utf8",
+);
 beforeEach(() => {
   server.use(...defaultHandlers);
 });
@@ -31,6 +38,16 @@ function renderPage() {
 }
 
 describe("AgentWorkspacePage", () => {
+  test("uses the shared workspace status bar instead of a local capsule implementation", () => {
+    expect(agentWorkspaceSource).toContain("WorkspaceStatusBar");
+    expect(agentWorkspaceSource).toContain('<WorkspaceStatusBar title="Agent 工作区" />');
+    expect(agentWorkspaceSource).not.toContain("function TopCapsule");
+    expect(agentWorkspaceSource).not.toContain("function OperatorDock");
+    expect(agentWorkspaceSource).not.toContain("function WorkdayCountdown");
+    expect(agentWorkspaceSource).not.toContain("getBrowserSession");
+    expect(agentWorkspaceSource).not.toContain("logoutMutation");
+  });
+
   test("renders the read-only workspace from real routing candidates", async () => {
     renderPage();
 
@@ -66,12 +83,12 @@ describe("AgentWorkspacePage", () => {
     expect(workdayCountdown).toHaveTextContent("下班倒计时");
     expect(workdayCountdown).toHaveTextContent("00:00:00");
     expect(workdayCountdown.children).toHaveLength(2);
-    expect(agentWorkspaceCss).toContain(".workdayCountdown");
-    expect(agentWorkspaceCss).toContain(".countdownGlyph");
-    expect(agentWorkspaceCss).not.toContain(".countdownTrack");
-    expect(agentWorkspaceCss).not.toContain(".workdayCountdown::before");
-    expect(agentWorkspaceCss).not.toContain(".workdayCountdown::after");
-    expect(agentWorkspaceCss).not.toContain(".workdayCountdownAvatar");
+    expect(workspaceStatusBarCss).toContain(".workdayCountdown");
+    expect(workspaceStatusBarCss).toContain(".countdownGlyph");
+    expect(workspaceStatusBarCss).not.toContain(".countdownTrack");
+    expect(workspaceStatusBarCss).not.toContain(".workdayCountdown::before");
+    expect(workspaceStatusBarCss).not.toContain(".workdayCountdown::after");
+    expect(workspaceStatusBarCss).not.toContain(".workdayCountdownAvatar");
   });
 
   test("keeps long operator IDs contained and inspectable in the operator dock", async () => {
@@ -94,23 +111,23 @@ describe("AgentWorkspacePage", () => {
     const operatorIdText = await screen.findByTitle(`ID ${longOperatorId}`);
     const operatorProfile = container.querySelector("[data-operator-profile]");
     const operatorDockRule =
-      agentWorkspaceCss.match(/[.]operatorDock\s*[{][^}]+[}]/u)?.[0] ?? "";
+      workspaceStatusBarCss.match(/[.]operatorDock\s*[{][^}]+[}]/u)?.[0] ?? "";
     const operatorProfileRule =
-      agentWorkspaceCss.match(/[.]operatorProfile\s*[{][^}]+[}]/u)?.[0] ?? "";
+      workspaceStatusBarCss.match(/[.]operatorProfile\s*[{][^}]+[}]/u)?.[0] ?? "";
     const operatorAvatarRule =
-      agentWorkspaceCss.match(/[.]operatorAvatar\s*[{][^}]+[}]/u)?.[0] ?? "";
+      workspaceStatusBarCss.match(/[.]operatorAvatar\s*[{][^}]+[}]/u)?.[0] ?? "";
     const operatorIdentityRule =
-      agentWorkspaceCss.match(/[.]operatorIdentity\s*[{][^}]+[}]/u)?.[0] ?? "";
+      workspaceStatusBarCss.match(/[.]operatorIdentity\s*[{][^}]+[}]/u)?.[0] ?? "";
     const workdayCountdownRule =
-      agentWorkspaceCss.match(/[.]workdayCountdown\s*[{][^}]+[}]/u)?.[0] ?? "";
+      workspaceStatusBarCss.match(/[.]workdayCountdown\s*[{][^}]+[}]/u)?.[0] ?? "";
     const countdownGlyphRule =
-      agentWorkspaceCss.match(/[.]countdownGlyph\s*[{][^}]+[}]/u)?.[0] ?? "";
+      workspaceStatusBarCss.match(/[.]countdownGlyph\s*[{][^}]+[}]/u)?.[0] ?? "";
     const logoutButtonRule =
-      agentWorkspaceCss.match(/[.]logoutButton\s*[{][^}]+[}]/u)?.[0] ?? "";
+      workspaceStatusBarCss.match(/[.]logoutButton\s*[{][^}]+[}]/u)?.[0] ?? "";
     const logoutIconBadgeRule =
-      agentWorkspaceCss.match(/[.]logoutIconBadge\s*[{][^}]+[}]/u)?.[0] ?? "";
+      workspaceStatusBarCss.match(/[.]logoutIconBadge\s*[{][^}]+[}]/u)?.[0] ?? "";
     const operatorIdentityTextRule =
-      agentWorkspaceCss.match(/[.]operatorIdentity strong,\s*\n[.]operatorIdentity small\s*[{][^}]+[}]/u)?.[0] ?? "";
+      workspaceStatusBarCss.match(/[.]operatorIdentity strong,\s*\n[.]operatorIdentity small\s*[{][^}]+[}]/u)?.[0] ?? "";
 
     expect(operatorIdText).toHaveTextContent(`ID ${longOperatorId}`);
     expect(operatorProfile).toBeInTheDocument();
@@ -121,7 +138,8 @@ describe("AgentWorkspacePage", () => {
     expect(operatorDockRule).toContain("background: transparent");
     expect(operatorDockRule).toContain("box-shadow: none");
     expect(operatorDockRule).not.toContain("backdrop-filter");
-    expect(operatorProfileRule).toContain("width: 198px");
+    expect(operatorProfileRule).toContain("width: 176px");
+    expect(operatorProfileRule).toContain("min-width: 0");
     expect(operatorProfileRule).toContain("grid-template-columns: 42px minmax(0, 1fr)");
     expect(operatorProfileRule).toContain("height: 42px");
     expect(operatorProfileRule).toContain("border: 1px solid rgba(37, 132, 169, 0.14)");
@@ -157,8 +175,8 @@ describe("AgentWorkspacePage", () => {
     expect(operatorAvatar).toBeInTheDocument();
     expect(operatorAvatar?.textContent).toBe("");
     expect(operatorAvatar?.children).toHaveLength(2);
-    expect(agentWorkspaceCss).toContain(".operatorAvatarCore");
-    expect(agentWorkspaceCss).toContain(".operatorAvatarOrbit");
+    expect(workspaceStatusBarCss).toContain(".operatorAvatarCore");
+    expect(workspaceStatusBarCss).toContain(".operatorAvatarOrbit");
   });
 
   test("keeps the outer glass frame separated from inner card borders", async () => {
@@ -182,22 +200,26 @@ describe("AgentWorkspacePage", () => {
     expect(container.querySelectorAll('[class*="panelIcon"] svg')).toHaveLength(3);
   });
 
-  test("logs out through the browser authentication endpoint", async () => {
+  test("logs out through the browser authentication endpoint and returns to login", async () => {
     const user = userEvent.setup();
     /** @type {string[]} */
     const calls = [];
     server.use(
-      http.post("/logout", ({ request }) => {
+      http.get("/auth/logout", ({ request }) => {
         calls.push(new URL(request.url).pathname);
-        return new HttpResponse(null, { status: 204 });
+        return HttpResponse.text("<!doctype html><title>Operator console</title>", {
+          headers: { "Content-Type": "text/html" },
+        });
       }),
     );
+    window.history.pushState({}, "", "/overview");
 
     renderPage();
 
     await user.click(await screen.findByRole("button", { name: "登出当前账号" }));
 
-    expect(calls).toEqual(["/logout"]);
+    expect(calls).toEqual(["/auth/logout"]);
+    await waitFor(() => expect(window.location.pathname).toBe("/login"));
   });
 
   test("shows service refusal without enabling task submission", async () => {
@@ -239,25 +261,25 @@ describe("AgentWorkspacePage", () => {
     expect(container.querySelector("[class*='agentIonField']")).toHaveAttribute("aria-hidden", "true");
 
     const appCapsuleRule =
-      agentWorkspaceCss.match(/[.]appCapsule\s*[{][^}]+[}]/u)?.[0] ?? "";
+      workspaceStatusBarCss.match(/[.]appCapsule\s*[{][^}]+[}]/u)?.[0] ?? "";
     const brandLockupRule =
-      agentWorkspaceCss.match(/[.]brandLockup\s*[{][^}]+[}]/u)?.[0] ?? "";
+      workspaceStatusBarCss.match(/[.]brandLockup\s*[{][^}]+[}]/u)?.[0] ?? "";
     const brandNameRule =
-      agentWorkspaceCss.match(/[.]brandName\s*[{][^}]+[}]/u)?.[0] ?? "";
+      workspaceStatusBarCss.match(/[.]brandName\s*[{][^}]+[}]/u)?.[0] ?? "";
     const brandNameBeforeRule =
-      [...agentWorkspaceCss.matchAll(/[.]brandName::before\s*[{][^}]+[}]/gu)].at(-1)?.[0] ??
+      [...workspaceStatusBarCss.matchAll(/[.]brandName::before\s*[{][^}]+[}]/gu)].at(-1)?.[0] ??
       "";
     const brandNameAfterRule =
-      [...agentWorkspaceCss.matchAll(/[.]brandName::after\s*[{][^}]+[}]/gu)].at(-1)?.[0] ??
+      [...workspaceStatusBarCss.matchAll(/[.]brandName::after\s*[{][^}]+[}]/gu)].at(-1)?.[0] ??
       "";
     const brandAgentPillRule =
-      agentWorkspaceCss.match(/[.]brandName strong\s*[{][^}]+[}]/u)?.[0] ?? "";
+      workspaceStatusBarCss.match(/[.]brandName strong\s*[{][^}]+[}]/u)?.[0] ?? "";
     const agentCanvasRule =
       agentWorkspaceCss.match(/[.]agentCanvas\s*[{][^}]+[}]/u)?.[0] ?? "";
     const capsuleHeadingRule =
-      agentWorkspaceCss.match(/[.]capsuleHeading\s*[{][^}]+[}]/u)?.[0] ?? "";
+      workspaceStatusBarCss.match(/[.]capsuleHeading\s*[{][^}]+[}]/u)?.[0] ?? "";
     const capsuleHeadingAccentRule =
-      agentWorkspaceCss.match(/[.]capsuleHeading::after\s*[{][^}]+[}]/u)?.[0] ?? "";
+      workspaceStatusBarCss.match(/[.]capsuleHeading::after\s*[{][^}]+[}]/u)?.[0] ?? "";
     const exchangeWindowRule =
       agentWorkspaceCss.match(/[.]exchangeWindow\s*[{][^}]+[}]/u)?.[0] ?? "";
     const agentPanelRule =

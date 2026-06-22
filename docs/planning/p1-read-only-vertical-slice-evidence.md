@@ -65,3 +65,15 @@
 - `ControlPlaneApplicationTest` 已覆盖恢复接口 `GET /internal/diagnostics/read-only/workflows/{workflowId}/events` 的策略保护与 SSE 输出。
 - `frontend/operator-console` 已增加当前工作流内自动恢复、事件去重和连接状态展示，并通过 `npm run build`。
 - 当前恢复能力仍以“已落盘事件续传”为边界，不宣称支持执行中的增量事件推送。
+## 2026-06-23 M09 登录登出与本地门禁补充证据
+
+- 登录页已接入现有 `POST /auth/login`，保留用户名与密码输入，登录成功后进入 `/overview`。
+- 操作台登出入口已接入服务端登出流程，退出后回到 `/login`。
+- 后端控制面以 `built-in` 登录模式启动后，`GET /actuator/health` 返回 `{"status":"UP","groups":["liveness","readiness"]}`。
+- `backend` 执行 `.\mvnw.cmd verify` 通过，15 个 Maven reactor 模块均为 `SUCCESS`。
+- `frontend/operator-console` 执行 `npm run build` 通过，包含 `checkJs`、ESLint、Vitest 和 Vite 生产构建；Vitest 结果为 10 个测试文件、88 个测试通过。
+- `frontend/operator-console` 执行 `npm run test:e2e` 通过，Playwright 在 `1280px`、`1440px`、`1920px` 三个桌面视口共 9 个浏览器测试通过。
+- `frontend/operator-console` 执行 `npm audit --audit-level=high` 通过，结果为 `found 0 vulnerabilities`。
+- 仓库级 `tools/ci/check-repository.ps1`、`tools/ci/check-contracts.ps1` 和 `tools/ci/scan-secrets.ps1` 均通过。
+
+本轮本地自动化门禁已满足 P1 只读诊断 MVP 的提交验收条件。正式里程碑验收仍需结合远程 CI、分支保护、评审签署，以及“已知风险”中列出的生产加固项逐项确认。

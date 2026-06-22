@@ -3,17 +3,13 @@ import {
   CircleDot,
   ClipboardCheck,
   GitBranch,
-  LogOut,
   SendHorizontal,
   ShieldCheck,
-  TimerReset,
   UserRound,
 } from "lucide-react";
-import { useMutation, useQuery } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState } from "react";
 
-import { getBrowserSession, logout } from "../../api/auth-api.js";
+import { WorkspaceStatusBar } from "../../components/layout/WorkspaceStatusBar.jsx";
 import { Badge } from "../../components/primitives/Badge.jsx";
 import { Button } from "../../components/primitives/Button.jsx";
 import { useAgentCandidates } from "./use-agent-candidates.js";
@@ -35,8 +31,6 @@ const agentIonSpecs = [
   ["agentIonTiny", "agentIonRed", "agentIonLaneEleven"],
   ["agentIonMedium", "agentIonBlue", "agentIonLaneTwelve"],
 ];
-const OFF_WORK_HOUR = 18;
-const WORKDAY_START_HOUR = 9;
 
 const workflowTasks = [
   {
@@ -80,7 +74,7 @@ export function AgentWorkspacePage() {
           />
         ))}
       </div>
-      <TopCapsule />
+      <WorkspaceStatusBar title="Agent 工作区" />
 
       <ConversationToolbar
         isWorkspaceExpanded={isWorkspaceExpanded}
@@ -144,147 +138,6 @@ export function AgentWorkspacePage() {
           <SessionContextPanel />
         </aside>
       </section>
-    </div>
-  );
-}
-
-function TopCapsule() {
-  const navigate = useNavigate();
-  const sessionQuery = useQuery({
-    queryKey: ["browser-session"],
-    queryFn: getBrowserSession,
-  });
-  const logoutMutation = useMutation({
-    mutationFn: logout,
-    onSuccess: () => {
-      navigate("/login", { replace: true });
-    },
-  });
-  const session = sessionQuery.data;
-  const isAuthenticated = session?.authenticated === true;
-  const username = isAuthenticated ? (session.username ?? "未登录") : "未登录";
-  const operatorId = isAuthenticated ? (session.subject ?? "unavailable") : "unavailable";
-
-  return (
-    <section aria-label="当前工作台" className={styles.appCapsule}>
-      <div aria-hidden="true" className={styles.logo}>
-        EA
-      </div>
-      <div className={styles.brandLockup}>
-        <span className={styles.brandName}>
-          <span>企业智能</span>
-          <strong>Agent</strong>
-        </span>
-      </div>
-      <div className={styles.capsuleCurrent}>
-        <h1 className={styles.capsuleHeading}>Agent 工作区</h1>
-      </div>
-      <div aria-hidden="true" className={styles.brandSignal}>
-        <i />
-        <i />
-        <i />
-      </div>
-      <OperatorDock
-        isLogoutPending={logoutMutation.isPending}
-        onLogout={() => logoutMutation.mutate()}
-        operatorId={operatorId}
-        username={username}
-      />
-    </section>
-  );
-}
-
-/**
- * @param {{
- *   isLogoutPending: boolean,
- *   onLogout: () => void,
- *   operatorId: string,
- *   username: string,
- * }} props
- */
-function OperatorDock({ isLogoutPending, onLogout, operatorId, username }) {
-  const operatorIdLabel = `ID ${operatorId}`;
-
-  return (
-    <section aria-label="当前登录人" className={styles.operatorDock}>
-      <div className={styles.operatorProfile} data-operator-profile="">
-        <span aria-hidden="true" className={styles.operatorAvatar} data-creative-avatar="operator">
-          <span className={styles.operatorAvatarCore} />
-          <span className={styles.operatorAvatarOrbit} />
-        </span>
-        <span className={styles.operatorIdentity}>
-          <strong title={username}>{username}</strong>
-          <small aria-label={operatorIdLabel} title={operatorIdLabel}>
-            {operatorIdLabel}
-          </small>
-        </span>
-      </div>
-      <WorkdayCountdown />
-      <button
-        aria-label="登出当前账号"
-        className={styles.logoutButton}
-        disabled={isLogoutPending}
-        onClick={onLogout}
-        type="button"
-      >
-        <span aria-hidden="true" className={styles.logoutIconBadge}>
-          <LogOut size={14} strokeWidth={2.6} />
-        </span>
-        <span>登出</span>
-      </button>
-    </section>
-  );
-}
-
-/**
- * @param {Date} now
- */
-function getOffWorkCountdown(now) {
-  const start = new Date(now);
-  start.setHours(WORKDAY_START_HOUR, 0, 0, 0);
-
-  const target = new Date(now);
-  target.setHours(OFF_WORK_HOUR, 0, 0, 0);
-
-  const remainingMs = Math.max(target.getTime() - now.getTime(), 0);
-  const workdayMs = target.getTime() - start.getTime();
-  const elapsedMs = Math.min(Math.max(now.getTime() - start.getTime(), 0), workdayMs);
-  const progress = workdayMs > 0 ? Math.round((elapsedMs / workdayMs) * 100) : 100;
-
-  const hours = Math.floor(remainingMs / 3_600_000);
-  const minutes = Math.floor((remainingMs % 3_600_000) / 60_000);
-  const seconds = Math.floor((remainingMs % 60_000) / 1_000);
-
-  return {
-    progress,
-    timeText: [hours, minutes, seconds].map((part) => String(part).padStart(2, "0")).join(":"),
-  };
-}
-
-function WorkdayCountdown() {
-  const [now, setNow] = useState(() => new Date());
-  const countdown = getOffWorkCountdown(now);
-
-  useEffect(() => {
-    const timer = window.setInterval(() => setNow(new Date()), 1_000);
-
-    return () => window.clearInterval(timer);
-  }, []);
-
-  return (
-    <div
-      aria-label={`下班倒计时：${countdown.timeText}`}
-      className={styles.workdayCountdown}
-      data-creative-timer="workday-countdown"
-      role="timer"
-    >
-      <span aria-hidden="true" className={styles.countdownGlyph}>
-        <TimerReset size={14} strokeWidth={2.6} />
-      </span>
-      <span className={styles.countdownContent}>
-        <span>下班倒计时</span>
-        <strong>{countdown.timeText}</strong>
-      </span>
     </div>
   );
 }

@@ -308,6 +308,13 @@
 }
 
 .active {
+  --nav-color: var(--color-info);
+  --nav-mark: #207fa4;
+  --nav-icon-radius: 13px;
+  --nav-symbol-radius: 9px;
+  --nav-detail-radius: 5px;
+  --nav-spark-x: 16px;
+  --nav-spark-y: 5px;
   border-color: color-mix(in srgb, var(--nav-color) 42%, rgba(166, 64, 92, 0.26));
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.82), rgba(255, 255, 255, 0.56)),
@@ -545,7 +552,7 @@
 
 .content {
   margin-left: 284px;
-  max-width: var(--content-max);
+  max-width: none;
   min-width: 0;
   padding: 40px clamp(32px, 4vw, 72px);
 }

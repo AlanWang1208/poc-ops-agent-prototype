@@ -1,4 +1,10 @@
-import { redirectToLogin } from "../../api/auth-api.js";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { Eye, EyeOff } from "lucide-react";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+
+import { loginWithPassword } from "../../api/auth-api.js";
+import { ApiError } from "../../api/client.js";
 import styles from "./LoginPage.module.css";
 
 const safetyModes = ["P1 只读模式", "服务端策略授权", "全程审计留痕"];
@@ -31,6 +37,48 @@ const screenIonSpecs = [
  * Latest prototype-driven login page.
  */
 export function LoginPage() {
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [isPasswordVisible, setIsPasswordVisible] = useState(false);
+  const [loginError, setLoginError] = useState("");
+  const loginMutation = useMutation({
+    mutationFn: loginWithPassword,
+    onMutate: () => {
+      setLoginError("");
+    },
+    onSuccess: async (result) => {
+      if (result.passwordChangeRequired) {
+        setLoginError("当前账号需要先完成密码修改。");
+        return;
+      }
+      await queryClient.invalidateQueries({ queryKey: ["browser-session"] });
+      navigate("/overview", { replace: true });
+    },
+    onError: (error) => {
+      setLoginError(readLoginErrorMessage(error));
+    },
+  });
+
+  /**
+   * @param {import("react").FormEvent<HTMLFormElement>} event
+   */
+  function handleSubmit(event) {
+    event.preventDefault();
+    loginMutation.mutate({
+      username: username.trim(),
+      password,
+    });
+  }
+
+  const loginCardClassName = [
+    styles.loginCard,
+    loginError ? styles.loginCardWithError : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
+
   return (
     <main className={styles.board}>
       <section className={styles.screen}>
@@ -127,30 +175,65 @@ export function LoginPage() {
             </div>
           </div>
 
-          <form className={styles.loginCard}>
-            <h2>操作员登录</h2>
+          <form className={loginCardClassName} onSubmit={handleSubmit}>
+            <h2>用户登录</h2>
+            {loginError ? (
+              <p aria-label="登录失败" className={styles.loginError} role="alert">
+                {loginError}
+              </p>
+            ) : null}
             <div className={styles.loginField}>
+              <label className={styles.loginLabel} htmlFor="operator-account">
+                用户名
+              </label>
               <input
+                aria-label="用户名"
+                autoComplete="username"
                 className={styles.loginInput}
                 id="operator-account"
-                defaultValue="ops.reader@company.internal"
+                onChange={(event) => setUsername(event.target.value)}
+                required
+                value={username}
               />
             </div>
-            <div className={styles.loginOptions}>
-              <div className={styles.loginOption}>
-                <span aria-hidden="true" className={styles.loginOptionIcon} />
-                <span className={styles.loginOptionCopy}>
-                  <strong>企业单点登录</strong>
-                  <span>身份确认后，权限仍由服务端策略独立判定。</span>
-                </span>
-              </div>
+            <div className={styles.loginField}>
+              <label className={styles.loginLabel} htmlFor="operator-password">
+                密码
+              </label>
+              <span className={styles.passwordInputShell}>
+                <input
+                  aria-label="密码"
+                  autoComplete="current-password"
+                  className={`${styles.loginInput} ${styles.passwordInput}`}
+                  id="operator-password"
+                  onChange={(event) => setPassword(event.target.value)}
+                  required
+                  type={isPasswordVisible ? "text" : "password"}
+                  value={password}
+                />
+                <button
+                  aria-label={isPasswordVisible ? "隐藏密码" : "显示密码"}
+                  aria-pressed={isPasswordVisible}
+                  className={styles.passwordToggle}
+                  onClick={() => setIsPasswordVisible((current) => !current)}
+                  type="button"
+                >
+                  {isPasswordVisible ? (
+                    <EyeOff aria-hidden="true" size={17} strokeWidth={2.3} />
+                  ) : (
+                    <Eye aria-hidden="true" size={17} strokeWidth={2.3} />
+                  )}
+                </button>
+              </span>
             </div>
             <button
               className={`${styles.button} ${styles.loginButton} ${styles.primaryEntry}`}
-              onClick={redirectToLogin}
-              type="button"
+              disabled={loginMutation.isPending}
+              type="submit"
             >
-              <span className={styles.entryText}>使用企业 SSO 登录</span>
+              <span className={styles.entryText}>
+                {loginMutation.isPending ? "登录中" : "登录"}
+              </span>
               <span aria-hidden="true" className={styles.entryPulse} />
             </button>
           </form>
@@ -158,4 +241,29 @@ export function LoginPage() {
       </section>
     </main>
   );
+}
+
+/**
+ * @param {unknown} error
+ */
+function readLoginErrorMessage(error) {
+  if (error instanceof ApiError && error.status === 401) {
+    return "用户名或密码不正确";
+  }
+  if (error instanceof ApiError && error.status === 423) {
+    return "账号已被锁定，请联系管理员处理。";
+  }
+  if (error instanceof ApiError && [0, 502, 503, 504].includes(error.status)) {
+    return "控制面服务暂时不可用，请确认后端服务已启动后再重试。";
+  }
+  if (error instanceof ApiError && [404, 405].includes(error.status)) {
+    return "当前后端没有启用账号密码登录，请用 built-in 模式启动控制面。";
+  }
+  if (error instanceof ApiError && error.status >= 500) {
+    return "控制面登录接口出错，请查看后端日志后再重试。";
+  }
+  if (error instanceof ApiError && error.kind === "contract") {
+    return "登录响应格式不一致，请检查前后端版本是否匹配。";
+  }
+  return "登录失败，请检查用户名、密码和后端服务状态。";
 }

@@ -2,6 +2,7 @@ import { z } from "zod";
 
 /**
  * @typedef {z.infer<typeof browserSessionSchema>} BrowserSession
+ * @typedef {z.infer<typeof passwordLoginResponseSchema>} PasswordLoginResponse
  */
 
 const nonBlankString = z.string().trim().min(1);
@@ -64,3 +65,13 @@ export const browserSessionSchema = z
       });
     }
   });
+
+export const passwordLoginResponseSchema = z
+  .object({
+    authenticated: z.literal(true),
+    subject: nonBlankString,
+    username: nonBlankString,
+    roles: z.array(nonBlankString),
+    passwordChangeRequired: z.boolean(),
+  })
+  .strict();

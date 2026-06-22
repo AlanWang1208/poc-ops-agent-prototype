@@ -1,6 +1,6 @@
 import { http, HttpResponse } from "msw";
 import { MemoryRouter } from "react-router-dom";
-import { describe, expect, test } from "vitest";
+import { beforeEach, describe, expect, test } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
@@ -19,8 +19,22 @@ function renderAt(path) {
   );
 }
 
+beforeEach(() => {
+  server.use(
+    http.get("/auth/session", () =>
+      HttpResponse.json({
+        authenticated: true,
+        subject: "operator-1",
+        username: "ops.reader",
+        roles: ["ROLE_agent-reader"],
+        authenticationType: "built-in",
+      }),
+    ),
+  );
+});
+
 describe("SqlWorkbenchPage", () => {
-  test("renders the SQL workbench from real connection catalog data", async () => {
+  test("renders the rewritten SQL workbench inside the shared shell", async () => {
     server.use(
       http.get("/internal/sql-workbench/connections", () =>
         HttpResponse.json(sqlConnections),
@@ -32,15 +46,18 @@ describe("SqlWorkbenchPage", () => {
 
     renderAt("/sql");
 
-    expect(await screen.findByText("已连接 · 开发环境")).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "SQL 工作台" })).toBeInTheDocument();
+    expect(screen.getByRole("navigation", { name: "主导航" })).toBeInTheDocument();
+    expect(screen.getByLabelText("当前工作台")).toBeInTheDocument();
+    expect(screen.queryByRole("navigation", { name: "SQL 工作台导航" })).not.toBeInTheDocument();
+    expect(screen.queryByText("SQL 控制台")).not.toBeInTheDocument();
+    expect(await screen.findByText("已连接 · development")).toBeInTheDocument();
     expect(screen.getAllByText("as400-development").length).toBeGreaterThanOrEqual(1);
     expect(screen.getAllByText("ORDERS").length).toBeGreaterThanOrEqual(1);
     expect(screen.queryByText("production")).not.toBeInTheDocument();
-    expect(
-      screen.getByRole("button", { name: "校验只读执行" }),
-    ).toBeEnabled();
-    expect(screen.getByRole("button", { name: "DML 预检" })).toBeEnabled();
-    expect(screen.getByRole("button", { name: "询问 AI" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "校验只读 SQL" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "预检 DML 风险" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "请求 AI 改写建议" })).toBeDisabled();
     expect(screen.queryByText("Commit")).not.toBeInTheDocument();
     expect(screen.queryByText("Rollback")).not.toBeInTheDocument();
   });
@@ -61,8 +78,8 @@ describe("SqlWorkbenchPage", () => {
 
     renderAt("/sql");
 
-    await screen.findByText("已连接 · 开发环境");
-    await user.click(screen.getByRole("button", { name: "DML 预检" }));
+    await screen.findByText("已连接 · development");
+    await user.click(screen.getByRole("button", { name: "预检 DML 风险" }));
 
     await screen.findByText("REJECTED");
     expect(screen.getByText("UPDATE_WITHOUT_BOUND_IMPACT")).toBeInTheDocument();
@@ -96,6 +113,7 @@ describe("SqlWorkbenchPage", () => {
     renderAt("/sql");
 
     expect(await screen.findByText("SQL 连接契约不兼容")).toBeInTheDocument();
+    expect(screen.getByLabelText("当前工作台")).toBeInTheDocument();
     expect(screen.queryByText("as400-production")).not.toBeInTheDocument();
     expect(screen.queryByText("AS/400 Production")).not.toBeInTheDocument();
   });
@@ -109,10 +127,10 @@ describe("SqlWorkbenchPage", () => {
 
     renderAt("/sql");
 
-    await screen.findByText("AI SQL 助手");
-    expect(screen.getByRole("button", { name: "询问 AI" })).toBeDisabled();
-    expect(screen.getByRole("button", { name: "查看建议修改" })).toBeDisabled();
-    expect(screen.getByText("潜在逻辑错误")).toBeInTheDocument();
+    await screen.findByText("AI 辅助分析");
+    expect(screen.getByRole("button", { name: "请求 AI 改写建议" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "查看建议改写" })).toBeDisabled();
+    expect(screen.getByText("潜在逻辑风险")).toBeInTheDocument();
   });
 });
 
