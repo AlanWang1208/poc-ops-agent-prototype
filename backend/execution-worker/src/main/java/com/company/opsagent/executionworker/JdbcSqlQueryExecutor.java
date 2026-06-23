@@ -45,7 +45,7 @@ public class JdbcSqlQueryExecutor implements SqlQueryExecutor {
   @Override
   public String execute(SqlQueryExecutionRequest request) {
     String resultId = UUID.randomUUID().toString();
-    try (Connection connection = dataSourceRegistry.resolve(request.query().connectionId()).getConnection()) {
+    try (Connection connection = dataSourceRegistry.resolve(request).getConnection()) {
       connection.setReadOnly(true);
       connection.setAutoCommit(false);
       connection.setSchema(request.query().schema());

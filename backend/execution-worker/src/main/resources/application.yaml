@@ -11,3 +11,6 @@ ops-agent:
     transport-auth:
       enabled: false
       max-clock-skew: 30s
+    sql-egress:
+      allowed-targets: []
+      connections: []

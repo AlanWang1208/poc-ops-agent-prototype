@@ -43,6 +43,8 @@ public class RestrictedSqlQueryExecutionWorker {
           resultId,
           null,
           null);
+    } catch (WorkerSqlEgressException exception) {
+      return rejected(request, exception.errorCode(), exception.safeMessage());
     } catch (RuntimeException exception) {
       return new SqlQueryExecutionResult(
           "1.0",

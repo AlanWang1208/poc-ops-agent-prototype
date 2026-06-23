@@ -21,9 +21,12 @@
 ## SQL 工作台 P1 边界
 
 - SQL 查询入口会在 Worker 内再次使用 AST 校验，只接受单条 `SELECT`。
+- Worker 在解析 JDBC `DataSource` 前会先执行本地 SQL 出口 allowlist；默认 allowlist 为空，因此未显式配置的连接会被拒绝。
+- SQL 连接目录只允许 `development` 和 `test` 环境，并且只保存连接元数据和凭据别名，不保存真实密码或密钥。
 - JTOpen 仅用于 Db2 for i JDBC 适配，不允许控制面或浏览器直接连接 AS/400。
-- 当前默认执行器未配置真实连接和 KeyStore，收到通过校验的查询后会明确失败。
+- 当前默认执行器未配置真实连接和 KeyStore；只有通过 allowlist 的开发或测试连接才会继续进入后续连接解析。
 - P1 真实联调允许管理员启动时人工解锁 Java KeyStore；P2 前必须替换为无人值守安全解锁。
+- SQL 出口 allowlist 是应用层保护，不替代防火墙、私有网络、mTLS、短期目标系统凭据或 Windows 隔离。
 
 ## 传输认证边界
 

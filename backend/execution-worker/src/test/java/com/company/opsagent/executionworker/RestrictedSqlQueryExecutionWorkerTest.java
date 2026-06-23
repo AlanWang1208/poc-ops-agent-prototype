@@ -50,6 +50,21 @@ class RestrictedSqlQueryExecutionWorkerTest {
     assertEquals("result-1", result.resultId());
   }
 
+  @Test
+  void mapsEgressPolicyRejectionToRejectedResult() {
+    var worker = new RestrictedSqlQueryExecutionWorker(
+        new CalciteSqlReadOnlyGuard(),
+        request -> {
+          throw new WorkerSqlEgressException("SQL_EGRESS_NOT_ALLOWED", "SQL egress target is not allowed");
+        },
+        CLOCK);
+
+    var result = worker.execute(request("select * from ORDERS.ORDERS", "development", 30));
+
+    assertEquals("REJECTED", result.status());
+    assertEquals("SQL_EGRESS_NOT_ALLOWED", result.errorCode());
+  }
+
   private SqlQueryExecutionRequest request(String sql, String environment, int expiresInSeconds) {
     var query = new SqlQueryRequest(
         "1.0",
