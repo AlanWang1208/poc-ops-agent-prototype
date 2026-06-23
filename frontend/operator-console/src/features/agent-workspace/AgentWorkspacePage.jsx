@@ -13,6 +13,7 @@ import { WorkspaceStatusBar } from "../../components/layout/WorkspaceStatusBar.j
 import { Badge } from "../../components/primitives/Badge.jsx";
 import { Button } from "../../components/primitives/Button.jsx";
 import { useAgentCandidates } from "./use-agent-candidates.js";
+import { useReadOnlyDiagnosticWorkflow } from "./use-read-only-diagnostic-workflow.js";
 import styles from "./AgentWorkspacePage.module.css";
 
 const secondaryConversationActions = ["分享", "接管状态"];
@@ -57,6 +58,16 @@ export function AgentWorkspacePage() {
   const [isWorkspaceExpanded, setIsWorkspaceExpanded] = useState(false);
   const candidatesQuery = useAgentCandidates();
   const candidates = candidatesQuery.data?.candidates ?? [];
+  const diagnosticWorkflow = useReadOnlyDiagnosticWorkflow();
+  const nodeHealthCandidate = candidates.find(
+    (candidate) => candidate.skill.descriptor.skillId === "node-health-read",
+  );
+  const canRunDiagnostic =
+    Boolean(nodeHealthCandidate) &&
+    !candidatesQuery.isLoading &&
+    !candidatesQuery.error &&
+    diagnosticWorkflow.status !== "running";
+  const currentWorkflowTask = toCurrentWorkflowTask(diagnosticWorkflow);
 
   return (
     <div
@@ -102,6 +113,7 @@ export function AgentWorkspacePage() {
               已拆分为两个独立只读任务。当前会话来自评审模板，符合范围的任务将在服务端策略通过后自动执行。
             </Message>
 
+            {currentWorkflowTask ? <WorkflowTaskCard task={currentWorkflowTask} /> : null}
             {workflowTasks.map((task) => (
               <WorkflowTaskCard key={task.attempt} task={task} />
             ))}
@@ -122,7 +134,8 @@ export function AgentWorkspacePage() {
                 <Button
                   aria-label="发送任务"
                   className={styles.sendButton}
-                  disabled
+                  disabled={!canRunDiagnostic}
+                  onClick={diagnosticWorkflow.run}
                   variant="primary"
                 >
                   <SendHorizontal aria-hidden="true" size={18} />
@@ -133,13 +146,60 @@ export function AgentWorkspacePage() {
         </div>
 
         <aside className={styles.agentSide}>
-          <TaskDetailPanel />
-          <SkillEventPanel candidates={candidates} query={candidatesQuery} />
-          <SessionContextPanel />
+          <TaskDetailPanel workflow={diagnosticWorkflow} />
+          <SkillEventPanel
+            candidates={candidates}
+            query={candidatesQuery}
+            workflow={diagnosticWorkflow}
+          />
+          <SessionContextPanel workflow={diagnosticWorkflow} />
         </aside>
       </section>
     </div>
   );
+}
+
+/**
+ * @param {import("./use-read-only-diagnostic-workflow.js").DiagnosticWorkflowState} workflow
+ */
+function toCurrentWorkflowTask(workflow) {
+  if (workflow.status === "idle") return null;
+
+  const eventCount = workflow.events.length;
+  return {
+    actions: workflow.events.map((event) => event.type),
+    attempt: `${workflow.workflowId ?? "pending"} · node-health-read@1.1.0 · attempt 1`,
+    state: workflowStateLabel(workflow.status),
+    tone:
+      workflow.status === "succeeded"
+        ? "success"
+        : workflow.status === "failed" ||
+            workflow.status === "denied" ||
+            workflow.status === "contractError"
+          ? "danger"
+          : "info",
+    title: "当前节点健康检查",
+    tags: ["development", "node-a", "READ_ONLY", `sequence ${eventCount}`],
+    progress: Math.min(eventCount, 4),
+    output: workflow.output,
+    errorCode: workflow.errorCode,
+    errorMessage: workflow.errorMessage,
+  };
+}
+
+/**
+ * @param {import("./use-read-only-diagnostic-workflow.js").DiagnosticWorkflowStatus} status
+ */
+function workflowStateLabel(status) {
+  const labels = {
+    idle: "未开始",
+    running: "执行中",
+    succeeded: "已完成",
+    failed: "失败",
+    denied: "已拒绝",
+    contractError: "契约错误",
+  };
+  return labels[status] ?? "未知";
 }
 
 /**
@@ -216,6 +276,9 @@ function Message({ author, children, tone }) {
  *     tags: string[],
  *     title: string,
  *     tone: string,
+ *     output?: import("../../schemas/agent-schemas.js").NodeHealthOutput | null,
+ *     errorCode?: string | null,
+ *     errorMessage?: string | null,
  *   },
  * }} props
  */
@@ -244,11 +307,36 @@ function WorkflowTaskCard({ task }) {
           <span key={action}>{action}</span>
         ))}
       </div>
+      {task.output ? <NodeHealthResult output={task.output} /> : null}
+      {task.errorCode || task.errorMessage ? (
+        <div className={styles.workflowError}>
+          {task.errorCode ? <strong>{task.errorCode}</strong> : null}
+          {task.errorMessage ? <span>{task.errorMessage}</span> : null}
+        </div>
+      ) : null}
     </article>
   );
 }
 
-function TaskDetailPanel() {
+/**
+ * @param {{ output: import("../../schemas/agent-schemas.js").NodeHealthOutput }} props
+ */
+function NodeHealthResult({ output }) {
+  return (
+    <div className={styles.nodeHealthResult}>
+      <strong>{output.status}</strong>
+      <span>CPU {output.cpuUsagePercent}%</span>
+      <span>内存 {output.memoryUsagePercent}%</span>
+      <span>磁盘 {output.diskUsagePercent}%</span>
+      <small>{output.lastHeartbeatAt}</small>
+    </div>
+  );
+}
+
+/**
+ * @param {{ workflow: import("./use-read-only-diagnostic-workflow.js").DiagnosticWorkflowState }} props
+ */
+function TaskDetailPanel({ workflow }) {
   return (
     <section className={styles.agentPanel}>
       <h3>
@@ -257,8 +345,8 @@ function TaskDetailPanel() {
         </span>
         选中任务详情
       </h3>
-      <MiniRow label="workflow" value="wf-043" />
-      <MiniRow label="状态" tone="info" value="执行中" />
+      <MiniRow label="workflow" value={workflow.workflowId ?? "pending"} />
+      <MiniRow label="状态" tone="info" value={workflowStateLabel(workflow.status)} />
       <MiniRow label="策略" tone="ok" value="READ_ONLY" />
     </section>
   );
@@ -272,9 +360,10 @@ function TaskDetailPanel() {
  *     matchedRules: string[],
  *   }>,
  *   query: { isLoading: boolean, error: Error | null },
+ *   workflow: import("./use-read-only-diagnostic-workflow.js").DiagnosticWorkflowState,
  * }} props
  */
-function SkillEventPanel({ candidates, query }) {
+function SkillEventPanel({ candidates, query, workflow }) {
   const primaryCandidate = candidates[0];
   const skillValue = query.isLoading
     ? "loading"
@@ -291,13 +380,27 @@ function SkillEventPanel({ candidates, query }) {
         Skill 与事件
       </h3>
       <MiniRow label="Skill" tone="info" value={skillValue} />
-      <MiniRow label="最近事件" tone="info" value="WORKER_ACCEPTED" />
-      <MiniRow label="sequence" tone="info" value="3 / continuous" />
+      <MiniRow label="最近事件" tone="info" value={workflow.latestEvent?.type ?? "WORKER_ACCEPTED"} />
+      <MiniRow
+        label="sequence"
+        tone="info"
+        value={
+          workflow.latestEvent ? String(workflow.latestEvent.sequence) : "3 / continuous"
+        }
+      />
     </section>
   );
 }
 
-function SessionContextPanel() {
+/**
+ * @param {{ workflow: import("./use-read-only-diagnostic-workflow.js").DiagnosticWorkflowState }} props
+ */
+function SessionContextPanel({ workflow }) {
+  const hasWorkflowError =
+    workflow.status === "denied" ||
+    workflow.status === "failed" ||
+    workflow.status === "contractError";
+
   return (
     <section className={`${styles.agentPanel} ${styles.scanLine}`}>
       <h3>
@@ -308,18 +411,25 @@ function SessionContextPanel() {
       </h3>
       <MiniRow label="目标" tone="info" value="node-a" />
       <MiniRow label="关联工单" tone="info" value="INC-2841" />
-      <MiniRow label="自动模式" tone="ok" value="模板启用" />
-      <MiniRow label="分享" tone="info" value="只读链接" />
-      <div className={styles.statusNote}>
+      <MiniRow label="workflow" tone="info" value={workflow.workflowId ?? "pending"} />
+      <MiniRow label="状态" tone={hasWorkflowError ? "danger" : "ok"} value={workflowStateLabel(workflow.status)} />
+      <div className={`${styles.statusNote} ${hasWorkflowError ? styles.errorNote : ""}`}>
         <ShieldCheck aria-hidden="true" size={16} />
-        仅展示可审计计划摘要、事件状态和服务端候选 Skill。
+        {hasWorkflowError ? (
+          <span>
+            {workflow.errorCode ? `${workflow.errorCode}: ` : ""}
+            {workflow.errorMessage ?? "只读诊断请求失败"}
+          </span>
+        ) : (
+          <span>仅展示可审计计划摘要、事件状态和服务端候选 Skill。</span>
+        )}
       </div>
     </section>
   );
 }
 
 /**
- * @param {{label: string, tone?: "default" | "info" | "ok", value: string}} props
+ * @param {{label: string, tone?: "default" | "info" | "ok" | "danger", value: string}} props
  */
 function MiniRow({ label, tone = "default", value }) {
   return (
