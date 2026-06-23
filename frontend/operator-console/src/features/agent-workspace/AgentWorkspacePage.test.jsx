@@ -129,6 +129,91 @@ describe("AgentWorkspacePage", () => {
     expect(within(currentWorkflowCard).getByText("HEALTHY")).toBeInTheDocument();
   });
 
+  test("shows policy denial from the diagnostic event endpoint", async () => {
+    server.use(
+      http.post("/internal/diagnostics/read-only/events", () =>
+        HttpResponse.json(
+          { code: "POLICY_DENIED", message: "role is not sufficient" },
+          { status: 403 },
+        ),
+      ),
+    );
+    const user = userEvent.setup();
+
+    renderPage();
+
+    expect(await screen.findByText(/node-health-read/u)).toBeInTheDocument();
+    const sendButton = screen.getByRole("button", { name: "发送任务" });
+    await waitFor(() => expect(sendButton).toBeEnabled());
+    await user.click(sendButton);
+
+    const currentWorkflowCard = await screen.findByLabelText("当前诊断工作流");
+    expect(within(currentWorkflowCard).getByText("已拒绝")).toBeInTheDocument();
+    expect(within(currentWorkflowCard).getByText("POLICY_DENIED")).toBeInTheDocument();
+    expect(within(currentWorkflowCard).getByText("role is not sufficient")).toBeInTheDocument();
+  });
+
+  test("renders workflow failure returned by the read-only diagnostic stream", async () => {
+    server.use(
+      http.post("/internal/diagnostics/read-only/events", () =>
+        HttpResponse.text(sseFromEvents([readOnlyDiagnosticEvents[0], workflowFailedEvent]), {
+          headers: { "Content-Type": "text/event-stream" },
+        }),
+      ),
+    );
+    const user = userEvent.setup();
+
+    renderPage();
+
+    expect(await screen.findByText(/node-health-read/u)).toBeInTheDocument();
+    const sendButton = screen.getByRole("button", { name: "发送任务" });
+    await waitFor(() => expect(sendButton).toBeEnabled());
+    await user.click(sendButton);
+
+    const currentWorkflowCard = await screen.findByLabelText("当前诊断工作流");
+    expect(within(currentWorkflowCard).getByText("WORKFLOW_FAILED")).toBeInTheDocument();
+    expect(within(currentWorkflowCard).getByText("失败")).toBeInTheDocument();
+    expect(within(currentWorkflowCard).getByText("INVALID_PARAMETERS")).toBeInTheDocument();
+    expect(within(currentWorkflowCard).getByText("nodeName is required")).toBeInTheDocument();
+  });
+
+  test("shows contract error when completed node health output is invalid", async () => {
+    const invalidCompletedEvent = {
+      ...readOnlyDiagnosticEvents[3],
+      payload: {
+        payloadType: "WORKFLOW_COMPLETED",
+        outputSchemaId: "node-health-output-v1",
+        output: { nodeName: "node-a", status: "HEALTHY" },
+      },
+    };
+    server.use(
+      http.post("/internal/diagnostics/read-only/events", () =>
+        HttpResponse.text(sseFromEvents([readOnlyDiagnosticEvents[0], invalidCompletedEvent]), {
+          headers: { "Content-Type": "text/event-stream" },
+        }),
+      ),
+    );
+    const user = userEvent.setup();
+
+    renderPage();
+
+    expect(await screen.findByText(/node-health-read/u)).toBeInTheDocument();
+    const sendButton = screen.getByRole("button", { name: "发送任务" });
+    await waitFor(() => expect(sendButton).toBeEnabled());
+    await user.click(sendButton);
+
+    const currentWorkflowCard = await screen.findByLabelText("当前诊断工作流");
+    expect(within(currentWorkflowCard).getByText("契约错误")).toBeInTheDocument();
+    expect(
+      within(currentWorkflowCard).getByText("NODE_HEALTH_OUTPUT_CONTRACT_MISMATCH"),
+    ).toBeInTheDocument();
+    expect(
+      within(currentWorkflowCard).getByText(
+        "Node health output did not match the expected contract",
+      ),
+    ).toBeInTheDocument();
+  });
+
   test("renders refined message role avatars", async () => {
     const { container } = renderPage();
 
@@ -573,6 +658,20 @@ const readOnlyDiagnosticEvents = [
     },
   },
 ];
+
+const workflowFailedEvent = {
+  contractVersion: "1.0",
+  eventId: "00000000-0000-4000-8000-000000000205",
+  workflowId,
+  sequence: 2,
+  timestamp: "2026-06-16T10:00:01+08:00",
+  type: "WORKFLOW_FAILED",
+  payload: {
+    payloadType: "WORKFLOW_FAILED",
+    errorCode: "INVALID_PARAMETERS",
+    message: "nodeName is required",
+  },
+};
 
 /**
  * @param {Array<Record<string, unknown>>} events
