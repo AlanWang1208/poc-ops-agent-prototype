@@ -5,11 +5,13 @@ import { WorkspacePageFrame } from "../components/layout/WorkspacePageFrame.jsx"
 import { WorkspaceStatusBar } from "../components/layout/WorkspaceStatusBar.jsx";
 import { Card } from "../components/primitives/Card.jsx";
 import { AgentWorkspacePage } from "../features/agent-workspace/AgentWorkspacePage.jsx";
+import { AuditRecordsPage } from "../features/audit-records/AuditRecordsPage.jsx";
 import { LoginPage } from "../features/auth/LoginPage.jsx";
 import { OverviewPage } from "../features/overview/OverviewPage.jsx";
 import { RagQuestionPage } from "../features/rag-question/RagQuestionPage.jsx";
 import { SkillRegistryPage } from "../features/skill-registry/SkillRegistryPage.jsx";
 import { SqlWorkbenchPage } from "../features/sql-workbench/SqlWorkbenchPage.jsx";
+import { WorkflowEventsPage } from "../features/workflow-events/WorkflowEventsPage.jsx";
 
 /**
  * @param {{title: string, description: string}} props
@@ -83,19 +85,17 @@ export function AppRouter() {
       />
       <Route
         element={
-          <ProtectedPlaceholder
-            description="围绕 workflowId、sequence、恢复和终态事件的只读观察面。"
-            title="工作流事件"
-          />
+          <AppShell>
+            <WorkflowEventsPage />
+          </AppShell>
         }
         path="/workflow-events"
       />
       <Route
         element={
-          <ProtectedPlaceholder
-            description="授权、拒绝、执行请求和结果证据链的只读审计入口。"
-            title="审计记录"
-          />
+          <AppShell>
+            <AuditRecordsPage />
+          </AppShell>
         }
         path="/audit"
       />

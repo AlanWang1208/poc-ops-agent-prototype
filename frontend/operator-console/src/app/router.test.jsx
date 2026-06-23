@@ -212,6 +212,51 @@ describe("operator console routes", () => {
     expect(screen.queryByRole("button", { name: "执行生产写操作" })).not.toBeInTheDocument();
   });
 
+  it("renders the workflow events workspace from the prototype while keeping the shared shell", () => {
+    renderAt("/workflow-events");
+
+    expect(screen.getByRole("navigation", { name: "主导航" })).toBeVisible();
+    expect(screen.getByLabelText("当前工作台")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "工作流事件" })).toBeInTheDocument();
+    expect(screen.getByRole("region", { name: "语义事件流" })).toBeInTheDocument();
+    expect(screen.getByRole("region", { name: "恢复检查" })).toBeInTheDocument();
+    expect(screen.getByRole("search", { name: "工作流事件筛选" })).toBeInTheDocument();
+    expect(screen.getByRole("region", { name: "事件流主轴" })).toBeInTheDocument();
+    expect(screen.getByRole("complementary", { name: "状态快照" })).toBeInTheDocument();
+    expect(screen.getByText("13 条事件 / 0 gap")).toBeInTheDocument();
+    expect(screen.getByText("WORKFLOW_STARTED")).toBeInTheDocument();
+    expect(screen.getByText("POLICY_EVALUATED")).toBeInTheDocument();
+    expect(screen.getByText("SKILL_ROUTED")).toBeInTheDocument();
+    expect(screen.getByText("WORKER_ACCEPTED")).toBeInTheDocument();
+    expect(screen.getByText("WORKFLOW_COMPLETED")).toBeInTheDocument();
+    expect(screen.getByText("connected / lastEventId=005")).toBeInTheDocument();
+    expect(screen.getByText("policy-v1 / READ_ONLY")).toBeInTheDocument();
+    expect(
+      screen.queryByText("当前页面只展示 P1 只读范围内的占位入口，后续任务再接入真实接口。"),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "回放事件" })).not.toBeInTheDocument();
+  });
+
+  it("renders the audit records workspace from the prototype while keeping the shared shell", () => {
+    renderAt("/audit");
+
+    expect(screen.getByRole("navigation", { name: "主导航" })).toBeVisible();
+    expect(screen.getByLabelText("当前工作台")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "审计记录" })).toBeInTheDocument();
+    expect(screen.getByRole("region", { name: "审计记录工作区" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "审计证据链" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "完整性校验" })).toBeInTheDocument();
+    expect(screen.getByRole("search", { name: "审计记录筛选" })).toBeInTheDocument();
+    expect(screen.getByRole("region", { name: "审计账本" })).toBeInTheDocument();
+    expect(screen.getByRole("complementary", { name: "证据详情" })).toBeInTheDocument();
+    expect(screen.getByText("SESSION_AUTHORIZED")).toBeInTheDocument();
+    expect(screen.getByText("POLICY_EVALUATED")).toBeInTheDocument();
+    expect(screen.getByText("AUDIT_SEALED")).toBeInTheDocument();
+    expect(screen.getByText("sha256:e91b")).toBeInTheDocument();
+    expect(screen.queryByText("当前页面只展示 P1 只读范围内的占位入口，后续任务再接入真实接口。")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "执行写操作" })).not.toBeInTheDocument();
+  });
+
   it("uses the main branch capsule status bar on the overview page", () => {
     const appCapsuleRule =
       workspaceStatusBarCss.match(/[.]appCapsule\s*[{][^}]+[}]/u)?.[0] ?? "";
