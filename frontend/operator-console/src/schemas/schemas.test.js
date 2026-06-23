@@ -196,7 +196,9 @@ describe("nodeHealthOutputSchema", () => {
   });
 
   test("rejects incomplete node health output", () => {
-    const { diskUsagePercent: _diskUsagePercent, ...incompleteOutput } = nodeHealthOutput;
+    const incompleteOutput = Object.fromEntries(
+      Object.entries(nodeHealthOutput).filter(([key]) => key !== "diskUsagePercent"),
+    );
 
     expect(() => nodeHealthOutputSchema.parse(incompleteOutput)).toThrow();
   });
