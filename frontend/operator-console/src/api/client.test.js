@@ -9,7 +9,11 @@ import {
   loginWithPassword,
   logout,
 } from "./auth-api.js";
-import { searchSkillCandidates, streamReadOnlyDiagnosticEvents } from "./agent-api.js";
+import {
+  runAgentDiagnosticTask,
+  searchSkillCandidates,
+  streamReadOnlyDiagnosticEvents,
+} from "./agent-api.js";
 import { ApiError, requestJson } from "./client.js";
 import { getSkill, listSkills } from "./skill-api.js";
 import { listSqlConnections, validateSqlQuery } from "./sql-api.js";
@@ -216,6 +220,45 @@ describe("feature API modules", () => {
     ]);
   });
 
+  test("posts main AgentScope diagnostic tasks to the primary control-plane endpoint", async () => {
+    /** @type {Array<[string, string, unknown]>} */
+    const calls = [];
+    server.use(
+      http.post("/internal/agent/diagnostics", async ({ request }) => {
+        calls.push([request.method, new URL(request.url).pathname, await request.json()]);
+        return HttpResponse.json(agentTaskResult);
+      }),
+    );
+
+    await expect(runAgentDiagnosticTask(agentDiagnosticRequest)).resolves.toEqual(agentTaskResult);
+
+    expect(calls).toEqual([
+      ["POST", "/internal/agent/diagnostics", agentDiagnosticRequest],
+    ]);
+  });
+
+  test("surfaces a disabled AgentScope runtime response without client fallback", async () => {
+    server.use(
+      http.post("/internal/agent/diagnostics", () =>
+        HttpResponse.json(
+          {
+            code: "AGENT_RUNTIME_DISABLED",
+            message: "Agent runtime is disabled for this environment.",
+          },
+          { status: 503 },
+        ),
+      ),
+    );
+
+    await expect(runAgentDiagnosticTask(agentDiagnosticRequest)).rejects.toMatchObject({
+      name: "ApiError",
+      status: 503,
+      kind: "request",
+      code: "AGENT_RUNTIME_DISABLED",
+      message: "Agent runtime is disabled for this environment.",
+    });
+  });
+
   test("streams read-only diagnostic events and notifies each parsed semantic event", async () => {
     /** @type {Array<[string, string, unknown, string | null, string | null]>} */
     const calls = [];
@@ -365,6 +408,23 @@ const readOnlyDiagnosticRequest = {
   targetEnvironment: "development",
   idempotencyKey: "agent-workspace-node-health-00000000-0000-4000-8000-000000000001",
   parameters: { nodeName: "node-a" },
+};
+
+const agentDiagnosticRequest = {
+  targetEnvironment: "development",
+  idempotencyKey: "agent-workspace-task-00000000-0000-4000-8000-000000000001",
+  userIntent: "检查 node-a 健康状态并总结风险",
+  inputParameters: {},
+};
+
+const agentTaskResult = {
+  schemaVersion: "1.0",
+  taskId: "task-0001",
+  workflowId: "00000000-0000-4000-8000-000000000301",
+  status: "SUCCEEDED",
+  summary: "已完成只读诊断，未发现阻塞风险。",
+  toolCallCount: 1,
+  completedAt: "2026-06-23T08:00:00Z",
 };
 
 const workflowId = "11111111-1111-4111-8111-111111111111";

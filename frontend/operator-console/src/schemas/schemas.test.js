@@ -2,6 +2,8 @@ import { describe, expect, test } from "vitest";
 
 import { browserSessionSchema } from "./auth-schemas.js";
 import {
+  agentDiagnosticRequestSchema,
+  agentTaskResultSchema,
   nodeHealthOutputSchema,
   readOnlyDiagnosticRequestSchema,
   semanticEventSchema,
@@ -154,6 +156,40 @@ describe("readOnlyDiagnosticRequestSchema", () => {
   });
 });
 
+describe("agent diagnostic schemas", () => {
+  test("accepts a main AgentScope diagnostic task request", () => {
+    expect(agentDiagnosticRequestSchema.parse(agentDiagnosticRequest)).toEqual(agentDiagnosticRequest);
+  });
+
+  test("rejects production or blank main Agent task requests", () => {
+    expect(() =>
+      agentDiagnosticRequestSchema.parse({
+        ...agentDiagnosticRequest,
+        targetEnvironment: "production",
+      }),
+    ).toThrow();
+    expect(() =>
+      agentDiagnosticRequestSchema.parse({
+        ...agentDiagnosticRequest,
+        userIntent: "   ",
+      }),
+    ).toThrow();
+  });
+
+  test("accepts the main Agent task result contract", () => {
+    expect(agentTaskResultSchema.parse(agentTaskResult)).toEqual(agentTaskResult);
+  });
+
+  test("rejects unsupported main Agent task result statuses", () => {
+    expect(() =>
+      agentTaskResultSchema.parse({
+        ...agentTaskResult,
+        status: "NEEDS_APPROVAL",
+      }),
+    ).toThrow();
+  });
+});
+
 describe("nodeHealthOutputSchema", () => {
   test("accepts complete node health output", () => {
     expect(nodeHealthOutputSchema.parse(nodeHealthOutput)).toEqual(nodeHealthOutput);
@@ -235,6 +271,23 @@ const nodeHealthRequest = {
     nodeName: "node-a",
   },
   idempotencyKey: "node-health-request-1",
+};
+
+const agentDiagnosticRequest = {
+  targetEnvironment: "development",
+  idempotencyKey: "agent-workspace-task-00000000-0000-4000-8000-000000000001",
+  userIntent: "检查 node-a 健康状态并总结风险",
+  inputParameters: {},
+};
+
+const agentTaskResult = {
+  schemaVersion: "1.0",
+  taskId: "task-0001",
+  workflowId: "00000000-0000-4000-8000-000000000301",
+  status: "SUCCEEDED",
+  summary: "已完成只读诊断，未发现阻塞风险。",
+  toolCallCount: 1,
+  completedAt: "2026-06-23T08:00:00Z",
 };
 
 const nodeHealthOutput = {

@@ -42,6 +42,35 @@ export const readOnlyDiagnosticRequestSchema = z
  * @typedef {z.infer<typeof readOnlyDiagnosticRequestSchema>} ReadOnlyDiagnosticRequest
  */
 
+export const agentDiagnosticRequestSchema = z
+  .object({
+    targetEnvironment: z.literal("development"),
+    idempotencyKey: nonBlankString,
+    userIntent: nonBlankString.max(2000),
+    inputParameters: z.record(z.string(), z.string()),
+  })
+  .strict();
+
+/**
+ * @typedef {z.infer<typeof agentDiagnosticRequestSchema>} AgentDiagnosticRequest
+ */
+
+export const agentTaskResultSchema = z
+  .object({
+    schemaVersion: z.literal("1.0"),
+    taskId: nonBlankString,
+    workflowId: nonBlankString,
+    status: z.enum(["SUCCEEDED", "FAILED_TERMINAL", "REJECTED", "AGENT_RUNTIME_DISABLED"]),
+    summary: nonBlankString,
+    toolCallCount: z.number().int().nonnegative(),
+    completedAt: z.iso.datetime({ offset: true }),
+  })
+  .strict();
+
+/**
+ * @typedef {z.infer<typeof agentTaskResultSchema>} AgentTaskResult
+ */
+
 export const nodeHealthOutputSchema = z
   .object({
     nodeName: nonBlankString,
