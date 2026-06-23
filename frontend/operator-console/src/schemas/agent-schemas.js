@@ -25,6 +25,38 @@ export const skillRoutingRequestSchema = z
   })
   .strict();
 
+export const readOnlyDiagnosticRequestSchema = z
+  .object({
+    skillId: z.literal("node-health-read"),
+    targetEnvironment: z.literal("development"),
+    parameters: z
+      .object({
+        nodeName: z.literal("node-a"),
+      })
+      .strict(),
+    idempotencyKey: nonBlankString,
+  })
+  .strict();
+
+/**
+ * @typedef {z.infer<typeof readOnlyDiagnosticRequestSchema>} ReadOnlyDiagnosticRequest
+ */
+
+export const nodeHealthOutputSchema = z
+  .object({
+    nodeName: nonBlankString,
+    status: nonBlankString,
+    cpuUsagePercent: z.number().int().min(0).max(100),
+    memoryUsagePercent: z.number().int().min(0).max(100),
+    diskUsagePercent: z.number().int().min(0).max(100),
+    lastHeartbeatAt: z.iso.datetime({ offset: true }),
+  })
+  .strict();
+
+/**
+ * @typedef {z.infer<typeof nodeHealthOutputSchema>} NodeHealthOutput
+ */
+
 const skillReleaseSnapshotSchema = z
   .object({
     skillId: nonBlankString,
@@ -115,3 +147,7 @@ export const semanticEventSchema = z
     message: "Event type must match payload type",
     path: ["payload", "payloadType"],
   });
+
+/**
+ * @typedef {z.infer<typeof semanticEventSchema>} SemanticEvent
+ */
