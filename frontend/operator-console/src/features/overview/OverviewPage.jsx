@@ -129,9 +129,9 @@ const capabilityRows = [
     icon: ExternalLink,
     label: "快捷连接",
     owner: "链接目录",
-    status: "占位",
+    status: "后续切片",
     tone: "quick",
-    to: "/quick-links",
+    disabled: true,
   },
 ];
 
@@ -303,16 +303,16 @@ function PrimaryEntry({ entry }) {
  *     label: string,
  *     owner: string,
  *     status: string,
- *     to: string,
+ *     to?: string,
+ *     disabled?: boolean,
  *     tone: string,
  *   }
  * }} props
  */
 function CapabilityRow({ item }) {
   const Icon = item.icon;
-
-  return (
-    <Link className={`${styles.capabilityRow} ${styles[item.tone]}`} to={item.to}>
+  const content = (
+    <>
       <span aria-hidden="true" className={styles.rowIcon}>
         <Icon size={17} strokeWidth={2.3} />
       </span>
@@ -321,6 +321,23 @@ function CapabilityRow({ item }) {
         <small>{item.owner}</small>
       </span>
       <span className={styles.rowStatus}>{item.status}</span>
+    </>
+  );
+
+  if (item.disabled) {
+    return (
+      <article
+        aria-disabled="true"
+        className={`${styles.capabilityRow} ${styles[item.tone]}`}
+      >
+        {content}
+      </article>
+    );
+  }
+
+  return (
+    <Link className={`${styles.capabilityRow} ${styles[item.tone]}`} to={item.to ?? "/"}>
+      {content}
     </Link>
   );
 }

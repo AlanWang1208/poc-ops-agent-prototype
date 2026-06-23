@@ -3,6 +3,7 @@ package com.company.opsagent.controlplane.bootstrap.config;
 import com.company.opsagent.controlplane.modules.agentruntime.AgentRuntimeService;
 import com.company.opsagent.controlplane.modules.agentruntime.AgentToolCatalogProvider;
 import com.company.opsagent.controlplane.modules.agentruntime.AgentToolDescriptor;
+import com.company.opsagent.controlplane.modules.agentruntime.AgentToolExecutor;
 import com.company.opsagent.controlplane.modules.agentruntime.AgentscopeAgentClient;
 import com.company.opsagent.controlplane.modules.agentruntime.AgentscopeAgentResponse;
 import com.company.opsagent.controlplane.modules.agentruntime.AgentscopePrimaryAgentRuntimeService;
@@ -17,12 +18,19 @@ import org.springframework.context.annotation.Configuration;
 import reactor.core.publisher.Mono;
 
 /**
- * AgentScope primary runtime wiring for P1 read-only diagnostics.
+ * P1 只读诊断 AgentScope 主运行时装配。
+ *
+ * <p>这里把 M03 已验证的只读 Skill 转成 M04 Tool Catalog，并把 M05 提供的
+ * AgentToolExecutor 注入运行时服务。这样 AgentScope 只能提出工具意图，真实
+ * 授权、工作流持久化和 Worker 调用仍由服务端平台边界完成。
  */
 @Configuration
 @EnableConfigurationProperties(AgentRuntimeProperties.class)
 public class AgentRuntimeConfiguration {
 
+  /**
+   * 从注册中心生成模型可见的只读 Tool Catalog。
+   */
   @Bean
   AgentToolCatalogProvider agentToolCatalogProvider(SkillRegistryService skillRegistryService) {
     return () -> skillRegistryService.listSkills().stream()
@@ -46,6 +54,9 @@ public class AgentRuntimeConfiguration {
         properties.getTimeout());
   }
 
+  /**
+   * 未配置模型供应方或 API Key 时必须失败关闭，不能静默切换到未审计路径。
+   */
   private AgentscopeAgentClient notConfiguredClient() {
     return invocation -> Mono.just(new AgentscopeAgentResponse(
         "AGENT_RUNTIME_NOT_CONFIGURED",
@@ -53,13 +64,23 @@ public class AgentRuntimeConfiguration {
         0));
   }
 
+  /**
+   * 装配主运行时服务，并显式注入平台 Tool 执行端口。
+   */
   @Bean
   AgentRuntimeService agentRuntimeService(
       AgentToolCatalogProvider agentToolCatalogProvider,
-      AgentscopeAgentClient agentscopeAgentClient) {
-    return new AgentscopePrimaryAgentRuntimeService(agentToolCatalogProvider, agentscopeAgentClient);
+      AgentscopeAgentClient agentscopeAgentClient,
+      AgentToolExecutor agentToolExecutor) {
+    return new AgentscopePrimaryAgentRuntimeService(
+        agentToolCatalogProvider,
+        agentscopeAgentClient,
+        agentToolExecutor);
   }
 
+  /**
+   * 将已发布 Skill 的平台描述转换为 AgentScope 可见的脱敏 Tool 描述。
+   */
   private AgentToolDescriptor toToolDescriptor(RegisteredSkill skill) {
     List<String> parameterNames = skill.descriptor().parameters().stream()
         .map(parameter -> parameter.name())

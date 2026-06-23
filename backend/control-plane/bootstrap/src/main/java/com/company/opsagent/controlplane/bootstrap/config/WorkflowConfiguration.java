@@ -1,6 +1,11 @@
 package com.company.opsagent.controlplane.bootstrap.config;
 
 import com.company.opsagent.controlplane.bootstrap.service.WebClientWorkerGateway;
+import com.company.opsagent.controlplane.modules.agentruntime.AgentRuntimeService;
+import com.company.opsagent.controlplane.modules.agentruntime.AgentToolCatalogProvider;
+import com.company.opsagent.controlplane.modules.agentruntime.AgentToolExecutor;
+import com.company.opsagent.controlplane.modules.audit.AuditTrail;
+import com.company.opsagent.controlplane.modules.policy.PolicyDecisionService;
 import com.company.opsagent.controlplane.modules.agentrouting.SkillRoutingService;
 import com.company.opsagent.controlplane.modules.workflow.AgentDiagnosticWorkflowService;
 import com.company.opsagent.controlplane.modules.workflow.AgentWorkflowStore;
@@ -11,7 +16,7 @@ import com.company.opsagent.controlplane.modules.workflow.R2dbcAgentWorkflowStor
 import com.company.opsagent.controlplane.modules.workflow.R2dbcReadOnlyWorkflowStore;
 import com.company.opsagent.controlplane.modules.workflow.RetryableFailureClassifier;
 import com.company.opsagent.controlplane.modules.workflow.WorkerGateway;
-import com.company.opsagent.controlplane.modules.agentruntime.AgentRuntimeService;
+import com.company.opsagent.controlplane.modules.workflow.WorkflowBackedAgentToolExecutor;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.Clock;
 import org.springframework.boot.ApplicationRunner;
@@ -53,13 +58,41 @@ public class WorkflowConfiguration {
     return new R2dbcAgentWorkflowStore(databaseClient);
   }
 
+  /**
+   * 装配 AgentScope ToolCall 的服务端执行边界。
+   *
+   * <p>这个 Bean 位于 workflow 配置中，是因为真实执行链需要 M05 的 Tool Step 事实源、
+   * M02 的策略决策和 M07 WorkerGateway。M04 AgentRuntime 只持有端口，不能反向依赖
+   * workflow，否则会形成模块依赖环并削弱“服务端策略是唯一权限决策点”的边界。
+   */
+  @Bean
+  AgentToolExecutor agentToolExecutor(
+      AgentToolCatalogProvider agentToolCatalogProvider,
+      PolicyDecisionService policyDecisionService,
+      AgentWorkflowStore agentWorkflowStore,
+      ReadOnlyWorkflowStore readOnlyWorkflowStore,
+      AuditTrail auditTrail,
+      WorkerGateway workerGateway,
+      ObjectMapper objectMapper) {
+    return new WorkflowBackedAgentToolExecutor(
+        agentToolCatalogProvider,
+        policyDecisionService,
+        agentWorkflowStore,
+        readOnlyWorkflowStore,
+        auditTrail,
+        workerGateway,
+        objectMapper,
+        Clock.systemUTC());
+  }
+
   @Bean
   ConnectionFactoryInitializer workflowSchemaInitializer(ConnectionFactory connectionFactory) {
     var initializer = new ConnectionFactoryInitializer();
     initializer.setConnectionFactory(connectionFactory);
     initializer.setDatabasePopulator(new ResourceDatabasePopulator(
         new ClassPathResource("sql/migrations/V001__workflow_schema.sql"),
-        new ClassPathResource("sql/migrations/V002__agent_workflow_schema.sql")));
+        new ClassPathResource("sql/migrations/V002__agent_workflow_schema.sql"),
+        new ClassPathResource("sql/migrations/V003__agent_workflow_result_columns.sql")));
     return initializer;
   }
 

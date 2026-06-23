@@ -50,6 +50,77 @@
   line-height: 1.5;
 }
 
+.disabledPanel {
+  display: grid;
+  max-width: 720px;
+  grid-template-columns: 54px minmax(0, 1fr);
+  gap: 18px;
+  align-content: start;
+  align-self: start;
+  padding: 24px;
+  border: 1px solid var(--quick-border);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow:
+    0 16px 40px rgba(31, 41, 51, 0.055),
+    inset 0 1px 0 rgba(255, 255, 255, 0.76);
+}
+
+.disabledIcon {
+  width: 54px;
+  height: 54px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid color-mix(in srgb, var(--quick-blue) 34%, #fff);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--quick-blue) 8%, #fff);
+  color: var(--quick-blue);
+}
+
+.disabledContent {
+  display: grid;
+  gap: 12px;
+}
+
+.disabledContent h2,
+.disabledContent p {
+  margin: 0;
+}
+
+.disabledContent h2 {
+  color: var(--quick-ink);
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 760;
+  letter-spacing: 0;
+  line-height: 1.2;
+}
+
+.disabledContent p {
+  color: var(--quick-muted);
+  font-size: 14px;
+  font-weight: 710;
+  line-height: 1.55;
+}
+
+.disabledList {
+  display: grid;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+.disabledList span {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr);
+  gap: 8px;
+  align-items: start;
+  color: var(--quick-muted);
+  font-size: 13px;
+  font-weight: 720;
+  line-height: 1.5;
+}
+
 .quickLinkGrid {
   display: grid;
   min-height: 0;

@@ -1,8 +1,10 @@
-# AgentScope Java 主链路运行手册
+# AgentScope Java 主链路 POC 运行手册
 
 ## 当前状态
 
-AgentScope Java 是 P1 只读诊断主链路中的 M04 主 Agent Runtime。控制面受保护入口：
+AgentScope Java 是 P1 只读诊断目标主链路中的 M04 主 Agent Runtime。当前代码已完成运行时边界、受保护入口、禁用/未配置失败关闭、最终摘要 POC、workflow-backed Agent Tool 执行器，以及 AgentScope ReAct 真实工具回调接线；该执行器已经能在服务端重做目录校验、M02 策略决策、执行器级授权审计、参数哈希、M05 Tool Step 持久化、Agent Tool 语义事件发布、M07 WorkerGateway 调用和结果映射。
+
+控制面受保护入口：
 
 ```text
 POST /api/v1/agent/diagnostics
@@ -10,7 +12,7 @@ POST /api/v1/agent/diagnostics
 
 该入口必须先通过 M01 身份认证、M02 策略授权和审计记录。客户端不得传入授权结论、策略版本或工作流事实源字段。
 
-确定性单 Skill 只读入口仅作为联调、兼容和紧急回退路径保留。
+确定性单 Skill 只读入口作为联调、兼容和紧急回退路径保留。AgentScope 主链路当前已补齐 Agent Tool 请求、完成和拒绝三类语义事件契约骨架、M05 发布接线、执行器级授权审计和多 Tool 幂等恢复演练；终态 Agent workflow 会复用持久化的 `AgentTaskResult` 状态、摘要和 toolCallCount。后续仍需继续补齐更完整评测集和路由解释 API。
 
 ## 主链路运行条件
 
@@ -54,6 +56,8 @@ ops-agent:
 .\mvnw.cmd -pl control-plane/modules/agentruntime -am test
 .\mvnw.cmd -pl control-plane/modules/workflow -am test
 .\mvnw.cmd -pl control-plane/bootstrap -am test
+.\mvnw.cmd -pl control-plane/modules/agentruntime,control-plane/modules/workflow,control-plane/bootstrap -am test
+.\mvnw.cmd -pl control-plane/modules/agentruntime -am '-Dtest=AgentscopeReActAgentClientTest' '-Dsurefire.failIfNoSpecifiedTests=false' test
 .\mvnw.cmd -pl control-plane/bootstrap -am dependency:tree '-Dincludes=io.modelcontextprotocol.sdk:*'
 ```
 

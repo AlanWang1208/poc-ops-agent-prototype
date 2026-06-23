@@ -4,7 +4,7 @@ import java.time.Duration;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
- * AgentScope primary runtime bootstrap settings.
+ * AgentScope 主运行时的启动配置。
  */
 @ConfigurationProperties(prefix = "ops-agent.agent-runtime")
 public class AgentRuntimeProperties {

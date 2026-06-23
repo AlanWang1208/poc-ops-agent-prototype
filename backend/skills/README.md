@@ -56,3 +56,4 @@ backend/contracts/skills/packages/<skill-name>/
 - `scripts/` 在 P1 不使用；如后续需要，必须先经过 ADR、安全评审和 Worker 隔离设计。
 - Skill 不得包含密钥、生产数据、模型内部推理过程或未脱敏日志。
 - AgentScope 只能调用平台暴露的已授权 Tool；权限、审计、工作流事实源和 Worker 隔离仍由平台执行。
+- 当前 AgentScope Tool Step 到 M05/M07 的端到端执行闭环已经通过 workflow-backed Agent Tool 执行器接通；`SKILL.md` 继续作为 Tool Catalog、模型上下文和评测输入维护。

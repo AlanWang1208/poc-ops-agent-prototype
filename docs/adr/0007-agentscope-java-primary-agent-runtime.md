@@ -1,4 +1,4 @@
-# ADR 0007：AgentScope Java 作为 P1 只读诊断主链路
+# ADR 0007：AgentScope Java 作为 P1 只读诊断目标主链路
 
 - 状态：Accepted
 - 日期：2026-06-13
@@ -11,13 +11,13 @@
 
 P1 只读诊断 MVP 已具备身份认证、服务端策略、Skill 注册、只读工作流、受限 Worker 和语义事件的基础闭环。早期方案将 AgentScope Java 作为 M04 主 Agent Runtime 的候选实现接入，用于验证意图理解、计划生成、只读 Tool 调用循环、多步诊断编排和最终诊断摘要。
 
-现在项目需要收敛主链路：P1 只读诊断的产品主路径应由 AgentScope Java 主导 Agent 循环，而不是继续以确定性单 Skill 路由作为主要诊断体验。确定性单 Skill 只读入口保留为兼容、联调和回退路径。
+现在项目需要收敛目标主链路：P1 只读诊断的产品主路径应由 AgentScope Java 主导 Agent 循环，而不是继续以确定性单 Skill 路由作为主要诊断体验。确定性单 Skill 只读入口保留为兼容、联调和回退路径。
 
 该调整不改变产品边界：系统仍是公司内部自研自用、单组织部署；P1 仍只允许只读诊断；生产写执行、任意脚本执行和审批绕过仍禁止。
 
 ## 决策
 
-将 AgentScope Java 定义为 P1 只读诊断主链路中的 M04 主 Agent Runtime。
+将 AgentScope Java 定义为 P1 只读诊断目标主链路中的 M04 主 Agent Runtime。
 
 P1 主链路为：
 
@@ -36,6 +36,12 @@ P1 主链路为：
   -> M09 输出强类型语义事件和最终摘要
   -> M10 记录指标、日志、追踪和审计证据
 ```
+
+## 当前实现状态
+
+截至 2026-06-23，当前代码已完成 Agent Runtime 模块边界、禁用/未配置状态、受保护入口、Agent workflow 基础事实源、最终摘要 POC、workflow-backed Agent Tool 执行器，以及 AgentScope ReAct 真实 `AgentTool` 回调接线。平台守护执行器已在服务端重新校验 Tool Catalog、重做 M02 策略决策、记录执行器级授权审计、重算参数哈希、写入 M05 Tool Step、发布 Agent Tool 语义事件，并通过 M07 WorkerGateway 提交已授权只读命令。
+
+AgentScope ReAct 现在注册真实 `AgentTool`，模型 ToolUse 会先在 M04 转成强类型 `AgentToolCall`，再交给 M05 的平台守护执行器。M04 生成的 policy 引用只用于满足当前信封契约，M05 会忽略该引用并以服务端重新授权结果为准。Agent Tool 请求、完成和拒绝三类语义事件契约骨架、M05 发布接线、执行器级审计和多 Tool 幂等恢复演练已经补齐；终态 Agent workflow 会复用持久化的 `AgentTaskResult` 状态、摘要和 toolCallCount，避免幂等重试时把 Runtime 失败误报成通用终态失败。评测集和路由解释 API 仍需后续补齐。确定性单 Skill 只读入口继续作为联调、兼容和紧急回退路径。
 
 AgentScope Java 负责：
 
@@ -156,11 +162,12 @@ backend/contracts/skills/packages/<skill-slug>/
 - 单元测试覆盖只读 Tool Catalog、未发布 Skill 拒绝、非只读 Skill 拒绝、跨工作空间拒绝。
 - Skill 检查覆盖两类目录：AgentScope 目录必须包含可解析的 `SKILL.md`；平台契约目录必须包含 `manifest.json`、`manifest.signature.json`、`input.schema.json`、`output.schema.json` 和三类测试样例。
 - 工作流测试覆盖 Agent workflow 幂等、Tool Step 顺序、Agent Runtime 失败和恢复事件。
+- Agent Runtime 测试覆盖 ReAct ToolUse 通过真实 AgentScope `AgentTool` 回调平台 `AgentToolExecutor`，并将结构化 Tool Result 回送给下一轮 ReAct。
 - 集成测试覆盖 `/api/v1/agent/diagnostics` 的认证、授权和受控只读诊断路径。
 - 评测覆盖 Prompt 注入、Tool 输出注入、写操作请求、模型超时和输出格式错误。
 
 ## 发布与回滚
 
-AgentScope Java 是 P1 只读诊断的产品主链路，但环境启用仍必须受配置控制。未配置模型提供方、API Key 或评测环境时，控制面必须明确返回不可用状态，不得静默改走未审计路径。
+AgentScope Java 是 P1 只读诊断的目标产品主链路，但环境启用仍必须受配置控制。未配置模型提供方、API Key 或评测环境时，控制面必须明确返回不可用状态，不得静默改走未审计路径。
 
 确定性单 Skill 只读入口保留为兼容、联调和紧急回退路径。若 AgentScope 主链路出现异常，可以通过配置关闭 Agent Runtime，并临时回到现有 `/internal/diagnostics/read-only` 单 Skill 只读闭环。历史 Agent workflow、Tool Step、语义事件和审计记录仍需可查询，不得删除或篡改。

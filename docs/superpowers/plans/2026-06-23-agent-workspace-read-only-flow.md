@@ -1,5 +1,7 @@
 # Agent 工作区只读诊断全流程实施计划
 
+> 历史归档：本文件记录 Agent 工作区曾经接入确定性单 Skill 事件流的实施计划。当前事实源以后续 `frontend/operator-console/README.md`、`docs/architecture/module-map.md` 和 `docs/adr/0007-agentscope-java-primary-agent-runtime.md` 为准；Agent 工作台主提交入口已经切换为 `/api/v1/agent/diagnostics`。
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use `superpowers:subagent-driven-development` (recommended) or `superpowers:executing-plans` to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** 让 Agent 工作区的发送按钮触发现有 `node-health-read@1.1.0` 只读诊断事件流，并在页面中展示强类型事件和 Worker 返回的节点健康结果。

@@ -3,7 +3,7 @@ package com.company.opsagent.controlplane.bootstrap.api;
 import java.util.Map;
 
 /**
- * Request accepted by the server-authorized primary Agent diagnostic endpoint.
+ * 服务端授权后的主 Agent 只读诊断入口所接收的请求体。
  */
 public record AgentDiagnosticRequest(
     String targetEnvironment,

@@ -1,5 +1,7 @@
 # M09 基于原型的操作台首轮重写实施计划
 
+> 历史归档：本文件记录 2026-06-13 首轮页面重写计划。当前 Agent 工作台提交入口、受保护路由和 Quick Links 状态以后续 `frontend/operator-console/README.md`、`docs/architecture/module-map.md` 和 `docs/planning/project-plan.md` 为准。
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** 删除现有操作台页面实现，基于已批准原型重新实现登录页、Agent 工作台、Skill 注册中心和 SQL 工作台，并优先接入现有真实接口。
@@ -14,8 +16,8 @@
 
 - 当前工作区存在用户未提交的 SQL 工作台和后端改动。只删除和重写 `frontend/operator-console` 中已明确授权替换的页面代码，不回退任何后端改动。
 - `backend/control-plane/bootstrap/src/main/java/.../SqlWorkbenchController.java` 及 `backend/contracts/sqlworkbench/` 当前为未提交文件，但计划将其视为已有真实接口。执行 SQL 页面任务前必须确认这些文件仍存在。
-- 不修改控制面授权链路，不新增生产写操作，不新增通用 Agent 对话后端接口。
-- Agent 工作台首轮使用真实 Skill 目录和路由搜索接口展示候选能力；任务发送与执行保持禁用。
+- 不修改控制面授权链路，不新增生产写操作；该历史计划执行时尚未接入 Agent 任务入口，当前事实源以后续 `frontend/operator-console/README.md` 和 `docs/architecture/module-map.md` 为准。
+- Agent 工作台首轮使用真实 Skill 目录和路由搜索接口展示候选能力；该历史计划执行时任务发送与执行保持禁用，当前实现已改为通过 `/api/v1/agent/diagnostics` 提交主 Agent 只读诊断任务。
 - Mock Service Worker 仅用于测试，不得从生产入口导入。
 - 每次提交只暂存该任务列出的文件，避免纳入工作区其他改动。
 
@@ -630,7 +632,7 @@ git commit -m "Implement prototype login experience"
 expect(await screen.findByText("工作会话")).toBeInTheDocument();
 expect(await screen.findByText("node-health-read")).toBeInTheDocument();
 expect(screen.getByRole("button", { name: "发送任务" })).toBeDisabled();
-expect(screen.getByText("通用 Agent 对话接口尚未开放")).toBeInTheDocument();
+expect(screen.getByText("诊断请求正在由服务端工作流处理")).toBeInTheDocument();
 expect(screen.queryByText("模型内部推理")).not.toBeInTheDocument();
 ```
 

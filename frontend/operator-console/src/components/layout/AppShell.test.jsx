@@ -65,7 +65,7 @@ describe("AppShell styles", () => {
     expect(symbolRule).toContain("background: var(--nav-mark)");
     expect(symbolBeforeRule).toContain("border:");
     expect(symbolAfterRule).toContain("box-shadow:");
-    expect(appShellCss.match(/--nav-mark:/gu)?.length ?? 0).toBeGreaterThanOrEqual(10);
+    expect(appShellCss.match(/--nav-mark:/gu)?.length ?? 0).toBeGreaterThanOrEqual(9);
     expect(glyphRule).toContain("width: 22px");
     expect(glyphRule).toContain("height: 22px");
     expect(glyphRule).toContain("z-index: 2");
@@ -87,7 +87,7 @@ describe("AppShell styles", () => {
     expect(appShellSource).toContain('label: "Skill 注册中心"');
     expect(appShellSource).toContain("会议录制纪要");
     expect(appShellSource).toContain("AS400改建表");
-    expect(appShellSource).toContain("快捷连接");
+    expect(appShellSource).not.toContain("快捷连接");
   });
 
   it("keeps the sidebar footer preview aligned to the navigation stack", () => {

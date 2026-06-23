@@ -13,9 +13,15 @@
 | ENDPOINT_POLICY_DENIED | `ControlPlaneApplicationTest.rejectsAgentDiagnosticEndpointWithoutReaderRole` | 角色不足请求返回 `POLICY_DENIED` |
 | ENABLED_AGENT_WORKFLOW | `AgentDiagnosticEndpointIntegrationTest.executesEnabledAgentDiagnosticEndpointThroughWorkflow` | 显式启用后通过工作流返回 `AgentTaskResult` |
 | READ_ONLY_CATALOG | `AgentscopePrimaryAgentRuntimeServiceTest.runtimeOnlySeesPublishedReadOnlyToolCatalog` | AgentScope 只看到只读 Tool |
-| REACT_CLIENT_SUMMARY | `AgentscopeReActAgentClientTest.runsReActAgentWithReadOnlyToolSchemasAndReturnsFinalText` | ReActAgent 接收只读 Tool Schema 并返回最终摘要 |
+| REACT_CLIENT_SUMMARY | `AgentscopeReActAgentClientTest.runsReActAgentWithReadOnlyToolSchemasAndReturnsFinalText` | ReActAgent 接收只读 Tool Catalog 并返回最终摘要 |
+| REACT_TOOL_EXECUTOR | `AgentscopeReActAgentClientTest.executesModelToolUseThroughPlatformToolExecutorAndFeedsResultBackToReAct` | ReAct ToolUse 通过真实 AgentScope `AgentTool` 回调平台 `AgentToolExecutor`，并将结构化结果送回下一轮 ReAct |
+| AGENT_TOOL_EVENT_CONTRACTS | `ContractsTest.acceptsAgentToolSemanticEventPayloadsAndSchemaTypes` | Agent Tool 请求、完成和拒绝三类语义事件的 Java 契约与 JSON Schema 类型保持一致 |
+| AGENT_TOOL_EVENT_PUBLISHING | `WorkflowBackedAgentToolExecutorTest` | Agent Tool 成功和策略拒绝路径都会把 requested/completed/rejected 事件写入持久化语义事件流 |
+| AGENT_TOOL_AUDIT | `WorkflowBackedAgentToolExecutorTest` | Agent Tool 服务端授权允许和拒绝都会写入现有 AuditTrail |
+| AGENT_WORKFLOW_MULTI_TOOL_IDEMPOTENCY | `AgentDiagnosticWorkflowServiceTest.reusesCompletedWorkflowWithPersistedMultiToolStepsWithoutRerunningRuntime`、`AgentDiagnosticWorkflowServiceTest.reusesTerminalWorkflowWithOriginalRuntimeFailureStatusAndSummary` | 多 Tool Agent workflow 命中终态幂等键时不会重跑 Runtime，并复用持久化的终态 `AgentTaskResult` 状态、摘要和 toolCallCount；旧数据缺少结果快照时才退回到 Tool Step 计数兼容恢复 |
 | SKILL_NOT_AVAILABLE | `PlatformGuardedAgentToolExecutorTest.rejectsToolCallWhenSkillIsNotInPublishedCatalog` | 未发布或不可见 Skill 被拒绝 |
 | WRITE_SKILL_REJECTED | `PlatformGuardedAgentToolExecutorTest.rejectsNonReadOnlySkillInP1` | 非只读 Skill 在 P1 被拒绝 |
+| WORKFLOW_BACKED_TOOL_EXECUTOR | `WorkflowBackedAgentToolExecutorTest.executesReadOnlyToolThroughServerPolicyWorkflowStepAndWorkerGateway` | 服务端重新授权、写入 M05 Tool Step，并通过 M07 WorkerGateway 执行只读命令 |
 | WORKFLOW_IDEMPOTENCY | `R2dbcAgentWorkflowStoreTest.createsOrReusesWorkflowByIdempotencyTuple` | Agent 工作流按幂等元组复用 |
 | TOOL_STEP_SEQUENCE | `R2dbcAgentWorkflowStoreTest.appendsToolStepsAndFindsStepsAfterSequence` | Tool Step 可按序恢复 |
 
@@ -31,7 +37,7 @@
 
 ## 发布门槛
 
-- AgentScope Java 是 P1 只读诊断主链路；目标环境启用前必须完成模型供应方、API Key 注入、只读 Tool Catalog 和回退开关验证。
+- AgentScope Java 是 P1 只读诊断目标主链路；目标环境启用前必须完成模型供应方、API Key 注入、只读 Tool Catalog、M05/M07 Tool 执行闭环和回退开关验证。
 - 未配置或未启用的环境必须失败关闭，不得静默改走未审计路径。
 - AgentScope 直接依赖只能出现在 `control-plane-agentruntime` 模块。
 - 不得引入未审查的 MCP 传递依赖。

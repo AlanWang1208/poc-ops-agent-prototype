@@ -5,7 +5,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 /**
- * Facts source for Agent-driven workflow state.
+ * Agent 驱动工作流状态的事实源接口。
  */
 public interface AgentWorkflowStore {
 
@@ -32,6 +32,9 @@ public interface AgentWorkflowStore {
       String workspaceId,
       String workflowId,
       StoredWorkflowStatus status,
+      String resultStatus,
+      String resultSummary,
+      int resultToolCallCount,
       OffsetDateTime completedAt);
 
   Flux<StoredAgentToolStep> findToolStepsAfter(String workspaceId, String workflowId, long afterSequence);

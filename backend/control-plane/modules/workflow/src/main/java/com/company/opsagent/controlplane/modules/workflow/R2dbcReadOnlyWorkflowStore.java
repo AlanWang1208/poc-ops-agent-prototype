@@ -3,6 +3,9 @@ package com.company.opsagent.controlplane.modules.workflow;
 import com.company.opsagent.contracts.events.SemanticEvent;
 import com.company.opsagent.contracts.events.SemanticEventPayload;
 import com.company.opsagent.contracts.events.SemanticEventType;
+import com.company.opsagent.contracts.events.AgentToolCallCompletedPayload;
+import com.company.opsagent.contracts.events.AgentToolCallRejectedPayload;
+import com.company.opsagent.contracts.events.AgentToolCallRequestedPayload;
 import com.company.opsagent.contracts.events.SkillRoutedPayload;
 import com.company.opsagent.contracts.workflow.ReadOnlyCommandEnvelope;
 import com.company.opsagent.contracts.events.WorkerAcceptedPayload;
@@ -590,6 +593,32 @@ public class R2dbcReadOnlyWorkflowStore implements ReadOnlyWorkflowStore {
         case WORKER_ACCEPTED -> new WorkerAcceptedPayload(
             type,
             payloadNode.get("executionRequestId").asText());
+        case AGENT_TOOL_CALL_REQUESTED -> new AgentToolCallRequestedPayload(
+            type,
+            payloadNode.get("toolCallId").asText(),
+            payloadNode.get("stepSequence").asLong(),
+            payloadNode.get("skillId").asText(),
+            payloadNode.get("skillVersion").asText(),
+            payloadNode.get("parameterSchemaId").asText(),
+            payloadNode.get("targetEnvironment").asText(),
+            payloadNode.get("parametersHash").asText());
+        case AGENT_TOOL_CALL_COMPLETED -> new AgentToolCallCompletedPayload(
+            type,
+            payloadNode.get("toolCallId").asText(),
+            payloadNode.get("stepSequence").asLong(),
+            payloadNode.get("skillId").asText(),
+            payloadNode.get("skillVersion").asText(),
+            payloadNode.get("status").asText(),
+            payloadNode.get("outputSchemaId").asText());
+        case AGENT_TOOL_CALL_REJECTED -> new AgentToolCallRejectedPayload(
+            type,
+            payloadNode.get("toolCallId").asText(),
+            payloadNode.get("stepSequence").asLong(),
+            payloadNode.get("skillId").asText(),
+            payloadNode.get("skillVersion").asText(),
+            payloadNode.get("errorCode").asText(),
+            payloadNode.get("message").asText(),
+            payloadNode.get("policyDecisionId").asText());
         case WORKFLOW_COMPLETED -> new WorkflowCompletedPayload(
             type,
             payloadNode.get("outputSchemaId").asText(),

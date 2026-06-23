@@ -98,7 +98,7 @@ class LocalOidcProviderControllerTest {
 运行：
 
 ```powershell
-cd C:\Users\Lenovo\Documents\ops-agent\backend
+cd backend
 .\mvnw.cmd -f .\pom.xml -pl control-plane/bootstrap -am -Dtest=LocalOidcProviderControllerTest -Dsurefire.failIfNoSpecifiedTests=false test
 ```
 
@@ -234,7 +234,7 @@ void exchangesAuthorizationCodeForTokens() {
 运行：
 
 ```powershell
-cd C:\Users\Lenovo\Documents\ops-agent\backend
+cd backend
 .\mvnw.cmd -f .\pom.xml -pl control-plane/bootstrap -am -Dtest=LocalOidcProviderControllerTest test
 ```
 
@@ -296,7 +296,7 @@ class LocalOidcBrowserLoginIntegrationTest {
 运行：
 
 ```powershell
-cd C:\Users\Lenovo\Documents\ops-agent\backend
+cd backend
 .\mvnw.cmd -f .\pom.xml -pl control-plane/bootstrap -am -Dtest=LocalOidcBrowserLoginIntegrationTest -Dsurefire.failIfNoSpecifiedTests=false test
 ```
 
@@ -451,7 +451,7 @@ private String loginAndReturnSessionCookie() {
 运行：
 
 ```powershell
-cd C:\Users\Lenovo\Documents\ops-agent\backend
+cd backend
 .\mvnw.cmd -f .\pom.xml -pl control-plane/bootstrap -am -Dtest=LocalOidcProviderControllerTest,LocalOidcBrowserLoginIntegrationTest test
 ```
 
@@ -504,7 +504,7 @@ export async function fetchBrowserSession(): Promise<BrowserSession> {
 运行：
 
 ```powershell
-cd C:\Users\Lenovo\Documents\ops-agent\frontend\operator-console
+cd frontend\operator-console
 npm run build
 ```
 
@@ -548,7 +548,7 @@ export async function streamDiagnosticEvents(
 运行：
 
 ```powershell
-cd C:\Users\Lenovo\Documents\ops-agent\frontend\operator-console
+cd frontend\operator-console
 npm run build
 ```
 
@@ -692,10 +692,10 @@ await streamDiagnosticEvents(
 运行：
 
 ```powershell
-cd C:\Users\Lenovo\Documents\ops-agent\frontend\operator-console
+cd frontend\operator-console
 npm run build
 
-cd C:\Users\Lenovo\Documents\ops-agent\backend
+cd backend
 .\mvnw.cmd -f .\pom.xml -pl control-plane/bootstrap -am -Dtest=LocalOidcBrowserLoginIntegrationTest test
 ```
 
@@ -721,7 +721,7 @@ git commit -m "Switch operator console to local browser login"
 - [ ] **步骤 1：运行后端聚焦验证**
 
 ```powershell
-cd C:\Users\Lenovo\Documents\ops-agent\backend
+cd backend
 .\mvnw.cmd -f .\pom.xml -pl control-plane/bootstrap -am test
 ```
 
@@ -730,7 +730,7 @@ cd C:\Users\Lenovo\Documents\ops-agent\backend
 - [ ] **步骤 2：运行前端验证**
 
 ```powershell
-cd C:\Users\Lenovo\Documents\ops-agent\frontend\operator-console
+cd frontend\operator-console
 npm run build
 ```
 
@@ -739,12 +739,12 @@ npm run build
 - [ ] **步骤 3：执行本地人工烟雾联调**
 
 ```powershell
-cd C:\Users\Lenovo\Documents\ops-agent\backend
+cd backend
 .\mvnw.cmd -f .\pom.xml -pl control-plane/bootstrap -am spring-boot:run -Dspring-boot.run.profiles=local-oidc
 ```
 
 ```powershell
-cd C:\Users\Lenovo\Documents\ops-agent\frontend\operator-console
+cd frontend\operator-console
 npm run dev
 ```
 

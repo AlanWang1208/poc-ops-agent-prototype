@@ -13,7 +13,9 @@ import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 /**
- * 平台守护 Tool Executor 的拒绝边界测试。
+ * M04 内置兜底 Tool Executor 的拒绝边界测试。
+ *
+ * <p>这个执行器不代表完整生产链路，只验证在 M05 executor 未接入时仍然不会越过目录和只读边界。
  */
 class PlatformGuardedAgentToolExecutorTest {
 
@@ -22,7 +24,7 @@ class PlatformGuardedAgentToolExecutorTest {
     AgentToolCatalogProvider catalogProvider = () -> List.of(readOnlyNodeHealthTool());
     AgentToolExecutor executor = new PlatformGuardedAgentToolExecutor(catalogProvider);
 
-    AgentToolResult result = executor.execute(toolCall("restart-node", "1.0.0")).block();
+    AgentToolResult result = executor.execute(runtimeRequest(), toolCall("restart-node", "1.0.0")).block();
 
     assertEquals("REJECTED", result.status());
     assertEquals("SKILL_NOT_AVAILABLE", result.errorCode());
@@ -40,7 +42,7 @@ class PlatformGuardedAgentToolExecutorTest {
         "LOW"));
     AgentToolExecutor executor = new PlatformGuardedAgentToolExecutor(catalogProvider);
 
-    AgentToolResult result = executor.execute(toolCall("restart-node", "1.0.0")).block();
+    AgentToolResult result = executor.execute(runtimeRequest(), toolCall("restart-node", "1.0.0")).block();
 
     assertEquals("REJECTED", result.status());
     assertEquals("ONLY_READ_ONLY_SKILLS_ALLOWED", result.errorCode());
@@ -55,6 +57,20 @@ class PlatformGuardedAgentToolExecutorTest {
         "node-health:1.0.0:output",
         List.of("nodeId"),
         "READ_ONLY");
+  }
+
+  private AgentRuntimeRequest runtimeRequest() {
+    return new AgentRuntimeRequest(
+        "task-1",
+        "workflow-1",
+        "workspace-default",
+        "operator-1",
+        List.of("ROLE_ops-reader"),
+        "development",
+        "check node health",
+        Map.of("nodeId", "node-1"),
+        "trace-1",
+        "request-1");
   }
 
   private AgentToolCall toolCall(String skillId, String version) {

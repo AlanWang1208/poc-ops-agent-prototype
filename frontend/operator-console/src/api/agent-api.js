@@ -27,7 +27,7 @@ export function searchSkillCandidates(criteria) {
  */
 export function runAgentDiagnosticTask(input) {
   const request = agentDiagnosticRequestSchema.parse(input);
-  return requestJson("/internal/agent/diagnostics", {
+  return requestJson("/api/v1/agent/diagnostics", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(request),

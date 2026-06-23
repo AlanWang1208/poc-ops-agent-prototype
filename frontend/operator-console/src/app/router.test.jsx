@@ -55,7 +55,26 @@ beforeEach(() => {
 });
 
 describe("operator console routes", () => {
-  it("shows the operator navigation for protected pages", () => {
+  it("redirects anonymous users away from protected pages", async () => {
+    server.use(
+      http.get("/auth/session", () =>
+        HttpResponse.json({
+          authenticated: false,
+          subject: null,
+          username: null,
+          roles: [],
+          authenticationType: "anonymous",
+        }),
+      ),
+    );
+
+    renderAt("/agent");
+
+    expect(await screen.findByRole("heading", { name: "用户登录" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Agent 工作区" })).not.toBeInTheDocument();
+  });
+
+  it("shows the operator navigation for protected pages", async () => {
     renderAt("/agent");
 
     expect(screen.getByRole("navigation", { name: "主导航" })).toBeVisible();
@@ -84,7 +103,7 @@ describe("operator console routes", () => {
     expect(
       screen.getByRole("link", { name: "审计记录" }),
     ).toBeInTheDocument();
-    expect(screen.getByText("会话列表")).toBeInTheDocument();
+    expect(await screen.findByText("会话列表")).toBeInTheDocument();
     expect(screen.getByText("会话上下文")).toBeInTheDocument();
   });
 
@@ -92,10 +111,11 @@ describe("operator console routes", () => {
     const user = userEvent.setup();
     renderAt("/agent");
 
+    await screen.findByText("会话列表");
     await user.click(screen.getByRole("link", { name: "SQL 工作区" }));
 
     expect(
-      screen.getByRole("heading", { name: "SQL 工作台" }),
+      await screen.findByRole("heading", { name: "SQL 工作台" }),
     ).toBeInTheDocument();
     expect(
       screen.getByRole("navigation", { name: "主导航" }),
@@ -114,33 +134,31 @@ describe("operator console routes", () => {
     ["/as400-ddl", "AS400改建表"],
     ["/quick-links", "快捷连接"],
     ["/sql", "SQL 工作台"],
-  ])("renders shared navigation and status bar for %s", (path, title) => {
+  ])("renders shared navigation and status bar for %s", async (path, title) => {
     renderAt(path);
 
     expect(screen.getByRole("navigation", { name: "主导航" })).toBeVisible();
+    expect(await screen.findByRole("heading", { name: title })).toBeInTheDocument();
     expect(screen.getByLabelText("当前工作台")).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: title })).toBeInTheDocument();
   });
 
-  it("renders the Skill registry inside the shared shell while replacing only the workspace body", () => {
+  it("renders the Skill registry inside the shared shell while replacing only the workspace body", async () => {
     renderAt("/skills");
 
     expect(screen.getByRole("navigation", { name: "主导航" })).toBeVisible();
+    expect(await screen.findByRole("heading", { name: "Skill 注册中心" })).toBeInTheDocument();
     expect(screen.getByLabelText("当前工作台")).toBeInTheDocument();
     expect(screen.queryByRole("navigation", { name: "Skill 注册中心导航" })).not.toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Skill 注册中心" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "内置 Skill" })).toBeInTheDocument();
   });
 
-  it("renders the overview React page for the overview navigation view", () => {
+  it("renders the overview React page for the overview navigation view", async () => {
     renderAt("/overview");
+    expect(await screen.findByRole("heading", { name: "平台总览" })).toBeInTheDocument();
     const availableEntries = screen.getByRole("region", { name: "可用工作入口" });
     const capabilityMap = screen.getByRole("region", { name: "后续能力地图" });
     const overviewGuide = screen.getByRole("region", { name: "怎么使用这个总览" });
 
-    expect(
-      screen.getByRole("heading", { name: "平台总览" }),
-    ).toBeInTheDocument();
     expect(
       screen.getByRole("heading", { name: "当前能用的功能" }),
     ).toBeInTheDocument();
@@ -178,7 +196,9 @@ describe("operator console routes", () => {
     expect(within(capabilityMap).getByRole("link", { name: /Skill 注册中心/u })).toHaveAttribute("href", "/skills");
     expect(within(capabilityMap).getByRole("link", { name: /会议录制纪要/u })).toHaveAttribute("href", "/meeting-notes");
     expect(within(capabilityMap).getByRole("link", { name: /AS400改建表/u })).toHaveAttribute("href", "/as400-ddl");
-    expect(within(capabilityMap).getByRole("link", { name: /快捷连接/u })).toHaveAttribute("href", "/quick-links");
+    expect(within(capabilityMap).getByText("快捷连接")).toBeInTheDocument();
+    expect(within(capabilityMap).getByText("后续切片")).toBeInTheDocument();
+    expect(within(capabilityMap).queryByRole("link", { name: /快捷连接/u })).not.toBeInTheDocument();
     expect(within(capabilityMap).getByRole("link", { name: /工作流事件/u })).toHaveAttribute("href", "/workflow-events");
     expect(within(capabilityMap).getByRole("link", { name: /审计记录/u })).toHaveAttribute("href", "/audit");
     expect(screen.queryByText("服务端策略决策")).not.toBeInTheDocument();
@@ -187,10 +207,10 @@ describe("operator console routes", () => {
     expect(screen.queryByText("工作会话")).not.toBeInTheDocument();
   });
 
-  it("renders the RAG question page from the prototype without enabling out-of-scope actions", () => {
+  it("renders the RAG question page from the prototype without enabling out-of-scope actions", async () => {
     renderAt("/rag");
 
-    expect(screen.getByRole("heading", { name: "RAG 问答" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "RAG 问答" })).toBeInTheDocument();
     expect(screen.getByRole("region", { name: "RAG 问答窗口" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "知识库问答" })).toBeInTheDocument();
     expect(
@@ -212,12 +232,12 @@ describe("operator console routes", () => {
     expect(screen.queryByRole("button", { name: "执行生产写操作" })).not.toBeInTheDocument();
   });
 
-  it("renders the workflow events workspace from the prototype while keeping the shared shell", () => {
+  it("renders the workflow events workspace from the prototype while keeping the shared shell", async () => {
     renderAt("/workflow-events");
 
     expect(screen.getByRole("navigation", { name: "主导航" })).toBeVisible();
+    expect(await screen.findByRole("heading", { name: "工作流事件" })).toBeInTheDocument();
     expect(screen.getByLabelText("当前工作台")).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "工作流事件" })).toBeInTheDocument();
     expect(screen.getByRole("region", { name: "语义事件流" })).toBeInTheDocument();
     expect(screen.getByRole("region", { name: "恢复检查" })).toBeInTheDocument();
     expect(screen.getByRole("search", { name: "工作流事件筛选" })).toBeInTheDocument();
@@ -237,12 +257,12 @@ describe("operator console routes", () => {
     expect(screen.queryByRole("button", { name: "回放事件" })).not.toBeInTheDocument();
   });
 
-  it("renders the audit records workspace from the prototype while keeping the shared shell", () => {
+  it("renders the audit records workspace from the prototype while keeping the shared shell", async () => {
     renderAt("/audit");
 
     expect(screen.getByRole("navigation", { name: "主导航" })).toBeVisible();
+    expect(await screen.findByRole("heading", { name: "审计记录" })).toBeInTheDocument();
     expect(screen.getByLabelText("当前工作台")).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "审计记录" })).toBeInTheDocument();
     expect(screen.getByRole("region", { name: "审计记录工作区" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "审计证据链" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "完整性校验" })).toBeInTheDocument();
@@ -257,7 +277,7 @@ describe("operator console routes", () => {
     expect(screen.queryByRole("button", { name: "执行写操作" })).not.toBeInTheDocument();
   });
 
-  it("uses the main branch capsule status bar on the overview page", () => {
+  it("uses the main branch capsule status bar on the overview page", async () => {
     const appCapsuleRule =
       workspaceStatusBarCss.match(/[.]appCapsule\s*[{][^}]+[}]/u)?.[0] ?? "";
     const capsuleHeadingRule =
@@ -317,7 +337,7 @@ describe("operator console routes", () => {
 
     renderAt("/overview");
 
-    expect(screen.getByRole("heading", { name: "平台总览" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "平台总览" })).toBeInTheDocument();
     expect(screen.queryByText("READ_ONLY")).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "启动诊断" })).not.toBeInTheDocument();
     expect(appCapsuleRule).toContain("height: 76px");
@@ -340,11 +360,11 @@ describe("operator console routes", () => {
     expect(sharedLogoutIconBadgeRule).toBe(agentLogoutIconBadgeRule);
   });
 
-  it("redirects the legacy agent overview query to the top-level overview route", () => {
+  it("redirects the legacy agent overview query to the top-level overview route", async () => {
     renderAt("/agent?view=overview");
 
     expect(
-      screen.getByRole("heading", { name: "平台总览" }),
+      await screen.findByRole("heading", { name: "平台总览" }),
     ).toBeInTheDocument();
     expect(screen.queryByText("工作会话")).not.toBeInTheDocument();
   });
@@ -353,11 +373,11 @@ describe("operator console routes", () => {
     ["/agent?view=rag", "RAG 问答"],
     ["/agent?view=workflow", "工作流事件"],
     ["/agent?view=audit", "审计记录"],
-  ])("redirects legacy agent query route %s to its menu page", (path, title) => {
+  ])("redirects legacy agent query route %s to its menu page", async (path, title) => {
     renderAt(path);
 
+    expect(await screen.findByRole("heading", { name: title })).toBeInTheDocument();
     expect(screen.getByLabelText("当前工作台")).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: title })).toBeInTheDocument();
     expect(screen.queryByText("工作会话")).not.toBeInTheDocument();
   });
 

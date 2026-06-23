@@ -20,6 +20,8 @@ import org.springframework.test.web.reactive.server.EntityExchangeResult;
     "ops-agent.security.issuer=http://127.0.0.1:18080/mock-oidc",
     "ops-agent.security.issuer-uri=http://127.0.0.1:18080/mock-oidc",
     "ops-agent.security.jwk-set-uri=http://127.0.0.1:18080/mock-oidc/oauth2/jwks",
+    "spring.r2dbc.url=r2dbc:h2:mem:///local-oidc-browser-login-test;MODE=PostgreSQL;DB_CLOSE_DELAY=-1",
+    "ops-agent.workflow.startup-recovery-enabled=false",
     "ops-agent.local-oidc-provider.enabled=true",
     "ops-agent.local-oidc-provider.issuer=http://127.0.0.1:18080/mock-oidc",
     "ops-agent.local-oidc-provider.client-id=ops-agent-local-client",

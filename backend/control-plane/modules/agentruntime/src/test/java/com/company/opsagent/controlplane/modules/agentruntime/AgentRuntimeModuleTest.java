@@ -3,6 +3,7 @@ package com.company.opsagent.controlplane.modules.agentruntime;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 
@@ -24,9 +25,12 @@ class AgentRuntimeModuleTest {
         "workflow-1",
         "default",
         "operator-1",
+        List.of("ROLE_ops-reader"),
         "development",
         "查看 node-1 健康状态",
-        Map.of("nodeId", "node-1"));
+        Map.of("nodeId", "node-1"),
+        "trace-1",
+        "request-1");
 
     AgentRuntimeResult result = service.run(request).block();
 

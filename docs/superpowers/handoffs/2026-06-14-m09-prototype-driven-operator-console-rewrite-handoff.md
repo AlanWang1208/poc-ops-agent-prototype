@@ -1,5 +1,7 @@
 # M09 基于原型的操作台首轮重写任务交接
 
+> 历史归档：本文件记录 2026-06-14 的中途交接状态，后续实现已经覆盖其中多项“尚未完成”描述。当前事实源以后续 `frontend/operator-console/README.md`、`docs/architecture/module-map.md` 和 `docs/planning/project-plan.md` 为准。
+
 - 文档日期：2026-06-14
 - 任务状态：进行中，已主动暂停实现并形成交接
 - 当前分支：`codex/operator-console-rewrite`
@@ -31,17 +33,17 @@
 
 恢复任务后必须先阅读并遵循：
 
-1. `C:\Users\Lenovo\Documents\ops-agent\AGENTS.md`
-2. `C:\Users\Lenovo\Documents\ops-agent\docs\architecture\module-map.md`
-3. `C:\Users\Lenovo\Documents\ops-agent\docs\planning\project-plan.md`
-4. `C:\Users\Lenovo\Documents\ops-agent\docs\planning\design-traceability.md`
+1. `AGENTS.md`
+2. `docs/architecture/module-map.md`
+3. `docs/planning/project-plan.md`
+4. `docs/planning/design-traceability.md`
 5. `docs/superpowers/specs/2026-06-13-m09-prototype-driven-operator-console-rewrite-design.md`
 6. `docs/superpowers/plans/2026-06-13-m09-prototype-driven-operator-console-rewrite.md`
 7. `docs/adr/0003-operator-console-toolchain.md`
 
 视觉事实源：
 
-- 本机原型：`D:\poc-ops-agent\figma-prototype\ops-agent-aia-prototype.html`
+- 仓库外历史原型：`figma-prototype/ops-agent-aia-prototype.html` 的早期本机副本
 - 仓库原型：`figma-prototype/ops-agent-aia-prototype.html`
 - 原型截图：`figma-prototype/` 下相关 PNG 文件
 
@@ -252,7 +254,7 @@ Task 4 恢复后必须完成：
 - 页面布局参考 `figma-prototype/ops-agent-aia-prototype.html` 的 Agent 工作区片段，已按原型还原顶部胶囊栏、会话工具栏、工作会话主窗、双 workflow 卡片、输入区、选中任务详情、Skill 与事件、会话上下文侧栏。
 - 已对接 `POST /internal/routing/skills/search`，候选 Skill、评分和匹配规则来自服务端响应，并统一经过 `src/api/agent-api.js` 与 Zod Schema。
 - 首轮固定请求 `READ_ONLY` 与 `VALIDATED` 候选能力；该筛选只是请求条件，授权结果仍以服务端策略为准。
-- 通用 Agent 对话、任务发送和执行接口尚未开放，发送按钮保持禁用并显示原因，不模拟任务发送或执行成功。
+- 历史交接时任务发送和执行接口尚未开放；当前事实源以后续 `frontend/operator-console/README.md` 和 `docs/architecture/module-map.md` 为准，Agent 工作台已接入 `/api/v1/agent/diagnostics` 主诊断入口，页面仍不得模拟任务执行成功。
 - 页面不展示模型内部推理，只展示可审计计划摘要。
 - 新增测试覆盖候选 Skill 成功渲染、服务端 `403` 拒绝、空候选状态、发送按钮禁用和内部推理文案缺失。
 - 已使用本机 Chrome + Playwright 截取 `1440x1080` 对比截图：`.artifacts/agent-reference-screen.png` 和 `.artifacts/agent-react-screen.png`。当前 React 页高度为 1080，无横向溢出，核心工作区落入首屏。
@@ -260,7 +262,7 @@ Task 4 恢复后必须完成：
 仍需后续完成：
 
 - 接入真实浏览器会话后，将静态会话提示替换为 `/auth/session` 返回的主体信息。
-- 在后端开放版本化任务接口、工作流和审计链路后，再启用任务提交。
+- 任务提交已接入 `/api/v1/agent/diagnostics`；后续继续补齐更完整的审计详情页、事件恢复视图和浏览器 E2E 验收。
 - 继续在 Skill 注册中心完成后执行整套页面的浏览器截图验收，并补齐正式 Playwright E2E。
 
 ### Task 7：Skill 注册中心
@@ -278,7 +280,7 @@ Task 4 恢复后必须完成：
 
 - 新增 `frontend/operator-console/src/features/sql-workbench/SqlWorkbenchPage.jsx`、`SqlWorkbenchPage.module.css`、`use-sql-workbench.js` 和页面测试。
 - `/sql` 已从 `ProtectedPlaceholder` 切换为独立 `SqlWorkbenchPage`，不再套用通用 `AppShell`，以匹配原型固定 screen 坐标。
-- 页面布局参考 `D:\poc-ops-agent\figma-prototype\ops-agent-aia-prototype.html` 的 `id="sql-workbench-screen"` 片段，落地左侧胶囊导航、顶部 EA 胶囊、连接工具条、数据库对象浏览、多 SQL 文件标签、查询编辑器视觉区、服务端报告、结果区和右侧 AI SQL 助手禁用区。
+- 页面布局参考仓库外历史原型的 `id="sql-workbench-screen"` 片段，落地左侧胶囊导航、顶部 EA 胶囊、连接工具条、数据库对象浏览、多 SQL 文件标签、查询编辑器视觉区、服务端报告、结果区和右侧 AI SQL 助手禁用区。
 - 已对接 `GET /internal/sql-workbench/connections` 和 `POST /internal/sql-workbench/queries/validate`，请求仍统一经过 `src/api/sql-api.js` 与 Zod Schema。
 - SQL 编辑区采用原型同结构代码展示，以保证像素还原；可触发动作仍只映射到服务端只读校验或 DML 预检契约。
 - P1 边界保持：不展示生产连接，不提供真实 DML 执行、交互事务、Commit、Rollback 或任意脚本执行；AI SQL 助手按钮保持禁用。
@@ -396,7 +398,7 @@ backend/control-plane/bootstrap/.../SqlWorkbenchController.java
 backend/control-plane/bootstrap/.../SqlWorkbenchConfiguration.java
 backend/execution-worker/ 下多个 SQL 工作台实现与测试文件
 docs/adr/0006-p1-sql-workbench-boundary.md
-docs/adr/0007-sql-workbench-controlled-development-crud.md
+docs/adr/0009-sql-workbench-controlled-development-crud.md
 docs/architecture/sql-workbench-product-design.md
 docs/runbooks/p1-sql-workbench.md
 ```

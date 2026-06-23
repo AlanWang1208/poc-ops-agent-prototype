@@ -1,12 +1,12 @@
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 
-import { AppShell } from "../components/layout/AppShell.jsx";
 import { WorkspacePageFrame } from "../components/layout/WorkspacePageFrame.jsx";
 import { WorkspaceStatusBar } from "../components/layout/WorkspaceStatusBar.jsx";
 import { Card } from "../components/primitives/Card.jsx";
 import { AgentWorkspacePage } from "../features/agent-workspace/AgentWorkspacePage.jsx";
 import { AuditRecordsPage } from "../features/audit-records/AuditRecordsPage.jsx";
 import { LoginPage } from "../features/auth/LoginPage.jsx";
+import { ProtectedRoute } from "../features/auth/ProtectedRoute.jsx";
 import { OverviewPage } from "../features/overview/OverviewPage.jsx";
 import { QuickLinksPage } from "../features/quick-links/QuickLinksPage.jsx";
 import { RagQuestionPage } from "../features/rag-question/RagQuestionPage.jsx";
@@ -15,20 +15,22 @@ import { SqlWorkbenchPage } from "../features/sql-workbench/SqlWorkbenchPage.jsx
 import { WorkflowEventsPage } from "../features/workflow-events/WorkflowEventsPage.jsx";
 
 /**
+ * 尚未接入真实后端能力的受保护占位页。
+ *
+ * 占位页仍必须放在 ProtectedRoute 内，避免未登录用户看到内部导航或误以为这些后续能力已经开放。
+ *
  * @param {{title: string, description: string}} props
  */
 function ProtectedPlaceholder({ title, description }) {
   return (
-    <AppShell>
-      <WorkspacePageFrame>
-        <WorkspaceStatusBar title={title} />
-        <Card ariaLabel={`${title}内容`}>
-          <h2>{title}入口</h2>
-          <p>{description}</p>
-          <p>当前页面只展示 P1 只读范围内的占位入口，后续任务再接入真实接口。</p>
-        </Card>
-      </WorkspacePageFrame>
-    </AppShell>
+    <WorkspacePageFrame>
+      <WorkspaceStatusBar title={title} />
+      <Card ariaLabel={`${title}内容`}>
+        <h2>{title}入口</h2>
+        <p>{description}</p>
+        <p>当前页面只展示 P1 只读范围内的占位入口，后续任务再接入真实接口。</p>
+      </Card>
+    </WorkspacePageFrame>
   );
 }
 
@@ -39,6 +41,11 @@ const legacyAgentViewRoutes = {
   workflow: "/workflow-events",
 };
 
+/**
+ * 兼容旧版 `/agent?view=...` 链接。
+ *
+ * 历史原型把多个工作区挂在 Agent 查询参数下；当前路由已拆成顶层页面，这里只做导航迁移，不承载权限判断。
+ */
 function AgentRoute() {
   const location = useLocation();
   const currentView = new URLSearchParams(location.search).get("view");
@@ -55,6 +62,12 @@ function AgentRoute() {
   return <AgentWorkspacePage />;
 }
 
+/**
+ * 操作台顶层路由表。
+ *
+ * 除登录页外，所有工作区都必须经过 ProtectedRoute。前端只做会话门禁，具体 API 调用仍由控制面的认证、
+ * 策略授权和审计过滤器作为唯一权限决策点。
+ */
 export function AppRouter() {
   return (
     <Routes>
@@ -62,83 +75,87 @@ export function AppRouter() {
       <Route element={<LoginPage />} path="/login" />
       <Route
         element={
-          <AppShell>
+          <ProtectedRoute>
             <OverviewPage />
-          </AppShell>
+          </ProtectedRoute>
         }
         path="/overview"
       />
       <Route
         element={
-          <AppShell>
+          <ProtectedRoute>
             <AgentRoute />
-          </AppShell>
+          </ProtectedRoute>
         }
         path="/agent"
       />
       <Route
         element={
-          <AppShell>
+          <ProtectedRoute>
             <RagQuestionPage />
-          </AppShell>
+          </ProtectedRoute>
         }
         path="/rag"
       />
       <Route
         element={
-          <AppShell>
+          <ProtectedRoute>
             <WorkflowEventsPage />
-          </AppShell>
+          </ProtectedRoute>
         }
         path="/workflow-events"
       />
       <Route
         element={
-          <AppShell>
+          <ProtectedRoute>
             <AuditRecordsPage />
-          </AppShell>
+          </ProtectedRoute>
         }
         path="/audit"
       />
       <Route
         element={
-          <AppShell>
+          <ProtectedRoute>
             <SkillRegistryPage />
-          </AppShell>
+          </ProtectedRoute>
         }
         path="/skills"
       />
       <Route
         element={
-          <ProtectedPlaceholder
-            description="会议录音、纪要总结和文件归档入口，后续接入受控接口。"
-            title="会议录制纪要"
-          />
+          <ProtectedRoute>
+            <ProtectedPlaceholder
+              description="会议录音、纪要总结和文件归档入口，后续接入受控接口。"
+              title="会议录制纪要"
+            />
+          </ProtectedRoute>
         }
         path="/meeting-notes"
       />
       <Route
         element={
-          <ProtectedPlaceholder
-            description="AS400 JT400 DDL 快速改表与建表入口，受控变更阶段再接入审批和执行链路。"
-            title="AS400改建表"
-          />
+          <ProtectedRoute>
+            <ProtectedPlaceholder
+              description="AS400 JT400 DDL 快速改表与建表入口，受控变更阶段再接入审批和执行链路。"
+              title="AS400改建表"
+            />
+          </ProtectedRoute>
         }
         path="/as400-ddl"
       />
       <Route
         element={
-          <AppShell>
+          <ProtectedRoute>
             <QuickLinksPage />
-          </AppShell>
+          </ProtectedRoute>
         }
         path="/quick-links"
       />
       <Route
         element={
-          <AppShell>
+          <ProtectedRoute>
             <SqlWorkbenchPage />
-          </AppShell>
+          </ProtectedRoute>
         }
         path="/sql"
       />
