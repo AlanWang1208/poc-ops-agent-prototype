@@ -9,7 +9,7 @@ import {
   loginWithPassword,
   logout,
 } from "./auth-api.js";
-import { searchSkillCandidates } from "./agent-api.js";
+import { searchSkillCandidates, streamReadOnlyDiagnosticEvents } from "./agent-api.js";
 import { ApiError, requestJson } from "./client.js";
 import { getSkill, listSkills } from "./skill-api.js";
 import { listSqlConnections, validateSqlQuery } from "./sql-api.js";
@@ -215,6 +215,87 @@ describe("feature API modules", () => {
       ["POST", "/internal/sql-workbench/queries/validate", sqlRequest],
     ]);
   });
+
+  test("streams read-only diagnostic events and notifies each parsed semantic event", async () => {
+    /** @type {Array<[string, string, unknown, string | null, string | null]>} */
+    const calls = [];
+    const events = [
+      workflowStartedEvent,
+      skillRoutedEvent,
+      workerAcceptedEvent,
+      workflowCompletedEvent,
+    ];
+    server.use(
+      http.post("/internal/diagnostics/read-only/events", async ({ request }) => {
+        calls.push([
+          request.method,
+          new URL(request.url).pathname,
+          await request.json(),
+          request.headers.get("accept"),
+          request.headers.get("content-type"),
+        ]);
+        return new HttpResponse(
+          events.map((event) => `data: ${JSON.stringify(event)}\n\n`).join(""),
+          {
+            status: 200,
+            headers: { "Content-Type": "text/event-stream" },
+          },
+        );
+      }),
+    );
+    const onEvent = vi.fn();
+
+    const result = await streamReadOnlyDiagnosticEvents(readOnlyDiagnosticRequest, {
+      onEvent,
+    });
+
+    expect(calls).toEqual([
+      [
+        "POST",
+        "/internal/diagnostics/read-only/events",
+        readOnlyDiagnosticRequest,
+        "text/event-stream",
+        "application/json",
+      ],
+    ]);
+    expect(onEvent).toHaveBeenCalledTimes(4);
+    expect(onEvent.mock.calls.map(([event]) => event.type)).toEqual([
+      "WORKFLOW_STARTED",
+      "SKILL_ROUTED",
+      "WORKER_ACCEPTED",
+      "WORKFLOW_COMPLETED",
+    ]);
+    expect(result.map((event) => event.type)).toEqual([
+      "WORKFLOW_STARTED",
+      "SKILL_ROUTED",
+      "WORKER_ACCEPTED",
+      "WORKFLOW_COMPLETED",
+    ]);
+  });
+
+  test("classifies read-only diagnostic policy denials as forbidden ApiErrors", async () => {
+    server.use(
+      http.post("/internal/diagnostics/read-only/events", () =>
+        HttpResponse.json(
+          {
+            code: "POLICY_DENIED",
+            message: "Operator is not allowed to run this read-only diagnostic.",
+          },
+          { status: 403 },
+        ),
+      ),
+    );
+
+    await expect(
+      streamReadOnlyDiagnosticEvents(readOnlyDiagnosticRequest),
+    ).rejects.toMatchObject({
+      name: "ApiError",
+      status: 403,
+      kind: "forbidden",
+      code: "POLICY_DENIED",
+      message: "Operator is not allowed to run this read-only diagnostic.",
+    });
+  });
 });
 
 const registeredSkill = {
@@ -277,4 +358,77 @@ const validationReport = {
   risks: [],
   rejectionReasons: [],
   unverifiedItems: [],
+};
+
+const readOnlyDiagnosticRequest = {
+  skillId: "node-health-read",
+  targetEnvironment: "development",
+  idempotencyKey: "agent-workspace-node-health-00000000-0000-4000-8000-000000000001",
+  parameters: { nodeName: "node-a" },
+};
+
+const workflowId = "11111111-1111-4111-8111-111111111111";
+const commandId = "22222222-2222-4222-8222-222222222222";
+const executionRequestId = "33333333-3333-4333-8333-333333333333";
+
+const workflowStartedEvent = {
+  contractVersion: "1.0",
+  eventId: "44444444-4444-4444-8444-444444444444",
+  workflowId,
+  sequence: 1,
+  timestamp: "2026-06-23T08:00:00Z",
+  type: "WORKFLOW_STARTED",
+  payload: {
+    payloadType: "WORKFLOW_STARTED",
+    commandId,
+    operatorId: "alice",
+  },
+};
+
+const skillRoutedEvent = {
+  contractVersion: "1.0",
+  eventId: "55555555-5555-4555-8555-555555555555",
+  workflowId,
+  sequence: 2,
+  timestamp: "2026-06-23T08:00:01Z",
+  type: "SKILL_ROUTED",
+  payload: {
+    payloadType: "SKILL_ROUTED",
+    skillId: "node-health-read",
+    skillVersion: "1.1.0",
+  },
+};
+
+const workerAcceptedEvent = {
+  contractVersion: "1.0",
+  eventId: "66666666-6666-4666-8666-666666666666",
+  workflowId,
+  sequence: 3,
+  timestamp: "2026-06-23T08:00:02Z",
+  type: "WORKER_ACCEPTED",
+  payload: {
+    payloadType: "WORKER_ACCEPTED",
+    executionRequestId,
+  },
+};
+
+const workflowCompletedEvent = {
+  contractVersion: "1.0",
+  eventId: "77777777-7777-4777-8777-777777777777",
+  workflowId,
+  sequence: 4,
+  timestamp: "2026-06-23T08:00:03Z",
+  type: "WORKFLOW_COMPLETED",
+  payload: {
+    payloadType: "WORKFLOW_COMPLETED",
+    outputSchemaId: "node-health-output-v1",
+    output: {
+      nodeName: "node-a",
+      status: "HEALTHY",
+      cpuUsagePercent: 12,
+      memoryUsagePercent: 48,
+      diskUsagePercent: 61,
+      lastHeartbeatAt: "2026-06-23T08:00:00Z",
+    },
+  },
 };
