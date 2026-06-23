@@ -11,7 +11,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @ConfigurationProperties(prefix = "ops-agent.skill-registry")
 public class SkillRegistryProperties {
 
-  private String rootPath = "backend/skills";
+  private String rootPath = "backend/contracts/skills/packages";
   private boolean signatureRequired = true;
   private String signingSecret = "ops-agent-skill-signing-key-2026-06-06-0001";
 
@@ -25,7 +25,7 @@ public class SkillRegistryProperties {
   /**
    * 设置 Skill Manifest 根目录。
    *
-   * @param rootPath 仓库中的 Skill 根目录，支持相对路径和绝对路径
+   * @param rootPath 仓库中的 Skill 平台契约包根目录，支持相对路径和绝对路径
    */
   public void setRootPath(String rootPath) {
     this.rootPath = rootPath;

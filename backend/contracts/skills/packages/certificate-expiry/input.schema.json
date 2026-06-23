@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://company.example/ops-agent/skills/certificate-expiry-read/1.0.0/input.schema.json",
+  "title": "certificate-expiry-read 输入",
+  "description": "读取证书到期信息所需的输入参数。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "endpoint"
+  ],
+  "properties": {
+    "endpoint": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 512,
+      "pattern": "^https://[A-Za-z0-9._:-]+(/.*)?$",
+      "description": "需要读取证书有效期的内部 HTTPS 服务端点。"
+    }
+  }
+}

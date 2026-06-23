@@ -1,0 +1,38 @@
+{
+  "caseId": "platform-alert-summary-read-happy-path",
+  "skillId": "platform-alert-summary-read",
+  "version": "1.0.0",
+  "description": "读取平台 WARNING 及以上活跃告警摘要成功。",
+  "operator": {
+    "subject": "ops-reader-1",
+    "roles": [
+      "ROLE_ops-reader"
+    ]
+  },
+  "targetEnvironment": "development",
+  "input": {
+    "severity": "WARNING"
+  },
+  "expected": {
+    "decision": "ALLOW",
+    "status": "SUCCEEDED",
+    "output": {
+      "minimumSeverity": "WARNING",
+      "activeCount": 1,
+      "groups": [
+        {
+          "severity": "WARNING",
+          "count": 1
+        }
+      ],
+      "alerts": [
+        {
+          "alertId": "alert-001",
+          "severity": "WARNING",
+          "summary": "orders 服务错误率升高"
+        }
+      ],
+      "generatedAt": "2026-06-23T08:00:00+08:00"
+    }
+  }
+}

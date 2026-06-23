@@ -1,0 +1,32 @@
+{
+  "caseId": "application-log-summary-read-happy-path",
+  "skillId": "application-log-summary-read",
+  "version": "1.0.0",
+  "description": "读取开发环境应用错误日志摘要成功。",
+  "operator": {
+    "subject": "ops-reader-1",
+    "roles": [
+      "ROLE_ops-reader"
+    ]
+  },
+  "targetEnvironment": "development",
+  "input": {
+    "applicationName": "order-service",
+    "minutes": 15
+  },
+  "expected": {
+    "decision": "ALLOW",
+    "status": "SUCCEEDED",
+    "output": {
+      "applicationName": "order-service",
+      "timeWindowMinutes": 15,
+      "errorCount": 3,
+      "topKeywords": [
+        "TimeoutException",
+        "database"
+      ],
+      "summaryMarkdown": "最近 15 分钟出现 3 条错误日志，主要集中在数据库访问超时。",
+      "generatedAt": "2026-06-23T08:00:00+08:00"
+    }
+  }
+}

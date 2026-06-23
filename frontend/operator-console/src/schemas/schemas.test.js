@@ -2,6 +2,8 @@ import { describe, expect, test } from "vitest";
 
 import { browserSessionSchema } from "./auth-schemas.js";
 import {
+  nodeHealthOutputSchema,
+  readOnlyDiagnosticRequestSchema,
   semanticEventSchema,
   skillRoutingResponseSchema,
 } from "./agent-schemas.js";
@@ -137,6 +139,33 @@ describe("semanticEventSchema", () => {
   });
 });
 
+describe("readOnlyDiagnosticRequestSchema", () => {
+  test("accepts the fixed P1 node health request", () => {
+    expect(readOnlyDiagnosticRequestSchema.parse(nodeHealthRequest)).toEqual(nodeHealthRequest);
+  });
+
+  test("rejects production diagnostic requests", () => {
+    expect(() =>
+      readOnlyDiagnosticRequestSchema.parse({
+        ...nodeHealthRequest,
+        targetEnvironment: "production",
+      }),
+    ).toThrow();
+  });
+});
+
+describe("nodeHealthOutputSchema", () => {
+  test("accepts complete node health output", () => {
+    expect(nodeHealthOutputSchema.parse(nodeHealthOutput)).toEqual(nodeHealthOutput);
+  });
+
+  test("rejects incomplete node health output", () => {
+    const { diskUsagePercent: _diskUsagePercent, ...incompleteOutput } = nodeHealthOutput;
+
+    expect(() => nodeHealthOutputSchema.parse(incompleteOutput)).toThrow();
+  });
+});
+
 const registeredSkill = {
   descriptor: {
     skillId: "node-health-read",
@@ -197,4 +226,22 @@ const validationReport = {
   risks: [],
   rejectionReasons: [],
   unverifiedItems: [],
+};
+
+const nodeHealthRequest = {
+  skillId: "node-health-read",
+  targetEnvironment: "development",
+  parameters: {
+    nodeName: "node-a",
+  },
+  idempotencyKey: "node-health-request-1",
+};
+
+const nodeHealthOutput = {
+  nodeName: "node-a",
+  status: "HEALTHY",
+  cpuUsagePercent: 17,
+  memoryUsagePercent: 43,
+  diskUsagePercent: 68,
+  lastHeartbeatAt: "2026-06-14T08:00:00+08:00",
 };
