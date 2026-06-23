@@ -94,3 +94,13 @@
 - 已新增 ADR `docs/adr/0008-m07-worker-transport-auth-and-deployment-isolation.md` 和运行手册 `docs/runbooks/m07-worker-transport-auth.md`。
 
 本补充仍不宣称完成完整生产隔离。mTLS、受控网络出口、短期目标系统凭据、Windows 隔离部署方案和生产演练仍是 M07 后续条件。
+
+## 2026-06-23 M07 Worker SQL 出口 allowlist 补充证据
+
+- Worker 新增 SQL 连接目录和 host/port allowlist 校验，默认空 allowlist 拒绝所有 SQL 目标。
+- SQL 连接目录只接受 `development` 和 `test` 环境，P1 生产 SQL 连接会在 Worker 边界被拒绝。
+- 数据源解析前会先执行 Worker 本地出口策略；未知连接、禁用连接、环境不匹配和 host/port 不在 allowlist 时不会继续解析真实 `DataSource`。
+- 出口策略拒绝会映射为 SQL 执行结果 `REJECTED`，并保留稳定错误码，避免误报为普通执行失败。
+- 新增自动化测试覆盖 `WorkerSqlConnectionDescriptorTest`、`WorkerSqlEgressPolicyTest`、`PolicyEnforcedSqlDataSourceRegistryTest`、`WorkerSqlEgressPropertiesTest`、`ExecutionWorkerConfigurationTest`、`RestrictedSqlQueryExecutionWorkerTest` 和 `JdbcSqlQueryExecutorTest`。
+
+本补充是应用层出口保护，不宣称替代防火墙、私有网络、mTLS、短期目标系统凭据、Windows 隔离或网络层出口策略。

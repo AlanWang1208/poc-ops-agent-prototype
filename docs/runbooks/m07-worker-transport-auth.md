@@ -32,6 +32,36 @@ ops-agent:
 
 密钥必须由部署系统、密钥管理系统或受控环境变量注入。不得写入源码、运行手册实例、日志、Prompt 或工单正文。
 
+## SQL 出口 allowlist
+
+Worker 的 SQL 查询路径在创建 JDBC 连接前会执行本地出口 allowlist。默认配置为空，表示拒绝所有 SQL 连接；只有显式列入连接目录且主机和端口同时出现在 allowlist 中的 `development` 或 `test` 连接才会继续进入后续连接解析。
+
+示例：
+
+```yaml
+ops-agent:
+  worker:
+    sql-egress:
+      allowed-targets:
+        - host: as400-dev.internal
+          port: 446
+      connections:
+        - connection-id: as400-dev-readonly
+          target-environment: development
+          host: as400-dev.internal
+          port: 446
+          credential-alias: as400-dev-readonly
+          enabled: true
+```
+
+配置要求：
+
+1. `connections[].target-environment` 只能是 `development` 或 `test`，P1 禁止配置生产 SQL 连接。
+2. `credential-alias` 只是凭据别名，不得把真实密码、密钥或连接串写入配置。
+3. 禁用的连接目录项会返回稳定拒绝错误，不会继续解析数据源。
+4. 请求环境、连接目录环境和 allowlist 目标必须同时匹配。
+5. 该机制是 Worker 应用层出口控制，不替代防火墙、私有网络、mTLS、短期目标系统凭据、Windows 隔离或网络层出口策略。
+
 ## 启用步骤
 
 1. 确认控制面和 Worker 主机时间同步，建议接入同一 NTP 源。
@@ -90,4 +120,5 @@ P1 M07 验收至少提供：
 - 未签名请求 `401` 证据。
 - 错误签名请求 `401` 证据。
 - 非回环绑定且认证禁用时启动失败的自动化测试证据。
+- SQL 出口 allowlist 默认拒绝、未知连接拒绝、禁用连接拒绝、环境不匹配拒绝和 host/port 不在 allowlist 时拒绝的自动化测试证据。
 - 后端测试、契约检查和密钥扫描结果。

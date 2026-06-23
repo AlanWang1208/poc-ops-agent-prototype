@@ -32,7 +32,7 @@ class JdbcSqlQueryExecutorTest {
     Clock clock = Clock.systemUTC();
     InMemorySqlResultStore store = new InMemorySqlResultStore(clock);
     JdbcSqlQueryExecutor executor = new JdbcSqlQueryExecutor(
-        connectionId -> dataSource,
+        request -> dataSource,
         store,
         new ObjectMapper(),
         clock);
