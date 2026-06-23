@@ -132,17 +132,26 @@ public class R2dbcAgentWorkflowStore implements AgentWorkflowStore {
       String workspaceId,
       String workflowId,
       StoredWorkflowStatus status,
+      String resultStatus,
+      String resultSummary,
+      int resultToolCallCount,
       OffsetDateTime completedAt) {
     return databaseClient.sql("""
             update agent_workflow
             set status = :status,
                 updated_at = :updatedAt,
-                completed_at = :completedAt
+                completed_at = :completedAt,
+                result_status = :resultStatus,
+                result_summary = :resultSummary,
+                result_tool_call_count = :resultToolCallCount
             where workspace_id = :workspaceId and workflow_id = :workflowId
             """)
         .bind("status", status.name())
         .bind("updatedAt", completedAt)
         .bind("completedAt", completedAt)
+        .bind("resultStatus", resultStatus)
+        .bind("resultSummary", resultSummary)
+        .bind("resultToolCallCount", resultToolCallCount)
         .bind("workspaceId", workspaceId)
         .bind("workflowId", workflowId)
         .fetch()
@@ -284,7 +293,10 @@ public class R2dbcAgentWorkflowStore implements AgentWorkflowStore {
             StoredWorkflowStatus.valueOf(row.get("status", String.class)),
             row.get("created_at", OffsetDateTime.class),
             row.get("updated_at", OffsetDateTime.class),
-            row.get("completed_at", OffsetDateTime.class)))
+            row.get("completed_at", OffsetDateTime.class),
+            row.get("result_status", String.class),
+            row.get("result_summary", String.class),
+            row.get("result_tool_call_count", Integer.class)))
         .one();
   }
 

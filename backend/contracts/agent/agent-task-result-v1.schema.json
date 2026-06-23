@@ -20,7 +20,14 @@
     "workflowId": { "type": "string", "minLength": 1 },
     "status": {
       "type": "string",
-      "enum": ["SUCCEEDED", "FAILED", "REJECTED", "TIMEOUT"]
+      "enum": [
+        "SUCCEEDED",
+        "FAILED_TERMINAL",
+        "REJECTED",
+        "AGENT_RUNTIME_DISABLED",
+        "AGENT_RUNTIME_NOT_CONFIGURED",
+        "AGENT_RUNTIME_FAILED"
+      ]
     },
     "summary": { "type": "string", "minLength": 1 },
     "toolCallCount": { "type": "integer", "minimum": 0 },

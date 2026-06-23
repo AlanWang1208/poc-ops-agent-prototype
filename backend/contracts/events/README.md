@@ -14,3 +14,9 @@
 禁止发布模型内部推理过程。
 
 `semantic-event-v1.schema.json` 定义 P1 操作台消费的版本化语义事件及强类型载荷。
+
+Agent Tool 事件当前包含：
+
+- `AGENT_TOOL_CALL_REQUESTED`：模型提出只读 Tool 意图，只携带 Skill、目标环境、step 和参数哈希，不携带原始参数。
+- `AGENT_TOOL_CALL_COMPLETED`：Tool 执行完成，只携带执行状态和输出契约标识。
+- `AGENT_TOOL_CALL_REJECTED`：Tool 意图被平台边界拒绝，携带错误码、展示消息和策略决策引用。

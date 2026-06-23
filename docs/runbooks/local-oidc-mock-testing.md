@@ -34,24 +34,26 @@ $env:JAVA_HOME='C:\Program Files\RedHat\java-21-openjdk-21.0.10.0.7-1'
 
 ## 启动顺序
 
+以下命令默认从仓库根目录执行。
+
 1. 启动本地 Worker：
 
 ```powershell
-Set-Location C:\Users\Lenovo\Documents\ops-agent\backend
+Set-Location .\backend
 .\mvnw.cmd -f .\execution-worker\pom.xml spring-boot:run
 ```
 
 2. 启动控制面并启用本地 OIDC profile：
 
 ```powershell
-Set-Location C:\Users\Lenovo\Documents\ops-agent\backend
+Set-Location .\backend
 .\mvnw.cmd -f .\control-plane\bootstrap\pom.xml spring-boot:run -Dspring-boot.run.profiles=local-oidc
 ```
 
 3. 启动前端开发服务器：
 
 ```powershell
-Set-Location C:\Users\Lenovo\Documents\ops-agent\frontend\operator-console
+Set-Location .\frontend\operator-console
 npm install
 npm run dev
 ```
@@ -88,14 +90,14 @@ npm run dev
 后端本地 OIDC 相关回归测试：
 
 ```powershell
-Set-Location C:\Users\Lenovo\Documents\ops-agent\backend
+Set-Location .\backend
 .\mvnw.cmd -f .\control-plane\bootstrap\pom.xml -Dtest=LocalOidcProviderControllerTest,LocalOidcBrowserLoginIntegrationTest -Dsurefire.failIfNoSpecifiedTests=false test
 ```
 
 前端构建验证：
 
 ```powershell
-Set-Location C:\Users\Lenovo\Documents\ops-agent\frontend\operator-console
+Set-Location .\frontend\operator-console
 npm run build
 ```
 

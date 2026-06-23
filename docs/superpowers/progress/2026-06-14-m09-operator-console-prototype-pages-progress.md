@@ -36,7 +36,7 @@
   - 新增 Agent 工作台页面和候选 Skill 查询 Hook。
   - 调用 `/internal/routing/skills/search`，请求条件固定为 P1 只读、已验证发布候选。
   - 展示真实候选 Skill、Owner、版本、发布快照、评分和匹配规则。
-  - 任务发送入口保持禁用，并显示“通用 Agent 对话接口尚未开放”。
+  - 历史进度记录中任务发送入口保持禁用；当前事实源以后续 `frontend/operator-console/README.md` 和 `docs/architecture/module-map.md` 为准，Agent 工作台已接入 `/api/v1/agent/diagnostics` 主诊断入口。
   - 服务端 `403` 和真实空候选均进入明确反馈状态，不使用 Mock 成功数据。
   - 页面不展示模型内部推理。
 - 验证证据：

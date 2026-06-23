@@ -1,16 +1,22 @@
 package com.company.opsagent.controlplane.modules.agentruntime;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.agentscope.core.ReActAgent;
 import io.agentscope.core.message.Msg;
 import io.agentscope.core.message.MsgRole;
 import io.agentscope.core.model.Model;
 import io.agentscope.core.tool.Toolkit;
+import java.time.Clock;
 import java.time.Duration;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import reactor.core.publisher.Mono;
 
 /**
- * AgentScope ReAct agent client used as the primary Agent runtime loop.
+ * 基于 AgentScope ReActAgent 的主 Agent Runtime 循环。
+ *
+ * <p>它负责 Prompt、模型和 SDK 工具注册；真实工具执行必须经 AgentToolExecutor
+ * 回到平台服务端边界，不能使用 AgentScope 的 SchemaOnlyTool 外部挂起路径绕过策略、
+ * workflow、审计或 Worker 隔离。
  */
 public final class AgentscopeReActAgentClient implements AgentscopeAgentClient {
 
@@ -24,22 +30,48 @@ public final class AgentscopeReActAgentClient implements AgentscopeAgentClient {
   private final Model model;
   private final int maxIters;
   private final Duration timeout;
+  private final ObjectMapper objectMapper;
+  private final Clock clock;
 
   public AgentscopeReActAgentClient(
       Model model,
       int maxIters,
       Duration timeout) {
+    this(model, maxIters, timeout, new ObjectMapper(), Clock.systemUTC());
+  }
+
+  AgentscopeReActAgentClient(
+      Model model,
+      int maxIters,
+      Duration timeout,
+      ObjectMapper objectMapper,
+      Clock clock) {
     this.model = model;
     this.maxIters = maxIters;
     this.timeout = timeout;
+    this.objectMapper = objectMapper;
+    this.clock = clock;
   }
 
   @Override
   public Mono<AgentscopeAgentResponse> run(AgentscopeAgentInvocation invocation) {
-    AtomicInteger toolCallCount = new AtomicInteger();
+    AtomicLong stepSequence = new AtomicLong();
     Toolkit toolkit = new Toolkit();
-    toolkit.registerSchemas(AgentscopeToolSchemaFactory.fromCatalog(invocation.tools()));
-    toolkit.setChunkCallback((toolUse, toolResult) -> toolCallCount.incrementAndGet());
+    /*
+     * 必须注册真实 AgentTool，而不是 registerSchemas。registerSchemas 会创建
+     * SchemaOnlyTool 并把执行挂起给外部调用方；这里要让 ReAct 立刻回调平台
+     * AgentToolExecutor，由服务端重新授权、记录事实并提交 Worker。
+     */
+    invocation.tools().stream()
+        .filter(AgentToolDescriptor::isReadOnly)
+        .map(tool -> new AgentscopePlatformAgentTool(
+            invocation.request(),
+            tool,
+            invocation.toolExecutor(),
+            stepSequence,
+            objectMapper,
+            clock))
+        .forEach(toolkit::registerAgentTool);
     ReActAgent agent = ReActAgent.builder()
         .name(AGENT_NAME)
         .sysPrompt(SYSTEM_PROMPT)
@@ -52,7 +84,7 @@ public final class AgentscopeReActAgentClient implements AgentscopeAgentClient {
         .map(message -> new AgentscopeAgentResponse(
             "SUCCEEDED",
             summary(message),
-            toolCallCount.get()));
+            Math.toIntExact(stepSequence.get())));
   }
 
   private Msg toUserMessage(AgentscopeAgentInvocation invocation) {

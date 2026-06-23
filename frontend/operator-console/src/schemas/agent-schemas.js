@@ -55,12 +55,27 @@ export const agentDiagnosticRequestSchema = z
  * @typedef {z.infer<typeof agentDiagnosticRequestSchema>} AgentDiagnosticRequest
  */
 
+/**
+ * Agent 任务结果的跨端状态枚举。
+ *
+ * 该列表必须与 `agent-task-result-v1.schema.json` 和 Java `AgentTaskResult` 保持一致。前端只按这些稳定状态
+ * 渲染运行结果，不从模型摘要文本推断失败原因或授权状态。
+ */
+export const agentTaskStatusValues = [
+  "SUCCEEDED",
+  "FAILED_TERMINAL",
+  "REJECTED",
+  "AGENT_RUNTIME_DISABLED",
+  "AGENT_RUNTIME_NOT_CONFIGURED",
+  "AGENT_RUNTIME_FAILED",
+];
+
 export const agentTaskResultSchema = z
   .object({
     schemaVersion: z.literal("1.0"),
     taskId: nonBlankString,
     workflowId: nonBlankString,
-    status: z.enum(["SUCCEEDED", "FAILED_TERMINAL", "REJECTED", "AGENT_RUNTIME_DISABLED"]),
+    status: z.enum(agentTaskStatusValues),
     summary: nonBlankString,
     toolCallCount: z.number().int().nonnegative(),
     completedAt: z.iso.datetime({ offset: true }),
@@ -141,6 +156,41 @@ const semanticPayloadSchema = z.discriminatedUnion("payloadType", [
     .strict(),
   z
     .object({
+      payloadType: z.literal("AGENT_TOOL_CALL_REQUESTED"),
+      toolCallId: nonBlankString,
+      stepSequence: z.number().int().positive(),
+      skillId: nonBlankString,
+      skillVersion: nonBlankString,
+      parameterSchemaId: nonBlankString,
+      targetEnvironment: nonBlankString,
+      parametersHash: nonBlankString,
+    })
+    .strict(),
+  z
+    .object({
+      payloadType: z.literal("AGENT_TOOL_CALL_COMPLETED"),
+      toolCallId: nonBlankString,
+      stepSequence: z.number().int().positive(),
+      skillId: nonBlankString,
+      skillVersion: nonBlankString,
+      status: z.enum(["SUCCEEDED", "FAILED"]),
+      outputSchemaId: nonBlankString,
+    })
+    .strict(),
+  z
+    .object({
+      payloadType: z.literal("AGENT_TOOL_CALL_REJECTED"),
+      toolCallId: nonBlankString,
+      stepSequence: z.number().int().positive(),
+      skillId: nonBlankString,
+      skillVersion: nonBlankString,
+      errorCode: nonBlankString,
+      message: nonBlankString,
+      policyDecisionId: nonBlankString,
+    })
+    .strict(),
+  z
+    .object({
       payloadType: z.literal("WORKFLOW_COMPLETED"),
       outputSchemaId: nonBlankString,
       output: z.record(z.string(), z.unknown()),
@@ -166,6 +216,9 @@ export const semanticEventSchema = z
       "WORKFLOW_STARTED",
       "SKILL_ROUTED",
       "WORKER_ACCEPTED",
+      "AGENT_TOOL_CALL_REQUESTED",
+      "AGENT_TOOL_CALL_COMPLETED",
+      "AGENT_TOOL_CALL_REJECTED",
       "WORKFLOW_COMPLETED",
       "WORKFLOW_FAILED",
     ]),

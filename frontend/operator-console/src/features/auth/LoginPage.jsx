@@ -34,7 +34,7 @@ const screenIonSpecs = [
 ];
 
 /**
- * Latest prototype-driven login page.
+ * 基于已批准原型实现的当前登录页。
  */
 export function LoginPage() {
   const navigate = useNavigate();

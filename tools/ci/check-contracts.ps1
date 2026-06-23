@@ -38,4 +38,97 @@ foreach ($requiredField in @("eventId", "workflowId", "sequence", "timestamp", "
 Get-Content -Raw -Encoding UTF8 "backend/contracts/workflow/examples/read-only-node-health-command.json" | ConvertFrom-Json | Out-Null
 Get-Content -Raw -Encoding UTF8 "backend/contracts/events/examples/workflow-completed-event.json" | ConvertFrom-Json | Out-Null
 
+$expectedAgentTaskStatuses = @(
+    "SUCCEEDED",
+    "FAILED_TERMINAL",
+    "REJECTED",
+    "AGENT_RUNTIME_DISABLED",
+    "AGENT_RUNTIME_NOT_CONFIGURED",
+    "AGENT_RUNTIME_FAILED"
+)
+
+$expectedSemanticEventTypes = @(
+    "WORKFLOW_STARTED",
+    "SKILL_ROUTED",
+    "WORKER_ACCEPTED",
+    "AGENT_TOOL_CALL_REQUESTED",
+    "AGENT_TOOL_CALL_COMPLETED",
+    "AGENT_TOOL_CALL_REJECTED",
+    "WORKFLOW_COMPLETED",
+    "WORKFLOW_FAILED"
+)
+
+function Assert-SameStringSet {
+    param(
+        [string] $Name,
+        [string[]] $Actual,
+        [string[]] $Expected
+    )
+
+    $missing = $Expected | Where-Object { $_ -notin $Actual }
+    $unexpected = $Actual | Where-Object { $_ -notin $Expected }
+    if ($missing.Count -gt 0 -or $unexpected.Count -gt 0) {
+        throw "$Name mismatch. Missing: $($missing -join ', '); unexpected: $($unexpected -join ', ')."
+    }
+}
+
+function Get-QuotedStrings {
+    param([string] $Text)
+
+    return [regex]::Matches($Text, '"([^"]+)"') | ForEach-Object { $_.Groups[1].Value }
+}
+
+Assert-SameStringSet `
+    -Name "Semantic event schema types" `
+    -Actual @($eventSchema.properties.type.enum) `
+    -Expected $expectedSemanticEventTypes
+
+$semanticEventTypeSource = Get-Content -Raw -Encoding UTF8 "backend/contracts/src/main/java/com/company/opsagent/contracts/events/SemanticEventType.java"
+$semanticEventTypeBlockMatch = [regex]::Match(
+    $semanticEventTypeSource,
+    'enum\s+SemanticEventType\s*\{(?<types>.*?)\}',
+    [System.Text.RegularExpressions.RegexOptions]::Singleline)
+if (-not $semanticEventTypeBlockMatch.Success) {
+    throw "SemanticEventType.java does not expose a parseable enum block."
+}
+$javaSemanticEventTypes = [regex]::Matches(
+    $semanticEventTypeBlockMatch.Groups["types"].Value,
+    '\b[A-Z][A-Z0-9_]+\b') | ForEach-Object { $_.Value }
+Assert-SameStringSet `
+    -Name "SemanticEventType Java values" `
+    -Actual @($javaSemanticEventTypes) `
+    -Expected $expectedSemanticEventTypes
+
+$agentTaskResultSchema = Get-Content -Raw -Encoding UTF8 "backend/contracts/agent/agent-task-result-v1.schema.json" | ConvertFrom-Json
+Assert-SameStringSet `
+    -Name "Agent task result schema statuses" `
+    -Actual @($agentTaskResultSchema.properties.status.enum) `
+    -Expected $expectedAgentTaskStatuses
+
+$agentTaskResultSource = Get-Content -Raw -Encoding UTF8 "backend/contracts/src/main/java/com/company/opsagent/contracts/agent/AgentTaskResult.java"
+$javaStatusBlockMatch = [regex]::Match(
+    $agentTaskResultSource,
+    'ALLOWED_STATUSES\s*=\s*Set\.of\((?<statuses>.*?)\);',
+    [System.Text.RegularExpressions.RegexOptions]::Singleline)
+if (-not $javaStatusBlockMatch.Success) {
+    throw "AgentTaskResult.java does not expose an ALLOWED_STATUSES Set.of block."
+}
+Assert-SameStringSet `
+    -Name "AgentTaskResult Java statuses" `
+    -Actual @(Get-QuotedStrings $javaStatusBlockMatch.Groups["statuses"].Value) `
+    -Expected $expectedAgentTaskStatuses
+
+$agentSchemasSource = Get-Content -Raw -Encoding UTF8 "frontend/operator-console/src/schemas/agent-schemas.js"
+$frontendStatusBlockMatch = [regex]::Match(
+    $agentSchemasSource,
+    'agentTaskStatusValues\s*=\s*\[(?<statuses>.*?)\];',
+    [System.Text.RegularExpressions.RegexOptions]::Singleline)
+if (-not $frontendStatusBlockMatch.Success) {
+    throw "agent-schemas.js does not expose agentTaskStatusValues."
+}
+Assert-SameStringSet `
+    -Name "Frontend Agent task result statuses" `
+    -Actual @(Get-QuotedStrings $frontendStatusBlockMatch.Groups["statuses"].Value) `
+    -Expected $expectedAgentTaskStatuses
+
 Write-Host "Contract baseline check passed."

@@ -15,6 +15,7 @@ import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Mono;
@@ -89,6 +90,93 @@ class AgentDiagnosticWorkflowServiceTest {
         .verifyComplete();
   }
 
+  @Test
+  void reusesCompletedWorkflowWithPersistedMultiToolStepsWithoutRerunningRuntime() {
+    Clock clock = fixedClock();
+    var store = new InMemoryAgentWorkflowStore();
+    var runtimeCalls = new AtomicInteger();
+    var workflowId = new AtomicReference<String>();
+    var service = new AgentDiagnosticWorkflowService(
+        runtimeRequest -> {
+          runtimeCalls.incrementAndGet();
+          workflowId.set(runtimeRequest.workflowId());
+          OffsetDateTime now = OffsetDateTime.now(clock);
+          return store.appendToolStep(toolStep(runtimeRequest, 1, "tool-call-1", "node-health", now))
+              .then(store.markToolStepCompleted(
+                  runtimeRequest.workspaceId(),
+                  runtimeRequest.workflowId(),
+                  1,
+                  StoredWorkflowStatus.SUCCEEDED,
+                  null,
+                  null,
+                  now.plusSeconds(1)))
+              .then(store.appendToolStep(toolStep(runtimeRequest, 2, "tool-call-2", "application-log-summary", now.plusSeconds(2))))
+              .then(store.markToolStepCompleted(
+                  runtimeRequest.workspaceId(),
+                  runtimeRequest.workflowId(),
+                  2,
+                  StoredWorkflowStatus.SUCCEEDED,
+                  null,
+                  null,
+                  now.plusSeconds(3)))
+              .thenReturn(new AgentRuntimeResult("SUCCEEDED", "node and log checks are healthy", 2));
+        },
+        store,
+        clock);
+
+    StepVerifier.create(service.execute(request("task-3", "idempotency-3")))
+        .assertNext(result -> {
+          assertEquals("SUCCEEDED", result.status());
+          assertEquals("node and log checks are healthy", result.summary());
+          assertEquals(2, result.toolCallCount());
+        })
+        .verifyComplete();
+
+    StepVerifier.create(service.execute(request("task-3", "idempotency-3")))
+        .assertNext(result -> {
+          assertEquals(workflowId.get(), result.workflowId());
+          assertEquals("SUCCEEDED", result.status());
+          assertEquals(2, result.toolCallCount());
+          assertEquals("node and log checks are healthy", result.summary());
+        })
+        .verifyComplete();
+    assertEquals(1, runtimeCalls.get());
+  }
+
+  @Test
+  void reusesTerminalWorkflowWithOriginalRuntimeFailureStatusAndSummary() {
+    Clock clock = fixedClock();
+    var store = new InMemoryAgentWorkflowStore();
+    var runtimeCalls = new AtomicInteger();
+    var service = new AgentDiagnosticWorkflowService(
+        runtimeRequest -> {
+          runtimeCalls.incrementAndGet();
+          return Mono.just(new AgentRuntimeResult(
+              "AGENT_RUNTIME_FAILED",
+              "AgentScope runtime failed before producing a valid result.",
+              0));
+        },
+        store,
+        clock);
+
+    StepVerifier.create(service.execute(request("task-4", "idempotency-4")))
+        .assertNext(result -> {
+          assertEquals("AGENT_RUNTIME_FAILED", result.status());
+          assertEquals("AgentScope runtime failed before producing a valid result.", result.summary());
+          assertEquals(0, result.toolCallCount());
+        })
+        .verifyComplete();
+
+    StepVerifier.create(service.execute(request("task-4", "idempotency-4")))
+        .assertNext(result -> {
+          assertEquals("AGENT_RUNTIME_FAILED", result.status());
+          assertEquals("AgentScope runtime failed before producing a valid result.", result.summary());
+          assertEquals(0, result.toolCallCount());
+        })
+        .verifyComplete();
+    assertEquals(1, runtimeCalls.get());
+  }
+
   private AgentTaskRequest request(String taskId, String idempotencyKey) {
     return new AgentTaskRequest(
         "1.0",
@@ -102,6 +190,28 @@ class AgentDiagnosticWorkflowServiceTest {
         new PolicyDecisionReference("decision-1", "policy-v1", "ALLOW"),
         new TraceContext("trace-1", "request-1"),
         OffsetDateTime.now(fixedClock()));
+  }
+
+  private StoredAgentToolStep toolStep(
+      AgentRuntimeRequest runtimeRequest,
+      long stepSequence,
+      String toolCallId,
+      String skillId,
+      OffsetDateTime requestedAt) {
+    return new StoredAgentToolStep(
+        runtimeRequest.workflowId(),
+        runtimeRequest.workspaceId(),
+        stepSequence,
+        toolCallId,
+        skillId,
+        "1.0.0",
+        "sha256:" + stepSequence,
+        "decision-" + stepSequence,
+        StoredWorkflowStatus.RUNNING,
+        requestedAt,
+        null,
+        null,
+        null);
   }
 
   private Clock fixedClock() {

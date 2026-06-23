@@ -139,6 +139,70 @@ describe("semanticEventSchema", () => {
       }),
     ).toThrow();
   });
+
+  test("accepts Agent Tool semantic event payloads from the shared contract", () => {
+    const baseEvent = {
+      contractVersion: "1.0",
+      workflowId: "193b2852-cd76-46a2-a589-dd350d830e6a",
+      timestamp: "2026-06-14T00:00:00Z",
+    };
+
+    expect(
+      semanticEventSchema.parse({
+        ...baseEvent,
+        eventId: "9cf516e0-561e-4cbf-8f18-c0b36a54b4db",
+        sequence: 1,
+        type: "AGENT_TOOL_CALL_REQUESTED",
+        payload: {
+          payloadType: "AGENT_TOOL_CALL_REQUESTED",
+          toolCallId: "tool-call-1",
+          stepSequence: 1,
+          skillId: "node-health-read",
+          skillVersion: "1.1.0",
+          parameterSchemaId: "node-health-read:1.1.0:input",
+          targetEnvironment: "development",
+          parametersHash: "sha256:abc123",
+        },
+      }).type,
+    ).toBe("AGENT_TOOL_CALL_REQUESTED");
+
+    expect(
+      semanticEventSchema.parse({
+        ...baseEvent,
+        eventId: "9cf516e0-561e-4cbf-8f18-c0b36a54b4dc",
+        sequence: 2,
+        type: "AGENT_TOOL_CALL_COMPLETED",
+        payload: {
+          payloadType: "AGENT_TOOL_CALL_COMPLETED",
+          toolCallId: "tool-call-1",
+          stepSequence: 1,
+          skillId: "node-health-read",
+          skillVersion: "1.1.0",
+          status: "SUCCEEDED",
+          outputSchemaId: "node-health-read:1.1.0:output",
+        },
+      }).type,
+    ).toBe("AGENT_TOOL_CALL_COMPLETED");
+
+    expect(
+      semanticEventSchema.parse({
+        ...baseEvent,
+        eventId: "9cf516e0-561e-4cbf-8f18-c0b36a54b4dd",
+        sequence: 3,
+        type: "AGENT_TOOL_CALL_REJECTED",
+        payload: {
+          payloadType: "AGENT_TOOL_CALL_REJECTED",
+          toolCallId: "tool-call-2",
+          stepSequence: 2,
+          skillId: "node-restart",
+          skillVersion: "1.0.0",
+          errorCode: "POLICY_DENIED",
+          message: "operator is not allowed",
+          policyDecisionId: "policy-v1:workflow-1:tool-call-2",
+        },
+      }).type,
+    ).toBe("AGENT_TOOL_CALL_REJECTED");
+  });
 });
 
 describe("readOnlyDiagnosticRequestSchema", () => {
@@ -178,6 +242,19 @@ describe("agent diagnostic schemas", () => {
 
   test("accepts the main Agent task result contract", () => {
     expect(agentTaskResultSchema.parse(agentTaskResult)).toEqual(agentTaskResult);
+  });
+
+  test("accepts all Agent task result statuses from the contract", () => {
+    for (const status of [
+      "SUCCEEDED",
+      "FAILED_TERMINAL",
+      "REJECTED",
+      "AGENT_RUNTIME_DISABLED",
+      "AGENT_RUNTIME_NOT_CONFIGURED",
+      "AGENT_RUNTIME_FAILED",
+    ]) {
+      expect(agentTaskResultSchema.parse({ ...agentTaskResult, status }).status).toBe(status);
+    }
   });
 
   test("rejects unsupported main Agent task result statuses", () => {

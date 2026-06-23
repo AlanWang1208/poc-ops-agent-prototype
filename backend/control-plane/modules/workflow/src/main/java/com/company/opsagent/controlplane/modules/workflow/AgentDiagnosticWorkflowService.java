@@ -11,7 +11,7 @@ import java.util.UUID;
 import reactor.core.publisher.Mono;
 
 /**
- * Runs the primary Agent runtime inside a persisted workflow boundary.
+ * 在持久化工作流边界内运行主 Agent 诊断链路。
  */
 public class AgentDiagnosticWorkflowService {
 
@@ -42,7 +42,9 @@ public class AgentDiagnosticWorkflowService {
             request.targetEnvironment(),
             request.idempotencyKey(),
             now)
-        .flatMap(workflow -> executeRuntime(request, workflow));
+        .flatMap(workflow -> isTerminal(workflow.status())
+            ? reuseTerminalWorkflow(request, workflow)
+            : executeRuntime(request, workflow));
   }
 
   private Mono<AgentTaskResult> executeRuntime(
@@ -53,9 +55,12 @@ public class AgentDiagnosticWorkflowService {
         workflow.workflowId(),
         request.workspace().workspaceId(),
         request.operator().operatorId(),
+        request.operator().roles(),
         request.targetEnvironment(),
         request.userIntent(),
-        request.inputParameters());
+        request.inputParameters(),
+        request.trace().traceId(),
+        request.trace().requestId());
     return agentRuntimeService.run(runtimeRequest)
         .flatMap(runtimeResult -> completeWithRuntimeResult(request, workflow, runtimeResult))
         .onErrorResume(error -> completeWithRuntimeFailure(request, workflow));
@@ -73,6 +78,9 @@ public class AgentDiagnosticWorkflowService {
             workflow.workspaceId(),
             workflow.workflowId(),
             storedStatus,
+            runtimeResult.status(),
+            runtimeResult.summary(),
+            runtimeResult.toolCallCount(),
             completedAt)
         .thenReturn(new AgentTaskResult(
             "1.0",
@@ -92,6 +100,9 @@ public class AgentDiagnosticWorkflowService {
             workflow.workspaceId(),
             workflow.workflowId(),
             StoredWorkflowStatus.FAILED_TERMINAL,
+            FAILED_TERMINAL,
+            RUNTIME_FAILURE_SUMMARY,
+            0,
             completedAt)
         .thenReturn(new AgentTaskResult(
             "1.0",
@@ -101,5 +112,51 @@ public class AgentDiagnosticWorkflowService {
             RUNTIME_FAILURE_SUMMARY,
             0,
             completedAt));
+  }
+
+  /**
+   * 复用已完成的 Agent workflow。
+   *
+   * <p>Agent 主链路可能包含多个 Tool Step。幂等重试命中终态 workflow 时，不能再次驱动
+   * 模型或重复提交 Worker；新写入的 workflow 会直接复用持久化的终态 AgentTaskResult。
+   * 旧数据若还没有结果快照，则退回到 Tool Step 事实源恢复最小兼容结果。
+   */
+  private Mono<AgentTaskResult> reuseTerminalWorkflow(
+      AgentTaskRequest request,
+      StoredAgentWorkflow workflow) {
+    if (workflow.resultStatus() != null
+        && workflow.resultSummary() != null
+        && workflow.resultToolCallCount() != null) {
+      return Mono.just(new AgentTaskResult(
+          "1.0",
+          request.taskId(),
+          workflow.workflowId(),
+          workflow.resultStatus(),
+          workflow.resultSummary(),
+          workflow.resultToolCallCount(),
+          workflow.completedAt() == null ? workflow.updatedAt() : workflow.completedAt()));
+    }
+    return workflowStore.findToolStepsAfter(workflow.workspaceId(), workflow.workflowId(), 0)
+        .count()
+        .map(toolStepCount -> new AgentTaskResult(
+            "1.0",
+            request.taskId(),
+            workflow.workflowId(),
+            workflow.status().name(),
+            reusedSummary(workflow.status()),
+            Math.toIntExact(toolStepCount),
+            workflow.completedAt() == null ? workflow.updatedAt() : workflow.completedAt()));
+  }
+
+  private boolean isTerminal(StoredWorkflowStatus status) {
+    return status == StoredWorkflowStatus.SUCCEEDED
+        || status == StoredWorkflowStatus.FAILED_TERMINAL;
+  }
+
+  private String reusedSummary(StoredWorkflowStatus status) {
+    if (status == StoredWorkflowStatus.SUCCEEDED) {
+      return "Agent workflow result was reused from persisted workflow state.";
+    }
+    return "Agent workflow failure was reused from persisted workflow state.";
   }
 }

@@ -23,7 +23,7 @@ import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
 /**
- * Protected primary Agent diagnostic entrypoint.
+ * 受保护的主 Agent 只读诊断入口。
  */
 @RestController
 @RequestMapping({"/internal/agent", "/api/v1/agent"})

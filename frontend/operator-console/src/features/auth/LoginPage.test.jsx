@@ -112,21 +112,32 @@ describe("LoginPage", () => {
     const user = userEvent.setup();
     /** @type {unknown[]} */
     const requests = [];
+    let authenticated = false;
     server.use(
       http.get("/auth/session", () =>
-        HttpResponse.json(
-          {
-            authenticated: false,
-            subject: null,
-            username: null,
-            roles: [],
-            authenticationType: "anonymous",
-          },
-          { status: 401 },
-        ),
+        authenticated
+          ? HttpResponse.json({
+              authenticated: true,
+              subject: "operator-1",
+              username: "alice",
+              roles: ["ROLE_ops-reader"],
+              authenticationType: "built-in",
+            })
+          : HttpResponse.json(
+              {
+                authenticated: false,
+                subject: null,
+                username: null,
+                roles: [],
+                authenticationType: "anonymous",
+              },
+              { status: 401 },
+            ),
       ),
       http.post("/auth/login", async ({ request }) => {
         requests.push(await request.json());
+        // 登录成功后，受保护路由会重新读取浏览器会话；测试必须模拟控制面已经建立会话。
+        authenticated = true;
         return HttpResponse.json({
           authenticated: true,
           subject: "operator-1",
@@ -223,16 +234,15 @@ describe("LoginPage", () => {
     expect(loginFieldRule).toContain("display: grid");
   });
 
-  test("renders anonymous operator state on menu pages", async () => {
+  test("redirects anonymous operators away from menu pages", async () => {
     useAnonymousSession();
 
     renderAt("/overview");
 
     expect(
-      await screen.findByRole("heading", { name: "平台总览" }),
+      await screen.findByRole("heading", { name: "用户登录" }),
     ).toBeInTheDocument();
-    expect(screen.getByText("未登录")).toBeInTheDocument();
-    expect(screen.getByLabelText("ID unavailable")).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "平台总览" })).not.toBeInTheDocument();
   });
 
   test("does not block the login entry when the session contract is invalid", async () => {

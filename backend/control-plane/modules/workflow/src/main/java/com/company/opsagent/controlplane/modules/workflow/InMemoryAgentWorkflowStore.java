@@ -10,7 +10,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 /**
- * In-memory Agent workflow facts source for POC and unit tests.
+ * 面向 POC 和单元测试的内存版 Agent workflow 事实源。
  */
 public class InMemoryAgentWorkflowStore implements AgentWorkflowStore {
 
@@ -40,6 +40,9 @@ public class InMemoryAgentWorkflowStore implements AgentWorkflowStore {
         StoredWorkflowStatus.PENDING,
         createdAt,
         createdAt,
+        null,
+        null,
+        null,
         null);
     workflowsById.put(workflowId, workflow);
     workflowIdsByIdempotency.put(idempotencyTuple, workflowId);
@@ -87,12 +90,21 @@ public class InMemoryAgentWorkflowStore implements AgentWorkflowStore {
       String workspaceId,
       String workflowId,
       StoredWorkflowStatus status,
+      String resultStatus,
+      String resultSummary,
+      int resultToolCallCount,
       OffsetDateTime completedAt) {
     StoredAgentWorkflow workflow = workflowsById.get(workflowId);
     if (workflow == null || !workflow.workspaceId().equals(workspaceId)) {
       return Mono.error(new IllegalArgumentException("agent workflow not found"));
     }
-    workflowsById.put(workflowId, workflow.withStatus(status, completedAt, completedAt));
+    workflowsById.put(workflowId, workflow.withResult(
+        status,
+        completedAt,
+        completedAt,
+        resultStatus,
+        resultSummary,
+        resultToolCallCount));
     return Mono.empty();
   }
 

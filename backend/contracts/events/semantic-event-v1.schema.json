@@ -18,6 +18,9 @@
         "WORKFLOW_STARTED",
         "SKILL_ROUTED",
         "WORKER_ACCEPTED",
+        "AGENT_TOOL_CALL_REQUESTED",
+        "AGENT_TOOL_CALL_COMPLETED",
+        "AGENT_TOOL_CALL_REJECTED",
         "WORKFLOW_COMPLETED",
         "WORKFLOW_FAILED"
       ]
@@ -27,6 +30,9 @@
         { "$ref": "#/$defs/workflowStartedPayload" },
         { "$ref": "#/$defs/skillRoutedPayload" },
         { "$ref": "#/$defs/workerAcceptedPayload" },
+        { "$ref": "#/$defs/agentToolCallRequestedPayload" },
+        { "$ref": "#/$defs/agentToolCallCompletedPayload" },
+        { "$ref": "#/$defs/agentToolCallRejectedPayload" },
         { "$ref": "#/$defs/workflowCompletedPayload" },
         { "$ref": "#/$defs/workflowFailedPayload" }
       ]
@@ -60,6 +66,76 @@
       "properties": {
         "payloadType": { "const": "WORKER_ACCEPTED" },
         "executionRequestId": { "type": "string", "format": "uuid" }
+      }
+    },
+    "agentToolCallRequestedPayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "payloadType",
+        "toolCallId",
+        "stepSequence",
+        "skillId",
+        "skillVersion",
+        "parameterSchemaId",
+        "targetEnvironment",
+        "parametersHash"
+      ],
+      "properties": {
+        "payloadType": { "const": "AGENT_TOOL_CALL_REQUESTED" },
+        "toolCallId": { "type": "string", "minLength": 1 },
+        "stepSequence": { "type": "integer", "minimum": 1 },
+        "skillId": { "type": "string", "minLength": 1 },
+        "skillVersion": { "type": "string", "minLength": 1 },
+        "parameterSchemaId": { "type": "string", "minLength": 1 },
+        "targetEnvironment": { "type": "string", "minLength": 1 },
+        "parametersHash": { "type": "string", "minLength": 1 }
+      }
+    },
+    "agentToolCallCompletedPayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "payloadType",
+        "toolCallId",
+        "stepSequence",
+        "skillId",
+        "skillVersion",
+        "status",
+        "outputSchemaId"
+      ],
+      "properties": {
+        "payloadType": { "const": "AGENT_TOOL_CALL_COMPLETED" },
+        "toolCallId": { "type": "string", "minLength": 1 },
+        "stepSequence": { "type": "integer", "minimum": 1 },
+        "skillId": { "type": "string", "minLength": 1 },
+        "skillVersion": { "type": "string", "minLength": 1 },
+        "status": { "type": "string", "enum": ["SUCCEEDED", "FAILED"] },
+        "outputSchemaId": { "type": "string", "minLength": 1 }
+      }
+    },
+    "agentToolCallRejectedPayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "payloadType",
+        "toolCallId",
+        "stepSequence",
+        "skillId",
+        "skillVersion",
+        "errorCode",
+        "message",
+        "policyDecisionId"
+      ],
+      "properties": {
+        "payloadType": { "const": "AGENT_TOOL_CALL_REJECTED" },
+        "toolCallId": { "type": "string", "minLength": 1 },
+        "stepSequence": { "type": "integer", "minimum": 1 },
+        "skillId": { "type": "string", "minLength": 1 },
+        "skillVersion": { "type": "string", "minLength": 1 },
+        "errorCode": { "type": "string", "minLength": 1 },
+        "message": { "type": "string", "minLength": 1 },
+        "policyDecisionId": { "type": "string", "minLength": 1 }
       }
     },
     "workflowCompletedPayload": {

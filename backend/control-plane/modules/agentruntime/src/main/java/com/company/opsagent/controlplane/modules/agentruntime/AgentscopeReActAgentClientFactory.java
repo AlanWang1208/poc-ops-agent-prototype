@@ -4,7 +4,10 @@ import io.agentscope.core.model.OpenAIChatModel;
 import java.time.Duration;
 
 /**
- * Factory that keeps AgentScope SDK construction details inside the M04 runtime module.
+ * AgentScope SDK 客户端工厂。
+ *
+ * <p>模型供应方、baseUrl 和 OpenAI-compatible 适配细节都收敛在 M04 运行时模块内，
+ * 避免其他模块直接依赖 AgentScope SDK 类型或模型构造方式。
  */
 public final class AgentscopeReActAgentClientFactory {
 

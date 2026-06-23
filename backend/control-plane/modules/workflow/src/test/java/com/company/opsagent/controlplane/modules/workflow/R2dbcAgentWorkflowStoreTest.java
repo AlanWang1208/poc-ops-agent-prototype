@@ -86,11 +86,50 @@ class R2dbcAgentWorkflowStoreTest {
             "workspace-default",
             "workflow-1",
             StoredWorkflowStatus.SUCCEEDED,
+            "SUCCEEDED",
+            "node health is clean",
+            1,
             now.plusSeconds(3)))
         .thenMany(store.findToolStepsAfter("workspace-default", "workflow-1", 0)))
         .assertNext(step -> {
           assertEquals(StoredWorkflowStatus.SUCCEEDED, step.status());
           assertEquals(now.plusSeconds(2), step.completedAt());
+        })
+        .verifyComplete();
+  }
+
+  @Test
+  void persistsTerminalAgentTaskResultForIdempotentReuse() {
+    var store = testStore();
+    OffsetDateTime now = OffsetDateTime.parse("2026-06-13T12:00:00Z");
+
+    StepVerifier.create(store.createOrReuse(
+            "workflow-1",
+            "workspace-default",
+            "operator-1",
+            "development",
+            "idempotency-1",
+            now)
+        .then(store.markWorkflowCompleted(
+            "workspace-default",
+            "workflow-1",
+            StoredWorkflowStatus.FAILED_TERMINAL,
+            "AGENT_RUNTIME_FAILED",
+            "AgentScope runtime failed before producing a valid result.",
+            0,
+            now.plusSeconds(1)))
+        .then(store.createOrReuse(
+            "workflow-2",
+            "workspace-default",
+            "operator-1",
+            "development",
+            "idempotency-1",
+            now.plusSeconds(2))))
+        .assertNext(workflow -> {
+          assertEquals(StoredWorkflowStatus.FAILED_TERMINAL, workflow.status());
+          assertEquals("AGENT_RUNTIME_FAILED", workflow.resultStatus());
+          assertEquals("AgentScope runtime failed before producing a valid result.", workflow.resultSummary());
+          assertEquals(0, workflow.resultToolCallCount());
         })
         .verifyComplete();
   }
@@ -123,7 +162,8 @@ class R2dbcAgentWorkflowStoreTest {
     var initializer = new ConnectionFactoryInitializer();
     initializer.setConnectionFactory(connectionFactory);
     initializer.setDatabasePopulator(new ResourceDatabasePopulator(
-        new ClassPathResource("sql/migrations/V002__agent_workflow_schema.sql")));
+        new ClassPathResource("sql/migrations/V002__agent_workflow_schema.sql"),
+        new ClassPathResource("sql/migrations/V003__agent_workflow_result_columns.sql")));
     initializer.afterPropertiesSet();
     return new R2dbcAgentWorkflowStore(DatabaseClient.create(connectionFactory));
   }

@@ -7,6 +7,9 @@ public sealed interface SemanticEventPayload permits
     WorkflowStartedPayload,
     SkillRoutedPayload,
     WorkerAcceptedPayload,
+    AgentToolCallRequestedPayload,
+    AgentToolCallCompletedPayload,
+    AgentToolCallRejectedPayload,
     WorkflowCompletedPayload,
     WorkflowFailedPayload {
 

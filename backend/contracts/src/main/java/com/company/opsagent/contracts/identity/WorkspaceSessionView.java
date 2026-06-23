@@ -5,12 +5,12 @@ import static com.company.opsagent.contracts.ContractValues.requiredText;
 import java.util.List;
 
 /**
- * Team Workspace summary visible in a browser session.
+ * 浏览器会话中可见的团队工作空间摘要。
  *
- * @param workspaceId stable workspace identifier
- * @param workspaceCode short workspace code
- * @param displayName workspace display name
- * @param roles roles granted to the current user in this workspace
+ * @param workspaceId 稳定的工作空间标识
+ * @param workspaceCode 工作空间短编码
+ * @param displayName 工作空间展示名称
+ * @param roles 当前用户在该工作空间内获得的角色
  */
 public record WorkspaceSessionView(
     String workspaceId,

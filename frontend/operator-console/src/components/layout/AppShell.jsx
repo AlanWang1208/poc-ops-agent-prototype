@@ -4,7 +4,6 @@ import {
   Boxes,
   CircleDot,
   DatabaseZap,
-  ExternalLink,
   FileClock,
   Network,
   SearchCheck,
@@ -27,7 +26,6 @@ const navigation = [
   { icon: Boxes, label: "Skill 注册中心", tone: "warning", to: "/skills" },
   { icon: AudioLines, label: "会议录制纪要", tone: "meeting", to: "/meeting-notes" },
   { icon: DatabaseZap, label: "AS400改建表", tone: "as400", to: "/as400-ddl" },
-  { icon: ExternalLink, label: "快捷连接", tone: "quick", to: "/quick-links" },
   { icon: Workflow, label: "工作流事件", tone: "green", to: "/workflow-events" },
   { icon: FileClock, label: "审计记录", tone: "slate", to: "/audit" },
 ];

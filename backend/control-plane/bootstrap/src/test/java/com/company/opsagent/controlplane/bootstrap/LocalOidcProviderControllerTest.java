@@ -14,6 +14,8 @@ import org.springframework.web.util.UriComponentsBuilder;
 @AutoConfigureWebTestClient
 @TestPropertySource(properties = {
     "server.port=18081",
+    "spring.r2dbc.url=r2dbc:h2:mem:///local-oidc-provider-test;MODE=PostgreSQL;DB_CLOSE_DELAY=-1",
+    "ops-agent.workflow.startup-recovery-enabled=false",
     "ops-agent.local-oidc-provider.enabled=true",
     "ops-agent.local-oidc-provider.issuer=http://127.0.0.1:18081/mock-oidc",
     "ops-agent.local-oidc-provider.client-id=ops-agent-local-client",

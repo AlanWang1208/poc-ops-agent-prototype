@@ -13,9 +13,10 @@
 ## 首轮页面
 
 - 登录页：读取 `/auth/session`，匿名用户展示控制面登录入口，已认证用户进入操作台。
-- Agent 工作台：读取 `/internal/routing/skills/search`，只展示 P1 只读、已验证发布的候选 Skill；任务发送入口保持禁用。
+- Agent 工作台：接入 `/api/v1/agent/diagnostics` 主诊断入口，并读取 `/internal/routing/skills/search` 展示 P1 只读、已验证发布的候选 Skill；服务端策略仍是唯一授权决策点。
 - Skill 注册中心：读取 `/internal/skills`，支持真实目录搜索、分类筛选、风险筛选和详情查看；安装、升级、卸载保持禁用。
 - SQL 工作台：读取 `/internal/sql-workbench/connections` 和 `/internal/sql-workbench/queries/validate`，只提供开发/测试连接的 SQL 校验和 DML 预检报告。
+- 快捷连接：入口和能力短期禁用；后续开放前必须补齐后端契约、服务端策略授权和审计。
 
 ## 技术栈
 
@@ -43,8 +44,8 @@
 - `/login` 已接入 React 登录页视觉，包含原型化首屏、安全能力展示、用户名与密码输入，以及“登录”按钮。
 - 前端认证 API 当前封装 `/auth/session`、`POST /auth/login` 和 `GET /auth/logout`；登录页只在控制面返回已认证响应后跳转 `/overview`。
 - 内建身份模式的首次改密接口 `POST /auth/password` 尚未在前端封装；后续需要补齐强制改密页面和对应验收。
-- 受保护页面当前不会读取浏览器会话，也不会在匿名访问时跳转登录页。
-- `AppShell` 会话区域仍是静态文案，尚未展示真实主体、角色或退出入口。
+- 受保护页面已接入 `ProtectedRoute`，匿名访问会先读取浏览器会话并跳转登录页。
+- `AppShell` 会话区域读取真实浏览器会话主体和角色；退出入口仍需后续补齐。
 
 ## Agent 工作台
 
@@ -52,9 +53,9 @@
 - 页面已还原原型中的顶部胶囊栏、会话工具栏、工作会话主窗、双 workflow 卡片、任务输入区、选中任务详情、Skill 与事件、会话上下文侧栏。
 - 候选 Skill 只通过 `src/api/agent-api.js` 调用控制面 `POST /internal/routing/skills/search`，页面和组件不直接 `fetch`。
 - 首轮固定请求 `READ_ONLY`、`VALIDATED` 候选能力；授权结论仍以服务端策略返回为准，前端不根据展示文本判断权限。
-- 通用 Agent 对话、任务发送和执行接口尚未开放，发送按钮保持禁用并显示原因；页面不模拟任务执行成功。
+- Agent 工作台的任务发送已接入 `/api/v1/agent/diagnostics` 主诊断入口；服务端策略、工作流幂等和审计仍是唯一可信结果来源，页面不模拟任务执行成功。
 - 页面不展示模型内部推理，只展示可审计计划摘要和服务端候选能力。
-- 自动化测试覆盖候选 Skill 成功渲染、服务端 `403` 拒绝、空候选状态、发送按钮禁用和内部推理文案缺失。
+- 自动化测试覆盖候选 Skill 成功渲染、服务端 `403` 拒绝、空候选状态、诊断请求提交、提交失败展示和内部推理文案缺失。
 - 视觉验收截图保存在 `.artifacts/agent-reference-screen.png` 和 `.artifacts/agent-react-screen.png`；`1440x1080` 下已确认页面高度回到原型画板高度、无横向溢出。
 
 ## SQL 工作台
@@ -68,7 +69,7 @@
 
 ### 2026-06-14 React 转换记录
 
-- `/sql` 已从通用 `AppShell` 中独立出来，按 `D:\poc-ops-agent\figma-prototype\ops-agent-aia-prototype.html` 中 `id="sql-workbench-screen"` 片段还原完整 screen。
+- `/sql` 已从通用 `AppShell` 中独立出来，按仓库外原型中 `id="sql-workbench-screen"` 片段还原完整 screen；原型仅作为历史视觉参考，不是当前事实源。
 - 页面包含原型同款左侧胶囊导航、顶部 EA 胶囊、连接工具条、数据库对象浏览器、多 SQL 文件标签、SQL 编辑器视觉区、服务端校验报告、结果区和右侧 AI SQL 助手禁用区。
 - 数据只通过 `src/api/sql-api.js` 调用控制面 `GET /internal/sql-workbench/connections` 与 `POST /internal/sql-workbench/queries/validate`，页面和组件不直接 `fetch`。
 - SQL 编辑区为了像素级贴近原型，采用原型同结构的行号、代码文本和 DML 高亮展示；交互动作仍只进入服务端校验契约。
@@ -124,7 +125,7 @@ npm run test:e2e
 
 如需排障，不得把 Bearer Token 覆盖入口作为默认链路；当前重写版本也尚未重新实现该调试入口。
 
-详细步骤见 [docs/runbooks/local-oidc-mock-testing.md](/C:/Users/Lenovo/Documents/ops-agent/docs/runbooks/local-oidc-mock-testing.md)。
+详细步骤见 [docs/runbooks/local-oidc-mock-testing.md](../../docs/runbooks/local-oidc-mock-testing.md)。
 
 ## 本地构建
 
@@ -136,4 +137,4 @@ npm run build
 
 - 发布影响：首轮页面只增加浏览器前端能力和只读校验入口，不开放新的生产副作用操作。
 - 回滚方式：回退当前前端构建产物或回退本仓库中 `frontend/operator-console` 的相关提交；后端接口和契约不因本页面重写而改变。
-- 已知后续工作：真实只读诊断工作流提交、RAG 问答页、审计详情页、SQL 查询结果分页与脱敏留存仍需后续任务完成。
+- 已知后续工作：RAG 问答页、审计详情页、SQL 查询结果分页与脱敏留存仍需后续任务完成。

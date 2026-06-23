@@ -1,12 +1,12 @@
 # AgentScope Java 主运行时接入实施计划
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> 历史归档：本文件记录 2026-06-13 的初始接入计划，部分 API 签名、SDK 版本和任务状态已经被后续实现替代。当前事实源以 `docs/adr/0007-agentscope-java-primary-agent-runtime.md`、`docs/architecture/module-map.md`、`docs/planning/project-plan.md` 和 `docs/superpowers/plans/2026-06-23-agent-tool-executor-platform-guard.md` 为准；本文件不得再作为待执行实施计划。
 
 **Goal:** 将 AgentScope Java 接入为平台 P1 只读诊断 MVP 的主 Agent Runtime，负责意图理解、计划生成、工具调用循环、多步诊断编排和最终诊断摘要生成。
 
 **Architecture:** AgentScope Java 作为 M04 的主运行时，而不是旁路建议器。平台仍保留不可替代的安全边界：M01 认证、M02 策略授权、M03 Skill 契约与发布校验、M05 工作流事实源与恢复、M07 Worker 执行隔离、M09 强类型事件和 M10 审计观测。也就是说，AgentScope 主导“怎么诊断”和“下一步调用哪个工具”，但每一次工具调用都必须被平台拦截、校验、授权、持久化和审计。
 
-**Tech Stack:** Java 21、Spring Boot WebFlux、Reactor、Maven 多模块、AgentScope Java 2.0 候选版本、JSON Schema、现有工作流 v2 和语义事件 v2 契约。
+**Tech Stack:** Java 21、Spring Boot WebFlux、Reactor、Maven 多模块、AgentScope Java `1.0.12`、JSON Schema、现有工作流和语义事件契约。
 
 ---
 

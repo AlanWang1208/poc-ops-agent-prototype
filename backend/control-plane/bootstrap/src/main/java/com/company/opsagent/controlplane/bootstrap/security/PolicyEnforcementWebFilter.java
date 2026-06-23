@@ -11,6 +11,8 @@ import com.company.opsagent.controlplane.modules.policy.PolicyDecisionService;
 import java.time.OffsetDateTime;
 import java.util.Optional;
 import java.util.UUID;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ServerWebExchange;
@@ -32,6 +34,7 @@ import reactor.core.scheduler.Schedulers;
 public class PolicyEnforcementWebFilter implements WebFilter {
 
   public static final String EXECUTION_CONTEXT_ATTRIBUTE = "ops-agent.execution-context";
+  private static final Logger LOGGER = LoggerFactory.getLogger(PolicyEnforcementWebFilter.class);
 
   private final PolicyDecisionService policyDecisionService;
   private final AuditTrail auditTrail;
@@ -90,8 +93,8 @@ public class PolicyEnforcementWebFilter implements WebFilter {
         exchange.getRequest().getMethod(),
         exchange.getRequest().getPath().value());
     if (descriptor == null) {
-      record(exchange, principal.subject(), "internal.unknown", exchange.getRequest().getPath().value(), policyDecisionService.policyVersion(), "DENY", "no action mapping");
-      return errorResponseWriter.write(exchange, HttpStatus.FORBIDDEN, "POLICY_DENIED", "no policy rule for request");
+      return record(exchange, principal.subject(), "internal.unknown", exchange.getRequest().getPath().value(), policyDecisionService.policyVersion(), "DENY", "no action mapping")
+          .then(errorResponseWriter.write(exchange, HttpStatus.FORBIDDEN, "POLICY_DENIED", "no policy rule for request"));
     }
     PolicyDecision decision = policyDecisionService.decide(principal, descriptor.action(), descriptor.resource());
     ExecutionContext executionContext = new ExecutionContext(
@@ -106,11 +109,18 @@ public class PolicyEnforcementWebFilter implements WebFilter {
         exchange.getRequest().getPath().value(),
         decision.policyVersion());
     exchange.getAttributes().put(EXECUTION_CONTEXT_ATTRIBUTE, executionContext);
-    record(exchange, principal.subject(), descriptor.action(), descriptor.resource(), decision.policyVersion(), decision.allowed() ? "ALLOW" : "DENY", decision.reason());
+    Mono<Void> auditRecord = record(
+        exchange,
+        principal.subject(),
+        descriptor.action(),
+        descriptor.resource(),
+        decision.policyVersion(),
+        decision.allowed() ? "ALLOW" : "DENY",
+        decision.reason());
     if (!decision.allowed()) {
-      return errorResponseWriter.write(exchange, HttpStatus.FORBIDDEN, "POLICY_DENIED", decision.reason());
+      return auditRecord.then(errorResponseWriter.write(exchange, HttpStatus.FORBIDDEN, "POLICY_DENIED", decision.reason()));
     }
-    return chain.filter(exchange);
+    return auditRecord.then(chain.filter(exchange));
   }
 
   /**
@@ -154,14 +164,18 @@ public class PolicyEnforcementWebFilter implements WebFilter {
     String path = exchange.getRequest().getPath().value();
     ActionDescriptor descriptor = Optional.ofNullable(ActionDescriptor.resolve(exchange.getRequest().getMethod(), path))
         .orElse(new ActionDescriptor("internal.unknown", path));
-    record(exchange, "anonymous", descriptor.action(), descriptor.resource(), policyDecisionService.policyVersion(), "DENY", "missing authenticated principal");
-    return errorResponseWriter.write(exchange, HttpStatus.UNAUTHORIZED, "UNAUTHENTICATED", "missing or invalid authentication");
+    return record(exchange, "anonymous", descriptor.action(), descriptor.resource(), policyDecisionService.policyVersion(), "DENY", "missing authenticated principal")
+        .then(errorResponseWriter.write(exchange, HttpStatus.UNAUTHORIZED, "UNAUTHENTICATED", "missing or invalid authentication"));
   }
 
   /**
-   * 记录一条审计事件。
+   * 记录一条请求级审计事件。
+   *
+   * <p>当前文件审计实现包含阻塞 I/O。控制面使用 WebFlux 事件循环处理请求，因此审计写入必须切换到
+   * boundedElastic，避免在 Netty 事件循环线程上执行文件写入。这里仍然把审计 Mono 串回主链路，保证授权放行、
+   * 拒绝响应和审计记录保持同一条可追踪执行路径；如果审计失败，请求不会被静默放行。
    */
-  private void record(
+  private Mono<Void> record(
       ServerWebExchange exchange,
       String subject,
       String action,
@@ -169,7 +183,7 @@ public class PolicyEnforcementWebFilter implements WebFilter {
       String policyVersion,
       String result,
       String reason) {
-    auditTrail.record(new AuditEvent(
+    AuditEvent event = new AuditEvent(
         UUID.randomUUID().toString(),
         exchange.getRequest().getId(),
         traceId(exchange),
@@ -179,7 +193,11 @@ public class PolicyEnforcementWebFilter implements WebFilter {
         policyVersion,
         result,
         reason,
-        OffsetDateTime.now()));
+        OffsetDateTime.now());
+    return Mono.fromRunnable(() -> auditTrail.record(event))
+        .subscribeOn(Schedulers.boundedElastic())
+        .doOnError(exception -> LOGGER.error("failed to record audit event {}", event.eventId(), exception))
+        .then();
   }
 
   /**

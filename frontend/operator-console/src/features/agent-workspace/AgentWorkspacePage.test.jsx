@@ -107,7 +107,7 @@ describe("AgentWorkspacePage", () => {
     /** @type {unknown[]} */
     const fixedSkillRequests = [];
     server.use(
-      http.post("/internal/agent/diagnostics", async ({ request }) => {
+      http.post("/api/v1/agent/diagnostics", async ({ request }) => {
         diagnosticRequests.push(await request.json());
         return HttpResponse.json(
           {
@@ -549,7 +549,7 @@ const defaultHandlers = [
       ],
     });
   }),
-  http.post("/internal/agent/diagnostics", async ({ request }) => {
+  http.post("/api/v1/agent/diagnostics", async ({ request }) => {
     diagnosticRequests.push(await request.json());
 
     return HttpResponse.json(agentTaskResult);

@@ -3,6 +3,7 @@ package com.company.opsagent.controlplane.modules.workflow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
+import com.company.opsagent.contracts.events.AgentToolCallRequestedPayload;
 import com.company.opsagent.contracts.events.SemanticEvent;
 import com.company.opsagent.contracts.events.SemanticEventType;
 import com.company.opsagent.contracts.events.SkillRoutedPayload;
@@ -223,9 +224,29 @@ class R2dbcReadOnlyWorkflowStoreTest {
             now.plusSeconds(2),
             SemanticEventType.WORKER_ACCEPTED,
             new WorkerAcceptedPayload(SemanticEventType.WORKER_ACCEPTED, "execution-4"))))
+        .then(store.appendEvent("workflow-4", 4, new SemanticEvent(
+            "1.0",
+            "event-4-4",
+            "workflow-4",
+            4,
+            now.plusSeconds(3),
+            SemanticEventType.AGENT_TOOL_CALL_REQUESTED,
+            new AgentToolCallRequestedPayload(
+                SemanticEventType.AGENT_TOOL_CALL_REQUESTED,
+                "tool-call-1",
+                1,
+                "node-health-read",
+                "1.1.0",
+                "node-health-read:1.1.0:input",
+                "development",
+                "sha256:tool-params"))))
         .thenMany(store.loadEventsAfter("workflow-4", 1)))
         .assertNext(event -> assertEquals(2, event.sequence()))
         .assertNext(event -> assertEquals(3, event.sequence()))
+        .assertNext(event -> {
+          assertEquals(4, event.sequence());
+          assertEquals(SemanticEventType.AGENT_TOOL_CALL_REQUESTED, event.type());
+        })
         .verifyComplete();
   }
 

@@ -224,7 +224,7 @@ describe("feature API modules", () => {
     /** @type {Array<[string, string, unknown]>} */
     const calls = [];
     server.use(
-      http.post("/internal/agent/diagnostics", async ({ request }) => {
+      http.post("/api/v1/agent/diagnostics", async ({ request }) => {
         calls.push([request.method, new URL(request.url).pathname, await request.json()]);
         return HttpResponse.json(agentTaskResult);
       }),
@@ -233,13 +233,13 @@ describe("feature API modules", () => {
     await expect(runAgentDiagnosticTask(agentDiagnosticRequest)).resolves.toEqual(agentTaskResult);
 
     expect(calls).toEqual([
-      ["POST", "/internal/agent/diagnostics", agentDiagnosticRequest],
+      ["POST", "/api/v1/agent/diagnostics", agentDiagnosticRequest],
     ]);
   });
 
   test("surfaces a disabled AgentScope runtime response without client fallback", async () => {
     server.use(
-      http.post("/internal/agent/diagnostics", () =>
+      http.post("/api/v1/agent/diagnostics", () =>
         HttpResponse.json(
           {
             code: "AGENT_RUNTIME_DISABLED",

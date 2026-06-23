@@ -7,7 +7,11 @@ import java.time.OffsetDateTime;
 import reactor.core.publisher.Mono;
 
 /**
- * 对 Agent Tool 调用执行平台侧拒绝边界。
+ * Agent Runtime 模块内的保守 Tool Executor 兜底实现。
+ *
+ * <p>这个实现不连接 Worker，也不做真实授权。它只保留目录存在性和 P1 只读风险边界，
+ * 用于没有装配 M05 workflow-backed executor 的测试或临时运行场景。生产执行链必须由
+ * M05 重新执行服务端策略授权、写入 Tool Step，并通过 WorkerGateway 提交已授权命令。
  */
 public final class PlatformGuardedAgentToolExecutor implements AgentToolExecutor {
 
@@ -18,7 +22,7 @@ public final class PlatformGuardedAgentToolExecutor implements AgentToolExecutor
   }
 
   @Override
-  public Mono<AgentToolResult> execute(AgentToolCall toolCall) {
+  public Mono<AgentToolResult> execute(AgentRuntimeRequest runtimeRequest, AgentToolCall toolCall) {
     return Mono.just(evaluate(toolCall));
   }
 

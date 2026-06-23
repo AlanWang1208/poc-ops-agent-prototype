@@ -18,9 +18,11 @@ class AgentscopePrimaryAgentRuntimeServiceTest {
       invocation.set(request);
       return Mono.just(new AgentscopeAgentResponse("SUCCEEDED", "node-1 is healthy", 1));
     };
+    AgentToolExecutor toolExecutor = (runtimeRequest, toolCall) -> Mono.empty();
     var service = new AgentscopePrimaryAgentRuntimeService(
         () -> List.of(readOnlyTool(), writeTool()),
-        client);
+        client,
+        toolExecutor);
 
     StepVerifier.create(service.run(runtimeRequest()))
         .assertNext(result -> {
@@ -33,6 +35,7 @@ class AgentscopePrimaryAgentRuntimeServiceTest {
     assertEquals(List.of("node-health"), invocation.get().tools().stream()
         .map(AgentToolDescriptor::skillId)
         .toList());
+    assertEquals(toolExecutor, invocation.get().toolExecutor());
   }
 
   @Test
@@ -54,9 +57,12 @@ class AgentscopePrimaryAgentRuntimeServiceTest {
         "workflow-1",
         "workspace-default",
         "operator-1",
+        List.of("ROLE_ops-reader"),
         "development",
         "check node-1 health",
-        Map.of("nodeId", "node-1"));
+        Map.of("nodeId", "node-1"),
+        "trace-1",
+        "request-1");
   }
 
   private AgentToolDescriptor readOnlyTool() {

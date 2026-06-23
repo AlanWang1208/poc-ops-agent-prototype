@@ -190,7 +190,7 @@
 - 定义：`SSE` 是 `Server-Sent Events` 的缩写，是服务器持续向浏览器推送事件流的一种方式。
 - 场景：当前只读操作台通过 SSE 获取工作流的语义事件序列，用于展示请求经过身份、策略、路由、Worker 和审计链的状态变化。
 - 常见边界或误区：SSE 只解决事件流传输问题，不负责授权判定，也不自动保证断线恢复语义。断点恢复、重连和去重需要额外设计与实现。
-- 相关位置：`docs/planning/project-plan.md`、`frontend/operator-console/README.md`、`frontend/operator-console/src/App.tsx`
+- 相关位置：`docs/planning/project-plan.md`、`frontend/operator-console/README.md`、`frontend/operator-console/src/app/router.jsx`
 
 ### Operator Console
 

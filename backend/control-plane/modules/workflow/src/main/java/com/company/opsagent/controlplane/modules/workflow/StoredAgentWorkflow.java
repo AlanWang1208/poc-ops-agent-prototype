@@ -11,7 +11,10 @@ public record StoredAgentWorkflow(
     StoredWorkflowStatus status,
     OffsetDateTime createdAt,
     OffsetDateTime updatedAt,
-    OffsetDateTime completedAt) {
+    OffsetDateTime completedAt,
+    String resultStatus,
+    String resultSummary,
+    Integer resultToolCallCount) {
 
   public StoredAgentWorkflow {
     workflowId = requiredText(workflowId, "workflowId");
@@ -28,9 +31,22 @@ public record StoredAgentWorkflow(
     if (updatedAt == null) {
       throw new IllegalArgumentException("updatedAt must not be null");
     }
+    if (resultToolCallCount != null && resultToolCallCount < 0) {
+      throw new IllegalArgumentException("resultToolCallCount must not be negative");
+    }
   }
 
   StoredAgentWorkflow withStatus(StoredWorkflowStatus nextStatus, OffsetDateTime updatedAt, OffsetDateTime completedAt) {
+    return withResult(nextStatus, updatedAt, completedAt, resultStatus, resultSummary, resultToolCallCount);
+  }
+
+  StoredAgentWorkflow withResult(
+      StoredWorkflowStatus nextStatus,
+      OffsetDateTime updatedAt,
+      OffsetDateTime completedAt,
+      String resultStatus,
+      String resultSummary,
+      Integer resultToolCallCount) {
     return new StoredAgentWorkflow(
         workflowId,
         workspaceId,
@@ -40,7 +56,10 @@ public record StoredAgentWorkflow(
         nextStatus,
         createdAt,
         updatedAt,
-        completedAt);
+        completedAt,
+        resultStatus,
+        resultSummary,
+        resultToolCallCount);
   }
 
   private static String requiredText(String value, String fieldName) {

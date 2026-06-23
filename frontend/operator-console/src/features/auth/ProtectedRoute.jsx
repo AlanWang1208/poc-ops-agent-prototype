@@ -6,10 +6,15 @@ import { useSession } from "./use-session.js";
 
 /**
  * @typedef {object} ProtectedRouteProps
- * @property {import("react").ReactNode} children
+ * @property {import("react").ReactNode} children 通过浏览器会话校验后才渲染的受保护页面内容。
  */
 
 /**
+ * 受保护页面的统一入口。
+ *
+ * 该组件只负责读取控制面会话并决定是否跳转登录页，不在浏览器中计算业务授权。具体动作能否执行仍以服务端
+ * M02 策略决策和审计链路为准，避免前端角色判断成为权限事实源。
+ *
  * @param {ProtectedRouteProps} props
  */
 export function ProtectedRoute({ children }) {
@@ -46,4 +51,3 @@ export function ProtectedRoute({ children }) {
 
   return <AppShell session={session.data}>{children}</AppShell>;
 }
-
