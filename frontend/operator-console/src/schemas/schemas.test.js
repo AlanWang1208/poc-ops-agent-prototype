@@ -196,7 +196,7 @@ describe("nodeHealthOutputSchema", () => {
   });
 
   test("rejects incomplete node health output", () => {
-    const { diskUsagePercent: _diskUsagePercent, ...incompleteOutput } = nodeHealthOutput;
+    const incompleteOutput = { ...nodeHealthOutput, diskUsagePercent: undefined };
 
     expect(() => nodeHealthOutputSchema.parse(incompleteOutput)).toThrow();
   });
