@@ -63,54 +63,65 @@ describe("AgentWorkspacePage", () => {
     expect(screen.getByRole("button", { name: "登出当前账号" })).toBeEnabled();
     expect(await screen.findByText(/node-health-read/u)).toBeInTheDocument();
     expect(screen.getByText("ROLE_agent-reader · policy-v1 · READ_ONLY")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "发送任务" })).toBeEnabled();
+    expect(screen.getByRole("textbox", { name: "任务目标" })).toHaveValue("");
+    expect(screen.getByRole("button", { name: "发送任务" })).toBeDisabled();
     expect(screen.queryByText("任务会话")).not.toBeInTheDocument();
     expect(screen.queryByText("只读模式")).not.toBeInTheDocument();
     expect(screen.queryByText("模型内部推理")).not.toBeInTheDocument();
   });
 
-  test("streams a read-only node health diagnostic workflow from the control plane", async () => {
+  test("submits typed task goals through the main AgentScope diagnostic endpoint", async () => {
     vi.spyOn(crypto, "randomUUID").mockReturnValue("00000000-0000-4000-8000-000000000001");
     const user = userEvent.setup();
 
     renderPage();
 
     expect(await screen.findByText(/node-health-read/u)).toBeInTheDocument();
+    await user.type(
+      screen.getByRole("textbox", { name: "任务目标" }),
+      "检查 node-a 健康状态并总结风险",
+    );
     const sendButton = screen.getByRole("button", { name: "发送任务" });
     await waitFor(() => expect(sendButton).toBeEnabled());
     await user.click(sendButton);
 
-    const currentWorkflowCard = await screen.findByLabelText("当前诊断工作流");
-    expect(within(currentWorkflowCard).getByText("WORKFLOW_STARTED")).toBeInTheDocument();
-    expect(within(currentWorkflowCard).getByText("SKILL_ROUTED")).toBeInTheDocument();
-    expect(within(currentWorkflowCard).getByText("WORKER_ACCEPTED")).toBeInTheDocument();
-    expect(within(currentWorkflowCard).getByText("WORKFLOW_COMPLETED")).toBeInTheDocument();
-    expect(await screen.findByText("CPU 18%")).toBeInTheDocument();
-    expect(await screen.findByText("内存 42%")).toBeInTheDocument();
-    expect(await screen.findByText("磁盘 37%")).toBeInTheDocument();
-    expect(await screen.findByText("HEALTHY")).toBeInTheDocument();
+    const currentWorkflowCard = await screen.findByLabelText("当前 Agent 诊断任务");
+    expect(within(currentWorkflowCard).getByText("已完成")).toBeInTheDocument();
+    expect(within(currentWorkflowCard).getByText("AGENT_TASK_COMPLETED")).toBeInTheDocument();
+    expect(
+      within(currentWorkflowCard).getByText("已完成只读诊断，未发现阻塞风险。"),
+    ).toBeInTheDocument();
+    expect(await screen.findByText("tool calls 1")).toBeInTheDocument();
     expect(diagnosticRequests).toEqual([
       {
-        skillId: "node-health-read",
         targetEnvironment: "development",
         idempotencyKey:
-          "agent-workspace-node-health-00000000-0000-4000-8000-000000000001",
-        parameters: { nodeName: "node-a" },
+          "agent-workspace-task-00000000-0000-4000-8000-000000000001",
+        userIntent: "检查 node-a 健康状态并总结风险",
+        inputParameters: {},
       },
     ]);
   });
 
-  test("keeps completed diagnostics terminal when replayed lower sequence events arrive later", async () => {
+  test("shows AgentScope runtime disabled response without falling back to fixed Skill", async () => {
+    /** @type {unknown[]} */
+    const fixedSkillRequests = [];
     server.use(
-      http.post("/internal/diagnostics/read-only/events", async ({ request }) => {
+      http.post("/internal/agent/diagnostics", async ({ request }) => {
         diagnosticRequests.push(await request.json());
-
-        return HttpResponse.text(
-          sseFromEvents([readOnlyDiagnosticEvents[3], readOnlyDiagnosticEvents[0]]),
+        return HttpResponse.json(
           {
-            headers: { "Content-Type": "text/event-stream" },
+            code: "AGENT_RUNTIME_DISABLED",
+            message: "Agent runtime is disabled for this environment.",
           },
+          { status: 503 },
         );
+      }),
+      http.post("/internal/diagnostics/read-only/events", async ({ request }) => {
+        fixedSkillRequests.push(await request.json());
+        return HttpResponse.text(sseFromEvents(readOnlyDiagnosticEvents), {
+          headers: { "Content-Type": "text/event-stream" },
+        });
       }),
     );
     const user = userEvent.setup();
@@ -118,20 +129,23 @@ describe("AgentWorkspacePage", () => {
     renderPage();
 
     expect(await screen.findByText(/node-health-read/u)).toBeInTheDocument();
+    await user.type(screen.getByRole("textbox", { name: "任务目标" }), "检查 node-a 健康状态");
     const sendButton = screen.getByRole("button", { name: "发送任务" });
     await waitFor(() => expect(sendButton).toBeEnabled());
     await user.click(sendButton);
 
-    const currentWorkflowCard = await screen.findByLabelText("当前诊断工作流");
-    expect(within(currentWorkflowCard).getByText("已完成")).toBeInTheDocument();
-    expect(within(currentWorkflowCard).queryByText("执行中")).not.toBeInTheDocument();
-    expect(within(currentWorkflowCard).getByText("CPU 18%")).toBeInTheDocument();
-    expect(within(currentWorkflowCard).getByText("HEALTHY")).toBeInTheDocument();
+    const currentWorkflowCard = await screen.findByLabelText("当前 Agent 诊断任务");
+    expect(within(currentWorkflowCard).getByText("失败")).toBeInTheDocument();
+    expect(within(currentWorkflowCard).getByText("AGENT_RUNTIME_DISABLED")).toBeInTheDocument();
+    expect(
+      within(currentWorkflowCard).getByText("Agent runtime is disabled for this environment."),
+    ).toBeInTheDocument();
+    expect(fixedSkillRequests).toEqual([]);
   });
 
-  test("shows policy denial from the diagnostic event endpoint", async () => {
+  test("keeps main Agent task submission available when routing preview is unavailable", async () => {
     server.use(
-      http.post("/internal/diagnostics/read-only/events", () =>
+      http.post("/internal/routing/skills/search", () =>
         HttpResponse.json(
           { code: "POLICY_DENIED", message: "role is not sufficient" },
           { status: 403 },
@@ -142,76 +156,14 @@ describe("AgentWorkspacePage", () => {
 
     renderPage();
 
-    expect(await screen.findByText(/node-health-read/u)).toBeInTheDocument();
+    expect(await screen.findByText("unavailable")).toBeInTheDocument();
+    await user.type(screen.getByRole("textbox", { name: "任务目标" }), "检查 node-a 健康状态");
     const sendButton = screen.getByRole("button", { name: "发送任务" });
     await waitFor(() => expect(sendButton).toBeEnabled());
     await user.click(sendButton);
 
-    const currentWorkflowCard = await screen.findByLabelText("当前诊断工作流");
-    expect(within(currentWorkflowCard).getByText("已拒绝")).toBeInTheDocument();
-    expect(within(currentWorkflowCard).getByText("POLICY_DENIED")).toBeInTheDocument();
-    expect(within(currentWorkflowCard).getByText("role is not sufficient")).toBeInTheDocument();
-  });
-
-  test("renders workflow failure returned by the read-only diagnostic stream", async () => {
-    server.use(
-      http.post("/internal/diagnostics/read-only/events", () =>
-        HttpResponse.text(sseFromEvents([readOnlyDiagnosticEvents[0], workflowFailedEvent]), {
-          headers: { "Content-Type": "text/event-stream" },
-        }),
-      ),
-    );
-    const user = userEvent.setup();
-
-    renderPage();
-
-    expect(await screen.findByText(/node-health-read/u)).toBeInTheDocument();
-    const sendButton = screen.getByRole("button", { name: "发送任务" });
-    await waitFor(() => expect(sendButton).toBeEnabled());
-    await user.click(sendButton);
-
-    const currentWorkflowCard = await screen.findByLabelText("当前诊断工作流");
-    expect(within(currentWorkflowCard).getByText("WORKFLOW_FAILED")).toBeInTheDocument();
-    expect(within(currentWorkflowCard).getByText("失败")).toBeInTheDocument();
-    expect(within(currentWorkflowCard).getByText("INVALID_PARAMETERS")).toBeInTheDocument();
-    expect(within(currentWorkflowCard).getByText("nodeName is required")).toBeInTheDocument();
-  });
-
-  test("shows contract error when completed node health output is invalid", async () => {
-    const invalidCompletedEvent = {
-      ...readOnlyDiagnosticEvents[3],
-      payload: {
-        payloadType: "WORKFLOW_COMPLETED",
-        outputSchemaId: "node-health-output-v1",
-        output: { nodeName: "node-a", status: "HEALTHY" },
-      },
-    };
-    server.use(
-      http.post("/internal/diagnostics/read-only/events", () =>
-        HttpResponse.text(sseFromEvents([readOnlyDiagnosticEvents[0], invalidCompletedEvent]), {
-          headers: { "Content-Type": "text/event-stream" },
-        }),
-      ),
-    );
-    const user = userEvent.setup();
-
-    renderPage();
-
-    expect(await screen.findByText(/node-health-read/u)).toBeInTheDocument();
-    const sendButton = screen.getByRole("button", { name: "发送任务" });
-    await waitFor(() => expect(sendButton).toBeEnabled());
-    await user.click(sendButton);
-
-    const currentWorkflowCard = await screen.findByLabelText("当前诊断工作流");
-    expect(within(currentWorkflowCard).getByText("契约错误")).toBeInTheDocument();
-    expect(
-      within(currentWorkflowCard).getByText("NODE_HEALTH_OUTPUT_CONTRACT_MISMATCH"),
-    ).toBeInTheDocument();
-    expect(
-      within(currentWorkflowCard).getByText(
-        "Node health output did not match the expected contract",
-      ),
-    ).toBeInTheDocument();
+    expect(await screen.findByLabelText("当前 Agent 诊断任务")).toBeInTheDocument();
+    expect(diagnosticRequests).toHaveLength(1);
   });
 
   test("renders refined message role avatars", async () => {
@@ -373,7 +325,7 @@ describe("AgentWorkspacePage", () => {
     await waitFor(() => expect(window.location.pathname).toBe("/login"));
   });
 
-  test("shows service refusal without enabling task submission", async () => {
+  test("shows route preview refusal without disabling main Agent submission", async () => {
     server.use(
       http.post("/internal/routing/skills/search", () =>
         HttpResponse.json(
@@ -388,9 +340,14 @@ describe("AgentWorkspacePage", () => {
     expect(await screen.findByText("unavailable")).toBeInTheDocument();
     expect(screen.getByText("等待发送")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "发送任务" })).toBeDisabled();
+    await userEvent.type(
+      screen.getByRole("textbox", { name: "任务目标" }),
+      "检查 node-a 健康状态",
+    );
+    expect(screen.getByRole("button", { name: "发送任务" })).toBeEnabled();
   });
 
-  test("shows an empty candidate state without mock skills", async () => {
+  test("shows an empty route preview state without disabling main Agent submission", async () => {
     server.use(
       http.post("/internal/routing/skills/search", () =>
         HttpResponse.json({ total: 0, candidates: [] }),
@@ -402,6 +359,11 @@ describe("AgentWorkspacePage", () => {
     expect(await screen.findByText("dependency")).toBeInTheDocument();
     expect(screen.getByText("等待发送")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "发送任务" })).toBeDisabled();
+    await userEvent.type(
+      screen.getByRole("textbox", { name: "任务目标" }),
+      "检查 node-a 健康状态",
+    );
+    expect(screen.getByRole("button", { name: "发送任务" })).toBeEnabled();
   });
 
   test("renders a login-aligned glass treatment as an alternate Agent page", async () => {
@@ -587,6 +549,11 @@ const defaultHandlers = [
       ],
     });
   }),
+  http.post("/internal/agent/diagnostics", async ({ request }) => {
+    diagnosticRequests.push(await request.json());
+
+    return HttpResponse.json(agentTaskResult);
+  }),
   http.post("/internal/diagnostics/read-only/events", async ({ request }) => {
     diagnosticRequests.push(await request.json());
 
@@ -595,6 +562,16 @@ const defaultHandlers = [
     });
   }),
 ];
+
+const agentTaskResult = {
+  schemaVersion: "1.0",
+  taskId: "task-0001",
+  workflowId: "00000000-0000-4000-8000-000000000301",
+  status: "SUCCEEDED",
+  summary: "已完成只读诊断，未发现阻塞风险。",
+  toolCallCount: 1,
+  completedAt: "2026-06-23T08:00:00Z",
+};
 
 const workflowId = "00000000-0000-4000-8000-000000000101";
 
@@ -658,20 +635,6 @@ const readOnlyDiagnosticEvents = [
     },
   },
 ];
-
-const workflowFailedEvent = {
-  contractVersion: "1.0",
-  eventId: "00000000-0000-4000-8000-000000000205",
-  workflowId,
-  sequence: 2,
-  timestamp: "2026-06-16T10:00:01+08:00",
-  type: "WORKFLOW_FAILED",
-  payload: {
-    payloadType: "WORKFLOW_FAILED",
-    errorCode: "INVALID_PARAMETERS",
-    message: "nodeName is required",
-  },
-};
 
 /**
  * @param {Array<Record<string, unknown>>} events

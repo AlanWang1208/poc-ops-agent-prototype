@@ -1440,6 +1440,20 @@
   font-size: 11px;
 }
 
+.agentTaskSummary {
+  min-width: 0;
+  margin: 0;
+  padding: 8px 10px;
+  border: 1px solid rgba(37, 132, 169, 0.14);
+  border-radius: 10px;
+  background: rgba(37, 132, 169, 0.06);
+  color: #344554;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
 .nodeHealthResult {
   display: flex;
   flex-wrap: wrap;
@@ -1524,12 +1538,29 @@
   z-index: 1;
 }
 
-.composerBox > p {
-  margin: 0;
-  color: #596675;
+.composerInput {
+  width: 100%;
+  min-width: 0;
+  min-height: 62px;
+  resize: none;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: #263541;
+  font: inherit;
   font-size: 13px;
   font-weight: 750;
   line-height: 1.45;
+}
+
+.composerInput::placeholder {
+  color: #596675;
+  opacity: 0.92;
+}
+
+.composerInput:disabled {
+  color: #7b8796;
+  cursor: wait;
 }
 
 .composerFooter {

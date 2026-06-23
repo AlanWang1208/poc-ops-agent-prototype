@@ -1,4 +1,6 @@
 import {
+  agentDiagnosticRequestSchema,
+  agentTaskResultSchema,
   readOnlyDiagnosticRequestSchema,
   semanticEventSchema,
   skillRoutingRequestSchema,
@@ -16,6 +18,20 @@ export function searchSkillCandidates(criteria) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(request),
     schema: skillRoutingResponseSchema,
+  });
+}
+
+/**
+ * @param {unknown} input
+ * @returns {Promise<import("../schemas/agent-schemas.js").AgentTaskResult>}
+ */
+export function runAgentDiagnosticTask(input) {
+  const request = agentDiagnosticRequestSchema.parse(input);
+  return requestJson("/internal/agent/diagnostics", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(request),
+    schema: agentTaskResultSchema,
   });
 }
 
