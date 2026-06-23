@@ -89,8 +89,8 @@ function reduceEvent(current, event) {
     errorMessage: null,
   };
 
-  if (event.payload.payloadType === "WORKFLOW_COMPLETED") {
-    const output = nodeHealthOutputSchema.safeParse(event.payload.output);
+  if (latestEvent.payload.payloadType === "WORKFLOW_COMPLETED") {
+    const output = nodeHealthOutputSchema.safeParse(latestEvent.payload.output);
     if (output.success) {
       return {
         ...nextState,
@@ -108,13 +108,13 @@ function reduceEvent(current, event) {
     };
   }
 
-  if (event.payload.payloadType === "WORKFLOW_FAILED") {
+  if (latestEvent.payload.payloadType === "WORKFLOW_FAILED") {
     return {
       ...nextState,
       status: "failed",
       output: null,
-      errorCode: event.payload.errorCode,
-      errorMessage: event.payload.message,
+      errorCode: latestEvent.payload.errorCode,
+      errorMessage: latestEvent.payload.message,
     };
   }
 

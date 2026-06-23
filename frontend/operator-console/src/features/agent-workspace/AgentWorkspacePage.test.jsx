@@ -100,6 +100,35 @@ describe("AgentWorkspacePage", () => {
     ]);
   });
 
+  test("keeps completed diagnostics terminal when replayed lower sequence events arrive later", async () => {
+    server.use(
+      http.post("/internal/diagnostics/read-only/events", async ({ request }) => {
+        diagnosticRequests.push(await request.json());
+
+        return HttpResponse.text(
+          sseFromEvents([readOnlyDiagnosticEvents[3], readOnlyDiagnosticEvents[0]]),
+          {
+            headers: { "Content-Type": "text/event-stream" },
+          },
+        );
+      }),
+    );
+    const user = userEvent.setup();
+
+    renderPage();
+
+    expect(await screen.findByText(/node-health-read/u)).toBeInTheDocument();
+    const sendButton = screen.getByRole("button", { name: "发送任务" });
+    await waitFor(() => expect(sendButton).toBeEnabled());
+    await user.click(sendButton);
+
+    const currentWorkflowCard = await screen.findByLabelText("当前诊断工作流");
+    expect(within(currentWorkflowCard).getByText("已完成")).toBeInTheDocument();
+    expect(within(currentWorkflowCard).queryByText("执行中")).not.toBeInTheDocument();
+    expect(within(currentWorkflowCard).getByText("CPU 18%")).toBeInTheDocument();
+    expect(within(currentWorkflowCard).getByText("HEALTHY")).toBeInTheDocument();
+  });
+
   test("renders refined message role avatars", async () => {
     const { container } = renderPage();
 
