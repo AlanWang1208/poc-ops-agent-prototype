@@ -37,7 +37,10 @@ public class WorkflowConfiguration {
    */
   @Bean
   WorkerGateway workerGateway(WebClient.Builder webClientBuilder, WorkerProperties properties) {
-    return new WebClientWorkerGateway(webClientBuilder.baseUrl(properties.getBaseUrl()).build());
+    return new WebClientWorkerGateway(
+        webClientBuilder.baseUrl(properties.getBaseUrl()).build(),
+        properties,
+        Clock.systemUTC());
   }
 
   @Bean
