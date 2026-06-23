@@ -77,3 +77,20 @@
 - 仓库级 `tools/ci/check-repository.ps1`、`tools/ci/check-contracts.ps1` 和 `tools/ci/scan-secrets.ps1` 均通过。
 
 本轮本地自动化门禁已满足 P1 只读诊断 MVP 的提交验收条件。正式里程碑验收仍需结合远程 CI、分支保护、评审签署，以及“已知风险”中列出的生产加固项逐项确认。
+
+## 2026-06-23 T010 审计保留与恢复补充证据
+
+- 已新增 `docs/runbooks/audit-retention-and-recovery.md`，明确 P1 文件审计的保留周期、归档步骤、恢复流程、访问控制和故障处理。
+- 已在 `docs/runbooks/identity-policy-audit.md` 增加审计运行手册入口，避免身份、策略与审计联调说明承载过多运维细节。
+- 已更新 `docs/runbooks/README.md` 和 `docs/planning/project-plan.md`，将 T010 进度调整为 96%，并保留集中审计存储和真实环境恢复演练作为剩余条件。
+
+本补充不改变当前代码实现和部署边界；P1 仍采用追加式 JSONL 文件审计，正式集中审计存储或组织级备份系统接入仍属于后续环境落地事项。
+
+## 2026-06-23 M07 Worker 传输认证补充证据
+
+- 已新增控制面到 Worker 的应用层 HMAC 签名契约，签名绑定执行请求 ID、命令、工作流、Skill、策略、trace 和参数摘要。
+- Worker HTTP 边界在认证启用时会拒绝未签名、错误签名和时间漂移过大的请求。
+- Worker 非回环绑定且未启用传输认证时启动保护失败，避免把未认证 Worker 暴露到跨主机网络。
+- 已新增 ADR `docs/adr/0008-m07-worker-transport-auth-and-deployment-isolation.md` 和运行手册 `docs/runbooks/m07-worker-transport-auth.md`。
+
+本补充仍不宣称完成完整生产隔离。mTLS、受控网络出口、短期目标系统凭据、Windows 隔离部署方案和生产演练仍是 M07 后续条件。

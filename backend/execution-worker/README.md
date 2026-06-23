@@ -25,6 +25,14 @@
 - 当前默认执行器未配置真实连接和 KeyStore，收到通过校验的查询后会明确失败。
 - P1 真实联调允许管理员启动时人工解锁 Java KeyStore；P2 前必须替换为无人值守安全解锁。
 
+## 传输认证边界
+
+- 控制面到 Worker 的 P1 HTTP 调用支持应用层 HMAC 签名认证。
+- 启用 `ops-agent.worker.transport-auth.enabled=true` 后，Worker 会校验 Key ID、时间戳漂移和请求签名。
+- 未签名、错误签名或时间漂移过大的请求会在 HTTP 边界返回 `401`，不会进入执行器。
+- Worker 绑定非回环地址时必须启用传输认证，否则启动保护会失败。
+- 该机制不替代 mTLS、私有网络、防火墙、短期目标系统凭据或 Windows 隔离。
+
 ## 构建结构
 
 执行 Worker 现在是标准 Maven 模块，包含 `pom.xml`、`src/main/java` 和 `src/test/java`。

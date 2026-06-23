@@ -124,6 +124,7 @@ spring:
   - traceId
   - requestId
 - 文件路径必须纳入环境备份、留存和访问控制策略。
+- 保留、归档、恢复和访问控制按 [审计保留、归档与恢复运行手册](audit-retention-and-recovery.md) 执行。
 
 ## 联调检查
 

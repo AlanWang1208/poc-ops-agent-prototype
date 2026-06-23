@@ -5,3 +5,9 @@ server:
 spring:
   application:
     name: execution-worker
+
+ops-agent:
+  worker:
+    transport-auth:
+      enabled: false
+      max-clock-skew: 30s

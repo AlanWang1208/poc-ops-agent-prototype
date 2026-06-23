@@ -86,6 +86,8 @@ ops-agent:
         - ROLE_ops-admin
   worker:
     base-url: http://127.0.0.1:8091
+    transport-auth:
+      enabled: false
   workflow:
     startup-recovery-enabled: true
   agent-runtime:
