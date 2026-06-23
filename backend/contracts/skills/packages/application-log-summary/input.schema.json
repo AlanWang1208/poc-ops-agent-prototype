@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://company.example/ops-agent/skills/application-log-summary-read/1.0.0/input.schema.json",
+  "title": "application-log-summary-read 输入",
+  "description": "读取应用日志摘要所需的输入参数。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "applicationName"
+  ],
+  "properties": {
+    "applicationName": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9._-]+$",
+      "description": "需要读取日志摘要的应用标识。"
+    },
+    "minutes": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 1440,
+      "default": 15,
+      "description": "日志聚合时间窗口，单位分钟。"
+    }
+  }
+}

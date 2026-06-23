@@ -1,0 +1,34 @@
+{
+  "caseId": "service-dependency-health-read-happy-path",
+  "skillId": "service-dependency-health-read",
+  "version": "1.0.0",
+  "description": "读取服务依赖健康状态成功。",
+  "operator": {
+    "subject": "ops-reader-1",
+    "roles": [
+      "ROLE_ops-reader"
+    ]
+  },
+  "targetEnvironment": "development",
+  "input": {
+    "serviceName": "order-service"
+  },
+  "expected": {
+    "decision": "ALLOW",
+    "status": "SUCCEEDED",
+    "output": {
+      "serviceName": "order-service",
+      "status": "DEGRADED",
+      "dependencies": [
+        {
+          "name": "inventory-api",
+          "target": "https://inventory.internal.example",
+          "status": "DEGRADED",
+          "latencyMillis": 820,
+          "message": "最近一次探测延迟高于阈值。"
+        }
+      ],
+      "checkedAt": "2026-06-23T08:00:00+08:00"
+    }
+  }
+}

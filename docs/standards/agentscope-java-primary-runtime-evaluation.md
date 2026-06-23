@@ -8,7 +8,7 @@
 
 | Case | 覆盖位置 | 期望 |
 |---|---|---|
-| RUNTIME_DISABLED | `ControlPlaneApplicationTest.reportsAgentRuntimeDisabledUntilExplicitlyEnabled` | 默认关闭时 `/api/v1/agent/diagnostics` 返回 `AGENT_RUNTIME_DISABLED` |
+| RUNTIME_DISABLED | `ControlPlaneApplicationTest.reportsAgentRuntimeDisabledUntilExplicitlyEnabled` | 环境未启用 Agent Runtime 时 `/api/v1/agent/diagnostics` 失败关闭并返回 `AGENT_RUNTIME_DISABLED` |
 | ENDPOINT_UNAUTHENTICATED | `ControlPlaneApplicationTest.rejectsMissingTokenOnAgentDiagnosticEndpoint` | 未认证请求返回 `UNAUTHENTICATED` |
 | ENDPOINT_POLICY_DENIED | `ControlPlaneApplicationTest.rejectsAgentDiagnosticEndpointWithoutReaderRole` | 角色不足请求返回 `POLICY_DENIED` |
 | ENABLED_AGENT_WORKFLOW | `AgentDiagnosticEndpointIntegrationTest.executesEnabledAgentDiagnosticEndpointThroughWorkflow` | 显式启用后通过工作流返回 `AgentTaskResult` |
@@ -31,7 +31,8 @@
 
 ## 发布门槛
 
-- `ops-agent.agent-runtime.enabled` 默认必须为 `false`。
+- AgentScope Java 是 P1 只读诊断主链路；目标环境启用前必须完成模型供应方、API Key 注入、只读 Tool Catalog 和回退开关验证。
+- 未配置或未启用的环境必须失败关闭，不得静默改走未审计路径。
 - AgentScope 直接依赖只能出现在 `control-plane-agentruntime` 模块。
 - 不得引入未审查的 MCP 传递依赖。
 - 所有新增 API 必须经过 `/internal/**` 统一认证、授权和审计过滤器。

@@ -92,8 +92,8 @@
 
 ### Skill
 
-- 定义：`Skill` 是本项目中的版本化运维能力单元。它不是随意挂接的一段脚本，而是带有 Owner、版本、分类、风险、执行器、输入输出契约、权限和测试要求的受控能力定义。
-- 场景：当控制面要决定“这次诊断请求应该交给哪一个能力”“某个能力是否已经发布可用”“Worker 允许加载哪些适配器”时，处理的核心对象就是 Skill。
+- 定义：`Skill` 是本项目中的版本化运维能力单元。它不是随意挂接的一段脚本，而是带有 Owner、版本、分类、风险、执行器、输入输出契约、权限和测试要求的受控能力定义。AgentScope 看到的是 `backend/skills/<skill>/SKILL.md`；平台注册和治理读取的是 `backend/contracts/skills/packages/<skill>/`。
+- 场景：当 AgentScope 需要理解“何时使用某项能力”时，读取 `SKILL.md`。当控制面要决定“这次诊断请求能否调用某个 Tool”“某个能力是否已经发布可用”“Worker 允许加载哪些适配器”时，读取平台契约包。
 - 常见边界或误区：Skill 不等于自由脚本执行入口。当前阶段只能围绕显式注册、已校验、只读的 Skill 构建闭环，不能把任何临时命令包装成 Skill 后直接上线。
 - 相关位置：`AGENTS.md`、`backend/contracts/skills/README.md`、`backend/skills`
 
@@ -107,7 +107,7 @@
 ### Manifest
 
 - 定义：`Manifest` 在本项目里通常指 Skill 的清单文件，用来声明该 Skill 的元数据、契约和发布相关信息。
-- 场景：新 Skill 注册、启动期扫描、显式发布校验、签名校验时，都会读取 `manifest.json` 及其相关签名侧文件。
+- 场景：新 Skill 注册、启动期扫描、显式发布校验、签名校验时，都会读取 `backend/contracts/skills/packages/<skill>/manifest.json` 及其相关签名侧文件。
 - 常见边界或误区：Manifest 不是给人看的自由文本，而是注册中心和发布校验链路依赖的正式输入。字段变化要受契约和版本管理约束。
 - 相关位置：`backend/contracts/skills/README.md`、`backend/contracts/skills/skill-manifest.schema.json`
 
@@ -236,4 +236,3 @@
 3. `docs/planning/project-plan.md`：理解当前阶段、范围和优先级。
 4. `docs/planning/design-traceability.md`：理解什么是设计内能力，什么不能擅自扩边界。
 5. `backend/contracts/`：理解契约先行的落地方式。
-

@@ -1,8 +1,8 @@
-# AgentScope Java 主运行时 POC 运行手册
+# AgentScope Java 主链路运行手册
 
 ## 当前状态
 
-AgentScope Java 已作为 M04 主运行时接入控制面，但默认关闭。控制面新增受保护入口：
+AgentScope Java 是 P1 只读诊断主链路中的 M04 主 Agent Runtime。控制面受保护入口：
 
 ```text
 POST /api/v1/agent/diagnostics
@@ -10,9 +10,11 @@ POST /api/v1/agent/diagnostics
 
 该入口必须先通过 M01 身份认证、M02 策略授权和审计记录。客户端不得传入授权结论、策略版本或工作流事实源字段。
 
-## 启用条件
+确定性单 Skill 只读入口仅作为联调、兼容和紧急回退路径保留。
 
-在开发或评测环境中配置：
+## 主链路运行条件
+
+在目标环境中启用主链路前，必须配置模型供应方、API Key 注入方式和 P1 只读约束：
 
 ```yaml
 ops-agent:
@@ -25,6 +27,8 @@ ops-agent:
 ```
 
 密钥必须通过运行环境注入，不得写入源码、配置样例、日志或测试数据。
+
+未配置模型供应方、API Key 或启用开关时，主入口必须失败关闭，返回明确错误，不得静默改走未审计路径。
 
 ## 回退
 
@@ -39,7 +43,7 @@ ops-agent:
 回退后：
 
 - `/api/v1/agent/diagnostics` 返回 `AGENT_RUNTIME_DISABLED`。
-- `/internal/diagnostics/read-only` 单 Skill 只读闭环继续可用。
+- `/internal/diagnostics/read-only` 单 Skill 只读闭环作为兼容和紧急回退路径继续可用。
 - 历史 Agent workflow、Tool Step 和审计记录不得删除或篡改。
 
 ## 验证命令

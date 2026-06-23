@@ -25,8 +25,8 @@
 
 | 模块 | 状态 | 进度 | 已完成 | 剩余条件 |
 |---|---|---:|---|---|
-| M03 Skill 契约与注册中心 | 进行中 | 96% | 已落地 Skill Manifest、发布签名、注册和显式校验，并将 P1 只读 Skill 补足到 5 个 | 继续补充真正的发布流水编排、生产签名方案和更多 Worker 适配器 |
-| M04 Agent 路由与候选筛选 | 进行中 | 85% | 已完成确定性候选筛选、发布态约束和与只读工作流的联动 | 继续补充路由解释 API、评测集和更丰富的排序策略 |
+| M03 Skill 契约与注册中心 | 进行中 | 97% | 已落地 Skill Manifest、发布签名、注册和显式校验，并将 P1 只读 Skill 补足到 5 个；平台 JSON 已迁入 `backend/contracts/skills/packages`，与 AgentScope `SKILL.md` 目录分离 | 继续补充真正的发布流水编排、生产签名方案、Skill 契约包自动校验和更多 Worker 适配器 |
+| M04 AgentScope 主运行链路 | 进行中 | 88% | 已完成确定性候选筛选、发布态约束和与只读工作流的联动；已将 AgentScope Java 定义为 P1 只读诊断主链路，确定性单 Skill 入口降级为联调、兼容和回退路径 | 继续补充 AgentScope 主链路评测集、路由解释 API、Tool Step 恢复演练和更丰富的排序策略 |
 | M05 只读工作流切片 | 已完成 | 100% | 已生成强类型只读命令、短期 Worker 请求和顺序语义事件；同时已落地 H2/R2DBC 工作流实例、attempt 与事件持久化、幂等复用、结果与事件回读、启动恢复装配、版本化迁移脚本，以及针对 `FAILED_RETRYABLE` 和 attempt 已过期在途实例的单次受控重放 | 无；后续仅在 P2/P3 扩展正式生产数据库接入与更长期恢复演练 |
 | M07 受限执行 Worker | 进行中 | 72% | 已提供独立 WebFlux Worker、回环地址开发配置、显式允许列表和 `node-health-read` 适配器；已新增控制面到 Worker 的 HMAC 传输认证、Worker 入站验签、非回环绑定启动保护、ADR 和运行手册；已补充 SQL 出口 allowlist、默认拒绝配置、连接目录校验和 Worker 拒绝映射 | 完成 mTLS、网络层出口策略、短期目标系统凭据、Windows 隔离部署方案和生产演练 |
 | M09 语义事件与只读操作台 | 进行中 | 65% | 已定义强类型语义事件、SSE 接口、React/JSX/JSDoc `checkJs` 最小只读操作台、API/Zod 边界；`main` 上 `ab57a00` 已将登录页转为 React 视觉页并接入 `/auth/login` 跳转入口；当前分支已将 `/agent` 转为 React Agent 工作区，按原型还原会话工作区并接入真实 Skill 路由搜索接口，已沉淀 `1440x1080` 截图验收证据 | 继续完成会话读取、匿名跳转、内建身份登录与改密、退出路径、AppShell 会话展示、Skill 注册中心、重连、断点恢复和整套页面浏览器验收 |
@@ -121,9 +121,9 @@ P1 SQL 工作台仍只允许 DML 预检。开发环境受控增删改查属于 P
   - 浏览器端到端验收沉淀；
   - 如未来需要，再评估执行中的增量事件推送。
 
-## 2026-06-13 AgentScope Java 主运行时 POC 计划
+## 2026-06-13 AgentScope Java 主运行时接入计划
 
-- 新增 P1 技术验证方向：将 AgentScope Java 作为 M04 主 Agent Runtime 候选接入，而不是辅助路由建议器。
+- 新增 P1 主链路方向：将 AgentScope Java 作为 M04 主 Agent Runtime 接入，而不是辅助路由建议器。
 - 接入目标：
   - 由 AgentScope Java 主导只读诊断意图理解、计划生成、多步 Tool 调用和最终诊断摘要；
   - 由平台继续强制执行 M01 身份、M02 授权、M03 Skill 契约、M05 工作流事实源、M07 Worker 隔离、M09 强类型事件和 M10 审计观测；
@@ -137,9 +137,21 @@ P1 SQL 工作台仍只允许 DML 预检。开发环境受控增删改查属于 P
 
 ## 2026-06-14 AgentScope Java 主运行时接入进展
 
-- 已将 AgentScope Java `1.0.12` 接入为 M04 主运行时实现候选，并限制直接依赖只出现在 `control-plane-agentruntime` 模块。
+- 已将 AgentScope Java `1.0.12` 接入为 M04 主运行时实现，并限制直接依赖只出现在 `control-plane-agentruntime` 模块。
 - 已新增 `AgentscopeReActAgentClient`，通过 AgentScope `ReActAgent` 和 OpenAI-compatible `OpenAIChatModel` 运行主 Agent 循环，并只返回最终可审计摘要，不输出模型内部推理。
-- 已新增 `/api/v1/agent/diagnostics` 受保护入口，默认关闭；入口经过统一认证、策略授权和审计过滤器。
+- 已新增 `/api/v1/agent/diagnostics` 受保护入口；入口经过统一认证、策略授权和审计过滤器。未配置模型供应方或未启用的环境必须失败关闭。
 - 已新增 R2DBC Agent 工作流事实源，覆盖 workflow 幂等、Tool Step 顺序和完成状态。
 - 当前 P1 Tool 执行仍保持平台守护边界：非只读、未发布或不可见 Skill 被拒绝；Worker 执行接线不在本次放宽。
 - 已补充评测清单和 POC 运行手册，记录启用、回退和依赖验证方式。
+
+## 2026-06-23 AgentScope 主链路与目录式 Skill 包补充
+
+- AgentScope Java 从“主运行时候选”调整为 P1 只读诊断产品主链路：
+  - `/api/v1/agent/diagnostics` 作为 Agent 只读诊断主入口；
+  - 确定性单 Skill 只读入口保留为联调、兼容和紧急回退路径；
+  - AgentScope 负责意图理解、计划摘要、多步只读 Tool 调用和最终摘要；
+  - 平台继续强制执行 M01 身份、M02 授权、M03 Skill 契约、M05 工作流事实源、M07 Worker 隔离、M09 强类型事件和 M10 审计观测。
+- 既有 5 个 P1 只读 Skill 改为 AgentScope Skill 与平台契约分离：
+  - `backend/skills/<skill>/SKILL.md` 作为 AgentScope 文件系统 Skill 入口，说明何时使用、输入、平台 Tool 调用方式、输出解读和安全边界；
+  - `backend/contracts/skills/packages/<skill>/input.schema.json` 和 `output.schema.json` 作为 AgentScope Tool Catalog 与 Worker 结果边界；
+  - `backend/contracts/skills/packages/<skill>/tests/happy-path.json`、`invalid-parameters.json` 和 `policy-denied.json` 作为 M11 后续契约测试与评测样例。

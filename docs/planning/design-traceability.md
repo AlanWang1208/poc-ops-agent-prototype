@@ -17,7 +17,7 @@
 | SSO/OAuth2/LDAP、JWT、RBAC | M01 接入网关与身份认证、M02 策略授权与审计 |
 | 无企业 SSO / 外部 IdP 时的内建身份提供方、账号登录、会话撤销与受控重置密码 | M01 接入网关与身份认证，衔接 M02 策略授权与审计 |
 | Skill 契约、Categories、RiskLevel、Executor、Interceptor、OutputType、Parameters | M03 Skill 契约与注册中心 |
-| 多标签 Skill 路由 | M04 Agent 路由与模型交互 |
+| AgentScope Java 主 Agent Runtime、ReAct 循环、多标签 Tool Catalog 与 Skill 路由 | M04 Agent 路由与模型交互，衔接 M03 Skill 契约、M05 工作流和 M07 Worker |
 | ReAct、DAG、三级并行和黑板通信 | M05 工作流、M06 DAG 编排与制品黑板 |
 | API 熔断与脚本受控重试 | M06 DAG 编排与容错 |
 | Windows Worker、WDAC、Job Object、工作区 | M07 执行器与安全隔离 |
@@ -33,6 +33,7 @@
 - 持久化工作流作为执行事实源。
 - 幂等键、补偿和人工接管。
 - Skill 签名、灰度和回滚。
+- AgentScope 文件系统 Skill 与平台契约分离：`backend/skills/<skill>/SKILL.md` 面向 Agent，`backend/contracts/skills/packages/<skill>/` 面向注册、签名、Schema 和测试。
 - 强类型 CommandEnvelope 和版本化跨模块契约。
 - 受限 Worker、短期凭据和受控网络出口。
 - 测试评测、安全验证、故障注入和发布门禁。
