@@ -8,6 +8,7 @@ import { AgentWorkspacePage } from "../features/agent-workspace/AgentWorkspacePa
 import { AuditRecordsPage } from "../features/audit-records/AuditRecordsPage.jsx";
 import { LoginPage } from "../features/auth/LoginPage.jsx";
 import { OverviewPage } from "../features/overview/OverviewPage.jsx";
+import { QuickLinksPage } from "../features/quick-links/QuickLinksPage.jsx";
 import { RagQuestionPage } from "../features/rag-question/RagQuestionPage.jsx";
 import { SkillRegistryPage } from "../features/skill-registry/SkillRegistryPage.jsx";
 import { SqlWorkbenchPage } from "../features/sql-workbench/SqlWorkbenchPage.jsx";
@@ -127,10 +128,9 @@ export function AppRouter() {
       />
       <Route
         element={
-          <ProtectedPlaceholder
-            description="集中放置常用系统、数据库、工单和运维工具快捷入口。"
-            title="快捷连接"
-          />
+          <AppShell>
+            <QuickLinksPage />
+          </AppShell>
         }
         path="/quick-links"
       />
