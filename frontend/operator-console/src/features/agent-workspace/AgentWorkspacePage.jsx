@@ -181,6 +181,7 @@ function toCurrentWorkflowTask(workflow) {
     title: "当前节点健康检查",
     tags: ["development", "node-a", "READ_ONLY", `sequence ${eventCount}`],
     progress: Math.min(eventCount, 4),
+    ariaLabel: "当前诊断工作流",
     output: workflow.output,
     errorCode: workflow.errorCode,
     errorMessage: workflow.errorMessage,
@@ -276,6 +277,7 @@ function Message({ author, children, tone }) {
  *     tags: string[],
  *     title: string,
  *     tone: string,
+ *     ariaLabel?: string,
  *     output?: import("../../schemas/agent-schemas.js").NodeHealthOutput | null,
  *     errorCode?: string | null,
  *     errorMessage?: string | null,
@@ -284,7 +286,10 @@ function Message({ author, children, tone }) {
  */
 function WorkflowTaskCard({ task }) {
   return (
-    <article className={`${styles.workflowTaskCard} ${styles[task.tone]}`}>
+    <article
+      aria-label={task.ariaLabel}
+      className={`${styles.workflowTaskCard} ${styles[task.tone]}`}
+    >
       <div className={styles.workflowTaskHead}>
         <div>
           <strong>{task.title}</strong>
@@ -370,6 +375,10 @@ function SkillEventPanel({ candidates, query, workflow }) {
     : query.error
       ? "unavailable"
       : primaryCandidate?.skill.descriptor.skillId.split("-").slice(1, 2)[0] ?? "dependency";
+  const latestEventType = workflow.latestEvent?.type ?? "等待发送";
+  const sequenceValue = workflow.latestEvent
+    ? String(workflow.latestEvent.sequence)
+    : `${workflow.events.length} / 4`;
 
   return (
     <section className={styles.agentPanel}>
@@ -380,14 +389,8 @@ function SkillEventPanel({ candidates, query, workflow }) {
         Skill 与事件
       </h3>
       <MiniRow label="Skill" tone="info" value={skillValue} />
-      <MiniRow label="最近事件" tone="info" value={workflow.latestEvent?.type ?? "WORKER_ACCEPTED"} />
-      <MiniRow
-        label="sequence"
-        tone="info"
-        value={
-          workflow.latestEvent ? String(workflow.latestEvent.sequence) : "3 / continuous"
-        }
-      />
+      <MiniRow label="最近事件" tone="info" value={latestEventType} />
+      <MiniRow label="sequence" tone="info" value={sequenceValue} />
     </section>
   );
 }

@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 
 import { http, HttpResponse } from "msw";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
@@ -80,10 +80,11 @@ describe("AgentWorkspacePage", () => {
     await waitFor(() => expect(sendButton).toBeEnabled());
     await user.click(sendButton);
 
-    expect(await screen.findByText("WORKFLOW_STARTED")).toBeInTheDocument();
-    expect(await screen.findByText("SKILL_ROUTED")).toBeInTheDocument();
-    expect(await screen.findByText("WORKER_ACCEPTED")).toBeInTheDocument();
-    expect(await screen.findAllByText("WORKFLOW_COMPLETED")).not.toHaveLength(0);
+    const currentWorkflowCard = await screen.findByLabelText("当前诊断工作流");
+    expect(within(currentWorkflowCard).getByText("WORKFLOW_STARTED")).toBeInTheDocument();
+    expect(within(currentWorkflowCard).getByText("SKILL_ROUTED")).toBeInTheDocument();
+    expect(within(currentWorkflowCard).getByText("WORKER_ACCEPTED")).toBeInTheDocument();
+    expect(within(currentWorkflowCard).getByText("WORKFLOW_COMPLETED")).toBeInTheDocument();
     expect(await screen.findByText("CPU 18%")).toBeInTheDocument();
     expect(await screen.findByText("内存 42%")).toBeInTheDocument();
     expect(await screen.findByText("磁盘 37%")).toBeInTheDocument();
@@ -271,7 +272,7 @@ describe("AgentWorkspacePage", () => {
     renderPage();
 
     expect(await screen.findByText("unavailable")).toBeInTheDocument();
-    expect(screen.getByText("WORKER_ACCEPTED")).toBeInTheDocument();
+    expect(screen.getByText("等待发送")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "发送任务" })).toBeDisabled();
   });
 
@@ -285,7 +286,7 @@ describe("AgentWorkspacePage", () => {
     renderPage();
 
     expect(await screen.findByText("dependency")).toBeInTheDocument();
-    expect(screen.getByText("WORKER_ACCEPTED")).toBeInTheDocument();
+    expect(screen.getByText("等待发送")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "发送任务" })).toBeDisabled();
   });
 
