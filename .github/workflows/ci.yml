@@ -59,9 +59,11 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: "22"
+          node-version: "22.13.0"
           cache: npm
           cache-dependency-path: frontend/operator-console/package-lock.json
+      - name: 记录 Node 与 npm 版本
+        run: node --version && npm --version
       - name: 安装前端依赖
         run: npm ci
       - name: 前端严格类型检查
