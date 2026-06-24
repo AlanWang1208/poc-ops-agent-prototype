@@ -2,10 +2,17 @@ package com.company.opsagent.controlplane.modules.agentruntime;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import io.agentscope.core.message.Msg;
+import io.agentscope.core.model.ChatResponse;
+import io.agentscope.core.model.GenerateOptions;
+import io.agentscope.core.model.Model;
+import io.agentscope.core.model.ToolSchema;
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
@@ -51,6 +58,25 @@ class AgentscopePrimaryAgentRuntimeServiceTest {
     assertEquals(Map.of("type", "string"), properties.get("nodeId"));
   }
 
+  @Test
+  void modelTimeoutReturnsControlledRuntimeFailure() {
+    var client = new AgentscopeReActAgentClient(new NeverRespondingModel(), 1, Duration.ofMillis(10));
+    AgentToolExecutor toolExecutor = (runtimeRequest, toolCall) -> Mono.error(
+        new AssertionError("model timeout must not execute tools"));
+    var service = new AgentscopePrimaryAgentRuntimeService(
+        () -> List.of(readOnlyTool()),
+        client,
+        toolExecutor);
+
+    StepVerifier.create(service.run(runtimeRequest()))
+        .assertNext(result -> {
+          assertEquals("AGENT_RUNTIME_FAILED", result.status());
+          assertEquals("AgentScope runtime failed before producing a valid result.", result.summary());
+          assertEquals(0, result.toolCallCount());
+        })
+        .verifyComplete();
+  }
+
   private AgentRuntimeRequest runtimeRequest() {
     return new AgentRuntimeRequest(
         "task-1",
@@ -85,5 +111,21 @@ class AgentscopePrimaryAgentRuntimeServiceTest {
         "restart-node:1.0.0:output",
         List.of("nodeId"),
         "LOW");
+  }
+
+  private static final class NeverRespondingModel implements Model {
+
+    @Override
+    public Flux<ChatResponse> stream(
+        List<Msg> messages,
+        List<ToolSchema> tools,
+        GenerateOptions options) {
+      return Flux.never();
+    }
+
+    @Override
+    public String getModelName() {
+      return "fake-timeout-model";
+    }
   }
 }

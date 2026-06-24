@@ -48,6 +48,41 @@ class PlatformGuardedAgentToolExecutorTest {
     assertEquals("ONLY_READ_ONLY_SKILLS_ALLOWED", result.errorCode());
   }
 
+  @Test
+  void rejectsPromptInjectedUnknownToolEvenWithModelSuppliedAllowReference() {
+    AgentToolCatalogProvider catalogProvider = () -> List.of(readOnlyNodeHealthTool());
+    AgentToolExecutor executor = new PlatformGuardedAgentToolExecutor(catalogProvider);
+
+    AgentToolResult result = executor.execute(
+        runtimeRequest(),
+        toolCall("shell-command", "1.0.0"))
+        .block();
+
+    assertEquals("REJECTED", result.status());
+    assertEquals("SKILL_NOT_AVAILABLE", result.errorCode());
+  }
+
+  @Test
+  void rejectsToolOutputInjectedWriteAttemptInP1() {
+    AgentToolCatalogProvider catalogProvider = () -> List.of(new AgentToolDescriptor(
+        "restart-node",
+        "1.0.0",
+        "重启节点",
+        "restart-node:1.0.0:input",
+        "restart-node:1.0.0:output",
+        List.of("nodeId"),
+        "LOW"));
+    AgentToolExecutor executor = new PlatformGuardedAgentToolExecutor(catalogProvider);
+
+    AgentToolResult result = executor.execute(
+        runtimeRequest(),
+        toolCall("restart-node", "1.0.0"))
+        .block();
+
+    assertEquals("REJECTED", result.status());
+    assertEquals("ONLY_READ_ONLY_SKILLS_ALLOWED", result.errorCode());
+  }
+
   private AgentToolDescriptor readOnlyNodeHealthTool() {
     return new AgentToolDescriptor(
         "node-health",

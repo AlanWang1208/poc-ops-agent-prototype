@@ -8,6 +8,8 @@ import io.agentscope.core.model.Model;
 import io.agentscope.core.tool.Toolkit;
 import java.time.Clock;
 import java.time.Duration;
+import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.atomic.AtomicLong;
 import reactor.core.publisher.Mono;
 
@@ -110,6 +112,46 @@ public final class AgentscopeReActAgentClient implements AgentscopeAgentClient {
     if (text == null || text.isBlank()) {
       return "AgentScope runtime completed without a textual summary.";
     }
-    return text.strip();
+    return sanitizedSummary(text.strip());
+  }
+
+  private String sanitizedSummary(String text) {
+    String finalAnswer = textAfterLastMarker(text, List.of("Final Answer:", "Final:", "Answer:"));
+    if (finalAnswer != null && !containsReasoningMarker(finalAnswer)) {
+      return finalAnswer;
+    }
+    if (containsReasoningMarker(text)) {
+      return "AgentScope runtime produced a summary that was withheld because it included internal reasoning markers.";
+    }
+    return text;
+  }
+
+  private String textAfterLastMarker(String text, List<String> markers) {
+    String lowerText = text.toLowerCase(Locale.ROOT);
+    int markerIndex = -1;
+    String matchedMarker = null;
+    for (String marker : markers) {
+      int index = lowerText.lastIndexOf(marker.toLowerCase(Locale.ROOT));
+      if (index > markerIndex) {
+        markerIndex = index;
+        matchedMarker = marker;
+      }
+    }
+    if (markerIndex < 0) {
+      return null;
+    }
+    String candidate = text.substring(markerIndex + matchedMarker.length()).strip();
+    return candidate.isBlank() ? null : candidate;
+  }
+
+  private boolean containsReasoningMarker(String text) {
+    return text.lines()
+        .map(String::strip)
+        .map(line -> line.toLowerCase(Locale.ROOT))
+        .anyMatch(line -> line.startsWith("thought:")
+            || line.startsWith("reasoning:")
+            || line.startsWith("chain of thought")
+            || line.startsWith("action:")
+            || line.startsWith("observation:"));
   }
 }

@@ -26,7 +26,7 @@
 | 模块 | 状态 | 进度 | 已完成 | 剩余条件 |
 |---|---|---:|---|---|
 | M03 Skill 契约与注册中心 | 进行中 | 97% | 已落地 Skill Manifest、发布签名、注册和显式校验，并将 P1 只读 Skill 补足到 5 个；平台 JSON 已迁入 `backend/contracts/skills/packages`，与 AgentScope `SKILL.md` 目录分离 | 继续补充真正的发布流水编排、生产签名方案、Skill 契约包自动校验和更多 Worker 适配器 |
-| M04 AgentScope 主运行链路 | 进行中 | 92% | 已完成确定性候选筛选、发布态约束、Agent Runtime 模块边界、启用开关、未配置失败关闭、最终摘要 POC，并已将 AgentScope Java 决策为 P1 只读诊断目标主链路；M04 `AgentToolExecutor` 端口已携带 Runtime 身份、角色和 trace 上下文，AgentScope ReAct 已通过真实 `AgentTool` 回调平台执行器；Agent Tool 请求、完成和拒绝语义事件契约骨架、M05 事件发布接线、执行器级授权审计和多 Tool 幂等恢复演练已补齐 | 完成评测集和路由解释 API |
+| M04 AgentScope 主运行链路 | 进行中 | 96% | 已完成确定性候选筛选、发布态约束、Agent Runtime 模块边界、启用开关、未配置失败关闭、最终摘要 POC，并已将 AgentScope Java 决策为 P1 只读诊断目标主链路；M04 `AgentToolExecutor` 端口已携带 Runtime 身份、角色和 trace 上下文，AgentScope ReAct 已通过真实 `AgentTool` 回调平台执行器；Agent Tool 请求、完成和拒绝语义事件契约骨架、M05 事件发布接线、执行器级授权审计、多 Tool 幂等恢复演练、`POST /internal/routing/skills/explain` 路由解释 API，以及 ReAct 单工具、多工具、注入拒绝和模型超时评测已补齐 | 完成真实模型供应方联调、AgentScope 主链路远程 CI 门禁固化，以及与 T010/M07 后续项联动的集中审计和生产级 Worker 隔离演练 |
 | M05 只读工作流切片 | 已完成 | 100% | 已生成强类型只读命令、短期 Worker 请求和顺序语义事件；同时已落地 H2/R2DBC 工作流实例、attempt 与事件持久化、幂等复用、结果与事件回读、启动恢复装配、版本化迁移脚本，以及针对 `FAILED_RETRYABLE` 和 attempt 已过期在途实例的单次受控重放；已新增 workflow-backed Agent Tool 执行器，服务端重算参数哈希、重做 M02 策略决策、写入 Tool Step、发布 Agent Tool requested/completed/rejected 语义事件、记录 Agent Tool 授权审计，并通过 WorkerGateway 提交只读命令；Agent workflow 终态幂等命中时不再重跑 Runtime，而是复用持久化的终态 `AgentTaskResult` 状态、摘要和 toolCallCount | 无；后续仅在 P2/P3 扩展正式生产数据库接入与更长期恢复演练 |
 | M07 受限执行 Worker | 进行中 | 74% | 已提供独立 WebFlux Worker、回环地址开发配置、显式允许列表和 `node-health-read` 适配器；已新增控制面到 Worker 的 HMAC 传输认证、Worker 入站验签、非回环绑定启动保护、ADR 和运行手册；已补充 SQL 出口 allowlist、默认拒绝配置、连接目录校验、Worker 拒绝映射，并通过 M05 Agent Tool 执行器生成已授权只读命令信封 | 完成 mTLS、网络层出口策略、短期目标系统凭据、Windows 隔离部署方案和生产演练 |
 | M09 语义事件与只读操作台 | 进行中 | 67% | 已定义强类型语义事件、SSE 接口、React/JSX/JSDoc `checkJs` 最小只读操作台、API/Zod 边界，并补齐 Agent Tool 请求、完成、拒绝三类事件契约和 M05 发布接线；`main` 上 `ab57a00` 已将登录页转为 React 视觉页并接入 `/auth/login` 跳转入口；当前分支已将 `/agent` 转为 React Agent 工作区，按原型还原会话工作区并接入真实 Skill 路由搜索接口，已沉淀 `1440x1080` 截图验收证据 | 继续完成会话读取、匿名跳转、内建身份登录与改密、退出路径、AppShell 会话展示、Skill 注册中心、重连、断点恢复和整套页面浏览器验收 |
@@ -155,7 +155,9 @@ P1 SQL 工作台仍只允许 DML 预检。开发环境受控增删改查属于 P
   - 已完成 Agent Runtime 模块边界、禁用/未配置状态、受保护入口、Agent workflow 基础事实源、最终摘要 POC、workflow-backed Agent Tool 执行器和 AgentScope ReAct 真实工具回调接线；
   - 平台守护执行器已在服务端忽略 ToolCall 夹带的授权引用，重新完成目录校验、M02 策略决策、执行器级授权审计、参数哈希、M05 Tool Step 持久化、M07 WorkerGateway 调用和结果映射；
   - 已补齐 Agent Tool 请求、完成和拒绝三类语义事件契约骨架，并由 M05 平台守护执行器发布到持久化语义事件流；
-  - 确定性单 Skill 只读工作流继续作为联调、兼容和紧急回退路径；AgentScope 主链路仍需补齐评测集和路由解释 API。
+  - 已补齐 `POST /internal/routing/skills/explain` 路由解释 API，用于解释候选 Skill、筛选条件、命中规则和无候选说明；该接口只解释服务端路由结果，不替代 M02 授权决策；
+  - 已补齐 AgentScope ReAct 单工具、多工具、Prompt 注入拒绝、Tool 输出注入拒绝和模型超时评测切片；
+  - 确定性单 Skill 只读工作流继续作为联调、兼容和紧急回退路径；AgentScope 主链路后续剩余项为真实模型供应方联调、远程 CI 门禁固化、集中审计存储和生产级 Worker 隔离演练。
 - 既有 5 个 P1 只读 Skill 改为 AgentScope Skill 与平台契约分离：
   - `backend/skills/<skill>/SKILL.md` 作为 AgentScope 文件系统 Skill 入口，说明何时使用、输入、平台 Tool 调用方式、输出解读和安全边界；
   - `backend/contracts/skills/packages/<skill>/input.schema.json` 和 `output.schema.json` 作为 AgentScope Tool Catalog 与 Worker 结果边界；

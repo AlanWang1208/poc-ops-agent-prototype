@@ -328,6 +328,62 @@ class ControlPlaneApplicationTest {
   }
 
   @Test
+  void explainsSkillRoutingWithoutExposingModelReasoningOrAuthorizationDecision() {
+    auditTrail.clear();
+    webTestClient.post()
+        .uri("/internal/routing/skills/explain")
+        .headers(headers -> headers.setBearerAuth(token("alice", List.of("ops-reader"), "ops-agent-internal")))
+        .contentType(APPLICATION_JSON)
+        .bodyValue("""
+            {
+              "category": "APPLICATION_DIAGNOSTICS",
+              "maxRiskLevel": "READ_ONLY",
+              "requiredParameters": ["applicationName"],
+              "requiredTags": ["summary"],
+              "publicationStatusRequired": "VALIDATED"
+            }
+            """)
+        .exchange()
+        .expectStatus().isOk()
+        .expectBody()
+        .jsonPath("$.explanationScope").isEqualTo("ROUTING_EXPLANATION_ONLY")
+        .jsonPath("$.total").isEqualTo(1)
+        .jsonPath("$.appliedConstraints.category").isEqualTo("APPLICATION_DIAGNOSTICS")
+        .jsonPath("$.appliedConstraints.maxRiskLevel").isEqualTo("READ_ONLY")
+        .jsonPath("$.appliedConstraints.requiredParameters[0]").isEqualTo("applicationName")
+        .jsonPath("$.topCandidate.skillId").isEqualTo("application-log-summary-read")
+        .jsonPath("$.topCandidate.version").isEqualTo("1.0.0")
+        .jsonPath("$.topCandidate.matchedRules").isArray()
+        .jsonPath("$.summary").isEqualTo("top routing candidate selected by deterministic constraints")
+        .jsonPath("$.candidates[0].matchedRules").isArray()
+        .jsonPath("$.candidates[0].skill.descriptor.skillId").isEqualTo("application-log-summary-read");
+  }
+
+  @Test
+  void protectsSkillRoutingExplanationWithRoutingReadPolicyAction() {
+    auditTrail.clear();
+    webTestClient.post()
+        .uri("/internal/routing/skills/explain")
+        .headers(headers -> headers.setBearerAuth(token("auditor", List.of("ops-auditor"), "ops-agent-internal")))
+        .contentType(APPLICATION_JSON)
+        .bodyValue("""
+            {
+              "category": "APPLICATION_DIAGNOSTICS",
+              "maxRiskLevel": "READ_ONLY"
+            }
+            """)
+        .exchange()
+        .expectStatus().isForbidden()
+        .expectBody()
+        .jsonPath("$.code").isEqualTo("POLICY_DENIED");
+
+    AuditEvent event = auditTrail.latest().orElseThrow();
+    Assertions.assertEquals("internal.routing.skills.read", event.action());
+    Assertions.assertEquals("/internal/routing/skills/explain", event.resource());
+    Assertions.assertEquals("DENY", event.result());
+  }
+
+  @Test
   void exposesOnlyDevelopmentAndTestSqlConnections() {
     webTestClient.get()
         .uri("/internal/sql-workbench/connections")

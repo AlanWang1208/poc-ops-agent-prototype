@@ -2,6 +2,8 @@ package com.company.opsagent.controlplane.bootstrap.api;
 
 import com.company.opsagent.controlplane.modules.agentrouting.SkillRoutingCriteria;
 import com.company.opsagent.controlplane.modules.agentrouting.SkillRoutingService;
+import com.company.opsagent.controlplane.modules.agentrouting.SkillRouteCandidate;
+import java.util.List;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -29,6 +31,22 @@ public class SkillRoutingController {
    */
   @PostMapping("/search")
   public Mono<SkillRoutingResponse> search(@RequestBody SkillRoutingRequest request) {
+    var candidates = findCandidates(request);
+    return Mono.just(new SkillRoutingResponse(candidates.size(), candidates));
+  }
+
+  /**
+   * 返回确定性路由解释。
+   *
+   * <p>该接口只解释 M04 规则路由如何筛选候选，不产生授权决策，也不暴露模型内部推理。
+   */
+  @PostMapping("/explain")
+  public Mono<SkillRoutingExplanationResponse> explain(@RequestBody SkillRoutingRequest request) {
+    var candidates = findCandidates(request);
+    return Mono.just(SkillRoutingExplanationResponse.from(request, candidates));
+  }
+
+  private List<SkillRouteCandidate> findCandidates(SkillRoutingRequest request) {
     var candidates = skillRoutingService.findCandidates(new SkillRoutingCriteria(
         request.skillId(),
         request.category(),
@@ -37,6 +55,6 @@ public class SkillRoutingController {
         request.requiredTags(),
         request.requestContextTags(),
         request.publicationStatusRequired()));
-    return Mono.just(new SkillRoutingResponse(candidates.size(), candidates));
+    return candidates;
   }
 }

@@ -250,6 +250,9 @@ public class PolicyEnforcementWebFilter implements WebFilter {
       if (method == HttpMethod.POST && "/internal/routing/skills/search".equals(path)) {
         return new ActionDescriptor("internal.routing.skills.read", path);
       }
+      if (method == HttpMethod.POST && "/internal/routing/skills/explain".equals(path)) {
+        return new ActionDescriptor("internal.routing.skills.read", path);
+      }
       if (method == HttpMethod.POST && "/internal/diagnostics/read-only".equals(path)) {
         return new ActionDescriptor("internal.diagnostics.read", path);
       }
