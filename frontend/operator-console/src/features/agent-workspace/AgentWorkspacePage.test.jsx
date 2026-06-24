@@ -175,7 +175,7 @@ describe("AgentWorkspacePage", () => {
 
   test("renders the workday countdown as a compact creative timer", () => {
     vi.useFakeTimers();
-    vi.setSystemTime(new Date("2026-06-16T19:00:00+08:00"));
+    vi.setSystemTime(new Date(2026, 5, 16, 19, 0, 0));
 
     renderPage();
 
