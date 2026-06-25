@@ -234,6 +234,117 @@ describe("LoginPage", () => {
     expect(loginFieldRule).toContain("display: grid");
   });
 
+  test("does not render the small task flow capsule above the login form", () => {
+    renderAt("/login");
+
+    expect(screen.queryByText("提任务")).not.toBeInTheDocument();
+    expect(screen.queryByText("选 Skill")).not.toBeInTheDocument();
+    expect(screen.queryByText("留痕")).not.toBeInTheDocument();
+    expect(loginCss).not.toContain(".capabilityFlow");
+  });
+
+  test("does not render the introductory operator audience copy", () => {
+    renderAt("/login");
+
+    expect(
+      screen.queryByText(
+        "面向研发、DBA 与运维团队，通过受控的只读诊断链路定位服务、数据库与基础设施问题。",
+      ),
+    ).not.toBeInTheDocument();
+    expect(loginCss).not.toContain(".loginCopy > p");
+  });
+
+  test("keeps only Chinese labels on the diagnostic node cards", () => {
+    renderAt("/login");
+
+    expect(screen.getByText("会话确权")).toBeInTheDocument();
+    expect(screen.getByText("服务端授权")).toBeInTheDocument();
+    expect(screen.getByText("只读候选")).toBeInTheDocument();
+    expect(screen.getByText("受限执行")).toBeInTheDocument();
+    expect(screen.queryByText("Identity")).not.toBeInTheDocument();
+    expect(screen.queryByText("Policy")).not.toBeInTheDocument();
+    expect(screen.queryByText("Skill")).not.toBeInTheDocument();
+    expect(screen.queryByText("Worker")).not.toBeInTheDocument();
+  });
+
+  test("renders four diagnostic node icons with stable label spacing", () => {
+    const { container } = renderAt("/login");
+    const icons = Array.from(container.querySelectorAll("[data-node-icon]"));
+    const routes = new Set(icons.map((icon) => icon.getAttribute("data-node-icon")));
+    const opsNodeRule = loginCss.match(/[.]opsNode\s*[{][^}]+[}]/u)?.[0] ?? "";
+    const nodeIconRule = loginCss.match(/[.]nodeIcon\s*[{][^}]+[}]/u)?.[0] ?? "";
+
+    expect(icons).toHaveLength(4);
+    expect(routes).toEqual(new Set(["identity", "policy", "skill", "worker"]));
+    expect(opsNodeRule).toContain("row-gap: 9px");
+    expect(opsNodeRule).toContain("align-content: center");
+    expect(nodeIconRule).toContain("place-items: center");
+    expect(nodeIconRule).not.toContain("margin-bottom");
+    expect(loginCss).toContain(".nodeIconGlyph");
+    expect(loginCss).not.toContain(".nodeRobot");
+    expect(loginCss).not.toContain("identityRobot");
+    expect(loginCss).not.toContain("policyRobot");
+    expect(loginCss).not.toContain("skillRobot");
+    expect(loginCss).not.toContain("workerRobot");
+  });
+
+  test("does not draw connector lines inside the diagnostic visual", () => {
+    const opsVisualBeforeRule =
+      loginCss.match(/[.]opsVisual::before\s*[{][^}]+[}]/u)?.[0] ?? "";
+
+    expect(opsVisualBeforeRule).toBe("");
+    expect(loginCss).not.toContain("188px 258px");
+    expect(loginCss).not.toContain("91px 232px");
+  });
+
+  test("renders diagonal background bands but masks them behind the login shell", () => {
+    const screenRule = loginCss.match(/[.]screen\s*[{][^}]+[}]/u)?.[0] ?? "";
+    const loginShellFrameRule =
+      loginCss.match(/[.]loginShell::before\s*[{][^}]+[}]/u)?.[0] ?? "";
+
+    expect(screenRule).toContain("linear-gradient(116deg");
+    expect(screenRule).toContain("linear-gradient(139deg");
+    expect(loginShellFrameRule).toContain("rgba(246, 247, 249, 0.96)");
+    expect(loginShellFrameRule).not.toContain("background: transparent");
+  });
+
+  test("trims the login shell frame height without moving the top anchor", () => {
+    const screenRule = loginCss.match(/[.]screen\s*[{][^}]+[}]/u)?.[0] ?? "";
+    const loginShellRule = loginCss.match(/[.]loginShell\s*[{][^}]+[}]/u)?.[0] ?? "";
+    const loginShellFrameRule =
+      loginCss.match(/[.]loginShell::before\s*[{][^}]+[}]/u)?.[0] ?? "";
+
+    expect(screenRule).toContain("--login-frame-anchor-height: min(720px, calc(100vh - 132px))");
+    expect(screenRule).toContain("--login-frame-height: min(640px, calc(100vh - 132px))");
+    expect(screenRule).toContain(
+      "--login-frame-y: calc((100vh - var(--login-frame-anchor-height)) / 2 - var(--login-frame-top))",
+    );
+    expect(loginShellRule).toContain("--frame-height: var(--login-frame-height)");
+    expect(loginShellFrameRule).toContain("height: var(--frame-height)");
+  });
+
+  test("keeps the agent animation above the login shell mask", () => {
+    const loginHeroEffectRule =
+      loginCss.match(/[.]loginHeroEffect\s*[{][^}]+[}]/u)?.[0] ?? "";
+    const loginShellRule = loginCss.match(/[.]loginShell\s*[{][^}]+[}]/u)?.[0] ?? "";
+    const loginShellFrameRule =
+      loginCss.match(/[.]loginShell::before\s*[{][^}]+[}]/u)?.[0] ?? "";
+
+    expect(loginShellRule).toContain("z-index: 2");
+    expect(loginShellFrameRule).toContain("rgba(246, 247, 249, 0.96)");
+    expect(loginHeroEffectRule).toContain("z-index: 3");
+    expect(loginHeroEffectRule).toContain("transform: translateY(-5px)");
+  });
+
+  test("aligns the diagnostic visual and login form bottoms", () => {
+    const opsVisualRule = loginCss.match(/[.]opsVisual\s*[{][^}]+[}]/u)?.[0] ?? "";
+    const loginCardRule = loginCss.match(/[.]loginCard\s*[{][^}]+[}]/u)?.[0] ?? "";
+
+    expect(opsVisualRule).toContain("margin-top: 52px");
+    expect(loginCardRule).toContain("height: 344px");
+    expect(loginCardRule).toContain("margin: 271px 0 0");
+  });
+
   test("redirects anonymous operators away from menu pages", async () => {
     useAnonymousSession();
 
