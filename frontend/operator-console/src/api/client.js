@@ -4,6 +4,8 @@ import { ZodError } from "zod";
  * @typedef {"unauthorized" | "forbidden" | "request" | "contract" | "network"} ApiErrorKind
  */
 
+export const SESSION_EXPIRED_EVENT = "ops-agent:session-expired";
+
 export class ApiError extends Error {
   /**
    * @param {{
@@ -21,6 +23,13 @@ export class ApiError extends Error {
     this.kind = kind;
     this.code = code;
   }
+}
+
+export function notifySessionExpired() {
+  if (typeof window === "undefined") {
+    return;
+  }
+  window.dispatchEvent(new CustomEvent(SESSION_EXPIRED_EVENT));
 }
 
 /**
@@ -56,19 +65,11 @@ export async function requestJson(url, options) {
   }
 
   if (!response.ok) {
-    const errorBody = await readOptionalJson(response).catch(() => undefined);
-    const structuredError = readStructuredError(errorBody);
-    throw new ApiError({
-      status: response.status,
-      kind:
-        response.status === 401
-          ? "unauthorized"
-          : response.status === 403
-            ? "forbidden"
-            : "request",
-      code: structuredError.code,
-      message: structuredError.message ?? `Request failed with HTTP ${response.status}`,
-    });
+    throw await createApiErrorFromResponse(response);
+  }
+
+  if (isLoginHtmlResponse(response)) {
+    throw createSessionExpiredApiError(response);
   }
 
   try {
@@ -89,6 +90,42 @@ export async function requestJson(url, options) {
 
 /**
  * @param {Response} response
+ * @returns {Promise<ApiError>}
+ */
+export async function createApiErrorFromResponse(response) {
+  const errorBody = await readOptionalJson(response).catch(() => undefined);
+  const structuredError = readStructuredError(errorBody);
+  const kind =
+    response.status === 401
+      ? "unauthorized"
+      : response.status === 403
+        ? "forbidden"
+        : "request";
+  if (kind === "unauthorized") {
+    notifySessionExpired();
+  }
+  return new ApiError({
+    status: response.status,
+    kind,
+    code: structuredError.code,
+    message: structuredError.message ?? `Request failed with HTTP ${response.status}`,
+  });
+}
+
+/**
+ * @param {Response} response
+ */
+export function createSessionExpiredApiError(response) {
+  notifySessionExpired();
+  return new ApiError({
+    status: response.status,
+    kind: "unauthorized",
+    message: "Browser session expired",
+  });
+}
+
+/**
+ * @param {Response} response
  * @returns {Promise<unknown>}
  */
 async function readOptionalJson(response) {
@@ -97,6 +134,14 @@ async function readOptionalJson(response) {
     return undefined;
   }
   return JSON.parse(text);
+}
+
+/**
+ * @param {Response} response
+ */
+export function isLoginHtmlResponse(response) {
+  const contentType = response.headers.get("content-type") ?? "";
+  return contentType.toLowerCase().includes("text/html");
 }
 
 /**

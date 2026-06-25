@@ -30,7 +30,7 @@ function useAuthenticatedSession() {
 }
 
 describe("SkillRegistryPage", () => {
-  test("renders real read-only skills in the shared shell with the prototype workspace body", async () => {
+  test("renders real read-only skills without the page intro block", async () => {
     useAuthenticatedSession();
     server.use(
       http.get("/internal/skills", () =>
@@ -45,10 +45,12 @@ describe("SkillRegistryPage", () => {
     expect(
       screen.queryByRole("navigation", { name: "Skill 注册中心导航" }),
     ).not.toBeInTheDocument();
+    const filterRegion = screen.getByRole("region", { name: "Skill 分类筛选" });
+    expect(filterRegion.parentElement?.firstElementChild).toBe(filterRegion);
     expect(
-      screen.getByText("查看 P1 只读诊断 Skill 的版本、风险、角色、签名和治理拦截器。"),
-    ).toBeInTheDocument();
-    expect(screen.getByRole("region", { name: "Skill 分类筛选" })).toBeInTheDocument();
+      screen.queryByText("查看 P1 只读诊断 Skill 的版本、风险、角色、签名和治理拦截器。"),
+    ).not.toBeInTheDocument();
+    expect(filterRegion).toBeInTheDocument();
     expect(screen.queryByText("搜索 Skill / Owner")).not.toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "内置 Skill" })).toBeInTheDocument();
     expect(await screen.findByText("node-health-read")).toBeInTheDocument();

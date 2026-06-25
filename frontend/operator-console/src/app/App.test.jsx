@@ -1,7 +1,8 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import { MemoryRouter } from "react-router-dom";
+import { MemoryRouter, useLocation } from "react-router-dom";
 
+import { SESSION_EXPIRED_EVENT } from "../api/client.js";
 import App from "./App.jsx";
 import { AppProviders } from "./providers.jsx";
 
@@ -21,4 +22,28 @@ describe("App", () => {
     ).toBeInTheDocument();
     expect(screen.getByText("SECURE OPERATOR ENTRY")).toBeInTheDocument();
   });
+
+  it("routes the active workspace back to login when the browser session expires", async () => {
+    render(
+      <AppProviders
+        Router={MemoryRouter}
+        routerProps={{ initialEntries: ["/agent"] }}
+      >
+        <LocationProbe />
+      </AppProviders>,
+    );
+
+    expect(screen.getByTestId("current-path")).toHaveTextContent("/agent");
+
+    window.dispatchEvent(new CustomEvent(SESSION_EXPIRED_EVENT));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("current-path")).toHaveTextContent("/login");
+    });
+  });
 });
+
+function LocationProbe() {
+  const location = useLocation();
+  return <span data-testid="current-path">{location.pathname}</span>;
+}

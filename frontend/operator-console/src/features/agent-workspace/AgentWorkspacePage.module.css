@@ -21,7 +21,8 @@
   display: grid;
   box-sizing: border-box;
   width: calc(100vw - var(--agent-canvas-left) - var(--agent-layout-gap));
-  min-height: calc(100vh - 48px);
+  height: calc(100vh - 48px);
+  min-height: 0;
   grid-template-rows: auto auto minmax(0, 1fr);
   gap: var(--agent-layout-gap);
   align-content: stretch;
@@ -1084,8 +1085,9 @@
 .agentLayout {
   display: grid;
   height: 100%;
-  min-height: 650px;
+  min-height: 0;
   grid-template-columns: minmax(0, 1fr) 360px;
+  align-items: stretch;
   gap: var(--agent-layout-gap);
 }
 
@@ -1093,7 +1095,7 @@
   display: grid;
   height: 100%;
   min-height: 0;
-  grid-template-rows: auto 1fr auto;
+  grid-template-rows: auto minmax(0, 1fr) auto;
   overflow: hidden;
   border: 1px solid rgba(37, 132, 169, 0.18);
   border-radius: 14px;
@@ -1174,7 +1176,9 @@
   align-content: start;
   gap: 10px;
   min-height: 0;
-  overflow: auto;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
   padding: 18px 24px;
 }
 
@@ -1332,7 +1336,14 @@
 }
 
 .messageContent {
+  display: grid;
+  gap: 8px;
   min-width: 0;
+}
+
+.messageContent p {
+  margin: 0;
+  overflow-wrap: anywhere;
 }
 
 .workflowTaskCard {
@@ -1405,8 +1416,7 @@
 }
 
 .workflowTaskTags span,
-.workflowTaskActions span,
-.composerTags span {
+.workflowTaskActions span {
   padding: 4px 8px;
   border: 1px solid rgba(37, 132, 169, 0.14);
   border-radius: 999px;
@@ -1507,28 +1517,31 @@
 .composerBox {
   position: relative;
   display: grid;
-  min-height: 132px;
-  grid-template-rows: minmax(0, 1fr) auto;
-  gap: 8px;
-  align-items: stretch;
+  min-height: 124px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: end;
   overflow: hidden;
-  padding: 14px 16px 14px 18px;
-  border: 1px solid rgba(211, 17, 69, 0.08);
+  padding: 10px 12px 10px 16px;
+  border: 1px solid rgba(37, 132, 169, 0.14);
   border-radius: 8px;
-  background: #fff;
+  background: rgba(255, 255, 255, 0.86);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.76);
+}
+
+.composerBox:focus-within {
+  border-color: rgba(37, 132, 169, 0.22);
   box-shadow:
-    0 14px 28px rgba(31, 41, 51, 0.055),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.82);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
+    inset 0 1px 0 rgba(255, 255, 255, 0.76),
+    0 0 0 1px rgba(37, 132, 169, 0.1);
 }
 
 .composerBox::before {
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(circle at 92% 24%, rgba(211, 17, 69, 0.1), transparent 9rem),
-    linear-gradient(90deg, rgba(211, 17, 69, 0.025), transparent 26%);
+    radial-gradient(circle at 96% 30%, rgba(211, 17, 69, 0.055), transparent 7.5rem),
+    linear-gradient(90deg, rgba(37, 132, 169, 0.025), transparent 28%);
   content: "";
   pointer-events: none;
 }
@@ -1541,7 +1554,8 @@
 .composerInput {
   width: 100%;
   min-width: 0;
-  min-height: 62px;
+  min-height: 96px;
+  align-self: stretch;
   resize: none;
   border: 0;
   outline: 0;
@@ -1551,6 +1565,14 @@
   font-size: 13px;
   font-weight: 750;
   line-height: 1.45;
+}
+
+.composerInput:focus,
+.composerInput:focus-visible {
+  outline: none;
+  outline-width: 0;
+  outline-color: transparent;
+  box-shadow: none;
 }
 
 .composerInput::placeholder {
@@ -1563,30 +1585,9 @@
   cursor: wait;
 }
 
-.composerFooter {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 14px;
-  align-items: end;
-  align-self: end;
-}
-
-.composerTags {
-  display: flex;
-  flex-wrap: nowrap;
-  gap: 7px;
-  align-self: end;
-  overflow-x: auto;
-  padding-bottom: 2px;
-  scrollbar-width: none;
-}
-
-.composerTags::-webkit-scrollbar {
-  display: none;
-}
-
 .sendButton {
   position: relative;
+  align-self: end;
   width: 44px;
   height: 44px;
   overflow: hidden;
@@ -1627,9 +1628,16 @@
 .agentSide {
   display: grid;
   height: 100%;
+  max-height: 100%;
   min-height: 0;
-  grid-template-rows: auto auto minmax(0, 1fr);
+  align-self: stretch;
+  align-content: start;
+  grid-auto-rows: max-content;
   gap: var(--agent-layout-gap);
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-right: 4px;
 }
 
 .agentPanel {
@@ -1638,8 +1646,8 @@
   min-height: 0;
   align-content: start;
   gap: 6px;
-  overflow: hidden;
-  padding: 16px;
+  overflow: visible;
+  padding: 12px;
   border: 1px solid var(--agent-border);
   border-radius: 12px;
   background:
@@ -1654,10 +1662,10 @@
 
 .agentPanel::before {
   position: absolute;
-  top: 14px;
-  right: 14px;
-  width: 7px;
-  height: 7px;
+  top: 12px;
+  right: 12px;
+  width: 6px;
+  height: 6px;
   border-radius: 999px;
   background: var(--agent-red);
   box-shadow: 0 0 0 5px rgba(211, 17, 69, 0.08);
@@ -1673,8 +1681,8 @@
 .agentPanel h3 {
   display: flex;
   align-items: center;
-  gap: 9px;
-  margin: 0 0 2px;
+  gap: 8px;
+  margin: 0 0 1px;
   color: #1f6f8a;
   font-family: var(--agent-font-display);
   font-size: 15px;
@@ -1780,12 +1788,16 @@
 }
 
 .miniRow {
-  display: flex;
-  justify-content: space-between;
-  padding: 7px 0;
+  display: grid;
+  min-height: 32px;
+  grid-template-columns: minmax(0, 1fr) minmax(72px, 52%);
+  gap: 10px;
+  align-items: center;
+  padding: 4px 0;
   border-top: 1px solid var(--agent-border);
   color: var(--agent-muted);
-  font-size: 13px;
+  font-size: 12px;
+  line-height: 1.25;
 }
 
 .miniRow span,
@@ -1798,15 +1810,20 @@
 
 .miniRow strong {
   display: inline-flex;
-  height: 24px;
+  box-sizing: border-box;
+  width: fit-content;
+  max-width: 100%;
+  height: 22px;
   align-items: center;
-  padding: 0 9px;
+  justify-self: end;
+  padding: 0 8px;
   border: 1px solid rgba(37, 132, 169, 0.16);
   border-radius: 999px;
   background: rgba(37, 132, 169, 0.08);
   color: var(--agent-blue);
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 900;
+  line-height: 1;
 }
 
 .miniRow strong[data-tone="ok"] {
@@ -1823,6 +1840,341 @@
 .miniRow strong[data-tone="danger"] {
   border-color: rgba(211, 17, 69, 0.18);
   background: rgba(211, 17, 69, 0.08);
+  color: var(--agent-red);
+}
+
+.detailButton {
+  width: 100%;
+  min-height: 32px;
+  justify-content: center;
+  margin-top: 4px;
+  padding: 0 10px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.detailDialogBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  align-items: center;
+  justify-items: center;
+  overflow: hidden;
+  padding: 32px 40px;
+  background: rgba(18, 31, 43, 0.42);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.detailDialog {
+  display: grid;
+  width: min(1180px, calc(100vw - 80px));
+  max-height: calc(100vh - 64px);
+  grid-template-rows: auto minmax(0, 1fr);
+  overflow: hidden;
+  border: 1px solid rgba(37, 132, 169, 0.2);
+  border-radius: 14px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(248, 252, 253, 0.92)),
+    radial-gradient(circle at 92% 0%, rgba(37, 132, 169, 0.1), transparent 16rem);
+  box-shadow:
+    0 24px 70px rgba(18, 31, 43, 0.24),
+    inset 0 1px 0 rgba(255, 255, 255, 0.84);
+}
+
+.detailDialogHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 18px;
+  border-bottom: 1px solid rgba(37, 132, 169, 0.14);
+}
+
+.detailDialogHeader h2 {
+  margin: 0;
+  color: #1f6f8a;
+  font-family: var(--agent-font-display);
+  font-size: 18px;
+  font-weight: 780;
+  line-height: 1.2;
+}
+
+.dialogCloseButton {
+  appearance: none;
+  display: grid;
+  width: 34px;
+  height: 34px;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 1px solid rgba(37, 132, 169, 0.16);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.82);
+  color: var(--agent-blue);
+  cursor: pointer;
+}
+
+.dialogCloseButton:hover {
+  border-color: rgba(211, 17, 69, 0.28);
+  color: var(--agent-red);
+}
+
+.detailDialogBody {
+  display: grid;
+  align-content: start;
+  gap: 12px;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding: 16px 18px 18px;
+}
+
+.detailDialogSection {
+  display: grid;
+  min-width: 0;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid rgba(37, 132, 169, 0.12);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.68);
+}
+
+.detailDialogSection h4 {
+  margin: 0;
+  color: var(--agent-muted);
+  font-size: 11px;
+  font-weight: 950;
+  letter-spacing: 0;
+}
+
+.detailDialogSection p {
+  margin: 0;
+  color: var(--color-text);
+  font-size: 13px;
+  font-weight: 820;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.detailRow {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: 140px minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+  padding: 8px 0;
+  border-top: 1px solid var(--agent-border);
+}
+
+.detailRow:first-child {
+  border-top: 0;
+}
+
+.detailRow span {
+  color: var(--agent-muted);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.detailRow strong {
+  min-width: 0;
+  color: var(--color-text);
+  font-size: 12px;
+  font-weight: 850;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.detailRow strong[data-tone="ok"] {
+  color: var(--agent-green);
+}
+
+.detailRow strong[data-tone="info"] {
+  color: var(--agent-blue);
+}
+
+.detailRow strong[data-tone="danger"] {
+  color: var(--agent-red);
+}
+
+.detailBlock {
+  display: grid;
+  gap: 6px;
+  padding: 10px;
+  border: 1px solid rgba(37, 132, 169, 0.12);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.54);
+}
+
+.detailBlock span,
+.ioBlock span {
+  color: var(--agent-muted);
+  font-size: 10px;
+  font-weight: 950;
+  letter-spacing: 0;
+}
+
+.detailBlock p {
+  margin: 0;
+  color: var(--color-text);
+  font-size: 12px;
+  font-weight: 850;
+  line-height: 1.45;
+}
+
+.skillResultList {
+  display: grid;
+  gap: 10px;
+}
+
+.skillResultCard {
+  display: grid;
+  min-width: 0;
+  max-width: 100%;
+  gap: 9px;
+  padding: 11px;
+  border: 1px solid rgba(37, 132, 169, 0.14);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.62);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
+}
+
+.skillResultHeader {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.skillResultHeader strong {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--color-text);
+  font-size: 12px;
+  font-weight: 920;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.skillResultHeader span {
+  display: inline-flex;
+  height: 22px;
+  flex: 0 0 auto;
+  align-items: center;
+  padding: 0 8px;
+  border: 1px solid rgba(37, 132, 169, 0.16);
+  border-radius: 999px;
+  background: rgba(37, 132, 169, 0.08);
+  color: var(--agent-blue);
+  font-size: 10px;
+  font-weight: 950;
+}
+
+.skillMetaGrid {
+  display: grid;
+  gap: 0;
+}
+
+.ioBlock {
+  display: grid;
+  min-width: 0;
+  gap: 6px;
+  padding: 9px;
+  border: 1px solid rgba(37, 132, 169, 0.12);
+  border-radius: 10px;
+  background: rgba(247, 251, 253, 0.72);
+}
+
+.ioBlock pre {
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  padding: 8px;
+  border: 1px solid rgba(37, 132, 169, 0.12);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.74);
+  color: #243444;
+  font-family: var(--font-mono, ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace);
+  font-size: 11px;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.ioBlock small {
+  color: var(--agent-muted);
+  font-size: 10px;
+  font-weight: 820;
+  line-height: 1.4;
+}
+
+.executionChain {
+  display: grid;
+  gap: 7px;
+  overflow: auto;
+}
+
+.detailDialog .executionChain {
+  overflow: visible;
+}
+
+.chainStep {
+  position: relative;
+  display: grid;
+  min-width: 0;
+  grid-template-columns: 112px minmax(0, 1fr);
+  gap: 8px;
+  align-items: center;
+  padding: 8px;
+  border: 1px solid rgba(37, 132, 169, 0.12);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.54);
+}
+
+.chainStep + .chainStep::before {
+  position: absolute;
+  top: -8px;
+  left: 18px;
+  width: 1px;
+  height: 8px;
+  background: rgba(37, 132, 169, 0.18);
+  content: "";
+}
+
+.chainStep span,
+.chainStep strong {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chainStep span {
+  color: var(--agent-muted);
+  font-size: 10px;
+  font-weight: 950;
+}
+
+.chainStep strong {
+  color: var(--color-text);
+  font-size: 11px;
+  font-weight: 880;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+.chainStep strong[data-tone="ok"] {
+  color: var(--agent-green);
+}
+
+.chainStep strong[data-tone="info"] {
+  color: var(--agent-blue);
+}
+
+.chainStep strong[data-tone="danger"] {
   color: var(--agent-red);
 }
 
@@ -2123,19 +2475,16 @@
     column-gap: 12px;
   }
 
-  .conversationToolbar,
-  .agentLayout {
+  .conversationToolbar {
     grid-template-columns: 1fr;
   }
 
-  .agentLayout,
-  .exchangeWindow,
   .agentSide {
     height: auto;
   }
 
   .exchangeWindow {
-    min-height: 650px;
+    min-height: 0;
   }
 
   .conversationToolbarActions,
@@ -2183,6 +2532,10 @@
   .message,
   .workflowTaskCard {
     max-width: 100%;
+  }
+
+  .agentSide {
+    grid-template-columns: 1fr;
   }
 }
 

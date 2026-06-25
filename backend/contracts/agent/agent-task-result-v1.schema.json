@@ -12,7 +12,8 @@
     "status",
     "summary",
     "toolCallCount",
-    "completedAt"
+    "completedAt",
+    "toolResults"
   ],
   "properties": {
     "schemaVersion": { "const": "1.0" },
@@ -31,6 +32,10 @@
     },
     "summary": { "type": "string", "minLength": 1 },
     "toolCallCount": { "type": "integer", "minimum": 0 },
-    "completedAt": { "type": "string", "format": "date-time" }
+    "completedAt": { "type": "string", "format": "date-time" },
+    "toolResults": {
+      "type": "array",
+      "items": { "$ref": "agent-tool-result-v1.schema.json" }
+    }
   }
 }

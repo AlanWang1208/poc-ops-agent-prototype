@@ -1,0 +1,16 @@
+# AgentScope 主运行时 profile。该文件只保存非敏感配置，真实 API Key 必须由环境或部署密钥系统注入。
+ops-agent:
+  agent-runtime:
+    enabled: true
+    provider: agentscope
+    model-name: ${OPS_AGENT_AGENT_RUNTIME_MODEL_NAME:gpt-4.1-mini}
+    base-url: ${OPS_AGENT_AGENT_RUNTIME_BASE_URL:https://api.openai.com/v1}
+    api-key-env: OPENAI_API_KEY
+    timeout: 30s
+    max-tool-calls: 5
+    max-tool-call-duration: 30s
+    max-iterations: 5
+    p1-read-only-only: true
+    workspace-id: workspace-default
+    workspace-code: default
+    workspace-display-name: Default Workspace

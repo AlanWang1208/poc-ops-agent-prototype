@@ -4,14 +4,14 @@
 
 - 版本化只读命令、Worker 请求、Worker 结果和语义事件契约。
 - 契约 Java 值对象拒绝非只读命令和不一致事件载荷。
-- Worker 仅执行显式注册的 `node-health-read:1.1.0`。
+- Worker 仅执行显式注册的只读适配器；`node-health-read:1.1.0` 使用专用开发适配器，简单 HTTP/JSON Skill 通过配置型适配器接入。
 - Worker 拒绝过期请求和未知 Skill 版本。
 - 控制面确定性路由到已校验的只读 Skill，并通过 `WorkerGateway` 调用独立 Worker。
 - 控制面将只读工作流、幂等键、原始命令信封、执行结果和语义事件持久化到关系型事实源。
 - 控制面可在启动后扫描 `FAILED_RETRYABLE` 工作流，以及当前 attempt 已过期的 `RUNNING` / `REPLAYING` 工作流，并执行一次受控重放。
 - SSE 输出强类型语义事件。
 - React/TypeScript 操作台按语义事件类型渲染，不进行浏览器授权决策。
-- 内置只读 Skill 数量达到 5 个。
+- 内置只读 Skill 数量达到 6 个。
 
 ## 自动化验证
 
@@ -54,9 +54,18 @@
 
 - 真实企业 IdP 联调尚未完成。
 - 远程 GitHub CI 和分支保护尚未验收。
-- Worker 生产传输认证、受控网络出口和部署隔离仍需 ADR。
+- Worker 生产传输认证、网络层出口策略和部署隔离仍需 ADR。
 - 现有开发 HMAC/JWT 固定测试密钥仍需迁移为运行时生成或安全注入。
-- 当前仅 `node-health-read` 具有 Worker 适配器，其余 4 个 Skill 只参与注册和路由。
+- 当前 `node-health-read` 具有专用 Worker 适配器；`weather-current-read` 通过配置型 HTTP/JSON 适配器接入但默认失败关闭；其余 4 个 Skill 只参与注册和路由。
+
+## 2026-06-24 天气查询 Skill 注册补充证据
+
+- 已新增 `weather-current-read:1.0.0` 当前天气查询 Skill。
+- AgentScope 入口位于 `backend/skills/weather-current/SKILL.md`，只允许通过平台 Tool 查询指定地点当前天气，不允许直接调用外部 API 或使用未托管凭据。
+- 平台契约位于 `backend/contracts/skills/packages/weather-current/`，包含 manifest、HMAC 发布签名、输入输出 Schema，以及 happy-path、invalid-parameters、policy-denied 三类样例。
+- 控制面测试资源同步新增该 Skill，用于验证启动注册、按 SkillId 查询和显式发布校验动作。
+- Worker 已新增配置型 HTTP/JSON 只读适配器和 HTTP 出口 allowlist，`weather-current-read` 通过配置项注册到该通用适配器；默认 `endpoint-url` 为空且 HTTP allowlist 为空，因此未配置受控天气源时会稳定拒绝。
+- 本次不新增天气专用 Java 适配器，后续简单第三方 HTTP Skill 应优先复用该通用适配器配置。
 - SSE 当前在 Worker 返回后输出完整事件序列，不支持执行中的增量恢复。
 
 ## 2026-06-07 M09 事件流恢复补充证据
@@ -104,3 +113,13 @@
 - 新增自动化测试覆盖 `WorkerSqlConnectionDescriptorTest`、`WorkerSqlEgressPolicyTest`、`PolicyEnforcedSqlDataSourceRegistryTest`、`WorkerSqlEgressPropertiesTest`、`ExecutionWorkerConfigurationTest`、`RestrictedSqlQueryExecutionWorkerTest` 和 `JdbcSqlQueryExecutorTest`。
 
 本补充是应用层出口保护，不宣称替代防火墙、私有网络、mTLS、短期目标系统凭据、Windows 隔离或网络层出口策略。
+
+## 2026-06-24 M07 Worker HTTP 出口与配置型 Skill 补充证据
+
+- Worker 新增 HTTP 出口 `scheme + host + port` allowlist，默认空 allowlist 拒绝所有 HTTP 目标。
+- Worker 新增 `ConfiguredHttpReadOnlySkillAdapter`，简单 HTTP/JSON 只读 Skill 通过配置声明 Skill ID、版本、基础 URL、输入参数名、query 参数名、响应字段白名单、source 和 timeout。
+- `weather-current-read:1.0.0` 已通过配置型适配器接入 Worker；默认天气源端点为空，因此未配置受控天气源时返回 `HTTP_SKILL_SOURCE_NOT_CONFIGURED`，不会访问外部网络。
+- 配置型适配器会对 query 参数进行安全编码，只透传响应字段白名单，并补充 `source` 与 `generatedAt`。
+- 新增自动化测试覆盖 `WorkerHttpEgressPolicyTest`、`WorkerHttpEgressPropertiesTest`、`ConfiguredHttpReadOnlySkillAdapterTest` 和 `ExecutionWorkerConfigurationTest` 中的配置型 HTTP Skill 场景。
+
+本补充是应用层出口保护，不宣称替代防火墙、私有网络、mTLS、短期目标系统凭据、内部受控网关、Windows 隔离或网络层出口策略。

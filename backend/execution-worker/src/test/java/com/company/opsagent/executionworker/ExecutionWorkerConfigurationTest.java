@@ -3,13 +3,13 @@ package com.company.opsagent.executionworker;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-import com.company.opsagent.contracts.sqlworkbench.SqlQueryAction;
-import com.company.opsagent.contracts.sqlworkbench.SqlQueryExecutionRequest;
-import com.company.opsagent.contracts.sqlworkbench.SqlQueryLimits;
-import com.company.opsagent.contracts.sqlworkbench.SqlQueryRequest;
 import com.company.opsagent.contracts.workflow.OperatorContext;
 import com.company.opsagent.contracts.workflow.PolicyDecisionReference;
+import com.company.opsagent.contracts.workflow.ReadOnlyCommandEnvelope;
+import com.company.opsagent.contracts.workflow.SkillReference;
 import com.company.opsagent.contracts.workflow.TraceContext;
+import com.company.opsagent.contracts.workflow.WorkerExecutionRequest;
+import com.company.opsagent.contracts.workflow.WorkerExecutionStatus;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -17,7 +17,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
 /**
- * 验证 Worker 默认装配会启用 SQL 出口 allowlist，且空配置默认拒绝。
+ * 验证通用 Worker 默认装配只包含通用只读 Skill 边界。
  */
 class ExecutionWorkerConfigurationTest {
 
@@ -26,42 +26,51 @@ class ExecutionWorkerConfigurationTest {
       .withBean(ObjectMapper.class, ObjectMapper::new);
 
   /**
-   * 验证默认配置注册 SQL 出口策略，并在没有连接目录时拒绝 SQL 请求。
+   * 验证默认装配已经通过通用 HTTP 适配器注册天气 Skill，但未配置天气源时失败关闭。
    */
   @Test
-  void registersSqlEgressPolicyWithEmptyDefaultDeny() {
-    contextRunner.run(context -> {
-      assertNotNull(context.getBean(WorkerSqlEgressProperties.class));
-      assertNotNull(context.getBean(WorkerSqlEgressPolicy.class));
+  void registersConfiguredHttpAdapterWithClosedWeatherDefault() {
+    contextRunner.withPropertyValues(
+        "ops-agent.worker.configured-http-skills.skills[0].skill-id=weather-current-read",
+        "ops-agent.worker.configured-http-skills.skills[0].version=1.0.0",
+        "ops-agent.worker.configured-http-skills.skills[0].endpoint-url=",
+        "ops-agent.worker.configured-http-skills.skills[0].input-parameter-name=location",
+        "ops-agent.worker.configured-http-skills.skills[0].query-parameter-name=location",
+        "ops-agent.worker.configured-http-skills.skills[0].source=weather-read-model",
+        "ops-agent.worker.configured-http-skills.skills[0].allowed-response-fields[0]=location"
+    ).run(context -> {
+      assertNotNull(context.getBean(WorkerHttpEgressProperties.class));
+      assertNotNull(context.getBean(WorkerHttpEgressPolicy.class));
+      assertNotNull(context.getBean(ConfiguredHttpReadOnlySkillProperties.class));
 
-      var worker = context.getBean(RestrictedSqlQueryExecutionWorker.class);
-      var result = worker.execute(request());
+      var worker = context.getBean(RestrictedReadOnlyExecutionWorker.class);
+      var result = worker.execute(weatherRequest());
 
-      assertEquals("REJECTED", result.status());
-      assertEquals("SQL_CONNECTION_NOT_FOUND", result.errorCode());
+      assertEquals(WorkerExecutionStatus.REJECTED, result.status());
+      assertEquals("HTTP_SKILL_SOURCE_NOT_CONFIGURED", result.errorCode());
     });
   }
 
-  private SqlQueryExecutionRequest request() {
-    var query = new SqlQueryRequest(
+  private WorkerExecutionRequest weatherRequest() {
+    OffsetDateTime now = OffsetDateTime.now();
+    ObjectMapper objectMapper = new ObjectMapper();
+    var command = new ReadOnlyCommandEnvelope(
         "1.0",
-        "as400-development",
+        "command-weather-1",
+        "workflow-weather-1",
+        "idempotency-weather-1",
+        "READ_ONLY",
         "development",
-        "ORDERS",
-        SqlQueryAction.RUN_READ_ONLY,
-        "select * from ORDERS.ORDERS",
-        List.of(),
-        new SqlQueryLimits(500, 5_000_000, 30),
-        "key");
-    return new SqlQueryExecutionRequest(
-        "1.0",
-        "execution-1",
-        "workflow-1",
-        query,
-        "sha256:test",
+        new SkillReference(
+            "weather-current-read",
+            "1.0.0",
+            "weather-current-read:1.0.0:input",
+            "weather-current-read:1.0.0:output"),
+        objectMapper.createObjectNode().put("location", "Shanghai"),
         new OperatorContext("operator-1", List.of("ROLE_ops-reader")),
         new PolicyDecisionReference("decision-1", "policy-v1", "ALLOW"),
         new TraceContext("trace-1", "request-1"),
-        OffsetDateTime.now().plusSeconds(30));
+        now);
+    return new WorkerExecutionRequest("1.0", "execution-weather-1", now, now.plusSeconds(30), command);
   }
 }

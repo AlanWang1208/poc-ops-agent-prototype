@@ -1,0 +1,19 @@
+{
+  "caseId": "weather-current-read-invalid-parameters",
+  "skillId": "weather-current-read",
+  "version": "1.0.0",
+  "description": "缺少地点时必须被输入 Schema 拒绝。",
+  "operator": {
+    "subject": "ops-reader-1",
+    "roles": [
+      "ROLE_ops-reader"
+    ]
+  },
+  "targetEnvironment": "development",
+  "input": {},
+  "expected": {
+    "decision": "REJECT",
+    "reason": "SCHEMA_VALIDATION_FAILED",
+    "field": "location"
+  }
+}

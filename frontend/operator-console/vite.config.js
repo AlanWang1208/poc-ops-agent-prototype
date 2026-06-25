@@ -1,7 +1,7 @@
 import { configDefaults, defineConfig } from "vitest/config";
 import react from "@vitejs/plugin-react";
 
-const backendTarget = "http://127.0.0.1:8080";
+const backendTarget = process.env.VITE_BACKEND_TARGET ?? "http://127.0.0.1:8080";
 const backendProxy = {
   target: backendTarget,
   changeOrigin: false,
@@ -16,6 +16,7 @@ export default defineConfig({
   },
   server: {
     proxy: {
+      "/api": backendProxy,
       "/internal": backendProxy,
       "/oauth2": backendProxy,
       "/logout": backendProxy,
@@ -57,7 +58,8 @@ function authProxyPlugin() {
             response.statusCode = backendResponse.status;
             forwardResponseHeaders(backendResponse, response);
             response.end(Buffer.from(await backendResponse.arrayBuffer()));
-          } catch {
+          } catch (error) {
+            console.error("[ops-agent-auth-proxy] failed to proxy auth request", error);
             response.statusCode = 502;
             response.setHeader("Content-Type", "application/json");
             response.end(JSON.stringify({
@@ -84,7 +86,22 @@ function hasBody(method) {
 function readForwardHeaders(source) {
   const headers = new Headers();
   for (const [name, value] of Object.entries(source)) {
-    if (!value || ["connection", "host"].includes(name.toLowerCase())) {
+    if (
+      !value ||
+      [
+        "connection",
+        "content-length",
+        "expect",
+        "host",
+        "keep-alive",
+        "proxy-authenticate",
+        "proxy-authorization",
+        "te",
+        "trailer",
+        "transfer-encoding",
+        "upgrade",
+      ].includes(name.toLowerCase())
+    ) {
       continue;
     }
     if (Array.isArray(value)) {

@@ -27,6 +27,7 @@
   <modules>
     <module>contracts</module>
     <module>control-plane</module>
+    <module>execution-worker-sqlworkbench</module>
     <module>execution-worker</module>
   </modules>
 

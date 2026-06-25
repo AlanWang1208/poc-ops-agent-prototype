@@ -241,6 +241,29 @@ class ControlPlaneApplicationTest {
   }
 
   @Test
+  void exposesRecentAuditEventsForAuditor() {
+    auditTrail.clear();
+    webTestClient.get()
+        .uri("/internal/healthz")
+        .headers(headers -> headers.setBearerAuth(token("alice", List.of("ops-reader"), "ops-agent-internal")))
+        .exchange()
+        .expectStatus().isOk();
+
+    webTestClient.get()
+        .uri("/internal/audit/events?limit=10")
+        .headers(headers -> headers.setBearerAuth(token("auditor", List.of("ops-auditor"), "ops-agent-internal")))
+        .exchange()
+        .expectStatus().isOk()
+        .expectBody(String.class)
+        .value(body -> {
+          Assertions.assertTrue(body.contains("\"action\":\"internal.audit.read\""));
+          Assertions.assertTrue(body.contains("\"action\":\"internal.health.read\""));
+          Assertions.assertTrue(body.indexOf("\"action\":\"internal.audit.read\"")
+              < body.indexOf("\"action\":\"internal.health.read\""));
+        });
+  }
+
+  @Test
   void exposesRegisteredSkillCatalog() {
     auditTrail.clear();
     webTestClient.get()
@@ -249,11 +272,13 @@ class ControlPlaneApplicationTest {
         .exchange()
         .expectStatus().isOk()
         .expectBody()
-        .jsonPath("$.total").isEqualTo(2)
+        .jsonPath("$.total").isEqualTo(3)
         .jsonPath("$.skills[0].descriptor.skillId").isEqualTo("application-log-summary-read")
         .jsonPath("$.skills[0].publication.signatureAlgorithm").isEqualTo("HmacSHA256")
         .jsonPath("$.skills[1].descriptor.skillId").isEqualTo("node-health-read")
-        .jsonPath("$.skills[1].publication.publishedBy").isEqualTo("platform-observability");
+        .jsonPath("$.skills[1].publication.publishedBy").isEqualTo("platform-observability")
+        .jsonPath("$.skills[2].descriptor.skillId").isEqualTo("weather-current-read")
+        .jsonPath("$.skills[2].descriptor.readOnly").isEqualTo(true);
   }
 
   @Test
@@ -269,6 +294,22 @@ class ControlPlaneApplicationTest {
         .jsonPath("$.skill.descriptor.version").isEqualTo("1.1.0")
         .jsonPath("$.skill.descriptor.readOnly").isEqualTo(true)
         .jsonPath("$.skill.publication.signatureAlgorithm").isEqualTo("HmacSHA256");
+  }
+
+  @Test
+  void exposesWeatherSkillBySkillId() {
+    auditTrail.clear();
+    webTestClient.get()
+        .uri("/internal/skills/weather-current-read")
+        .headers(headers -> headers.setBearerAuth(token("alice", List.of("ops-reader"), "ops-agent-internal")))
+        .exchange()
+        .expectStatus().isOk()
+        .expectBody()
+        .jsonPath("$.skill.descriptor.skillId").isEqualTo("weather-current-read")
+        .jsonPath("$.skill.descriptor.version").isEqualTo("1.0.0")
+        .jsonPath("$.skill.descriptor.category").isEqualTo("PLATFORM_OBSERVABILITY")
+        .jsonPath("$.skill.descriptor.riskLevel").isEqualTo("READ_ONLY")
+        .jsonPath("$.skill.descriptor.parameters[0].name").isEqualTo("location");
   }
 
   @Test
@@ -300,6 +341,26 @@ class ControlPlaneApplicationTest {
         .expectBody()
         .jsonPath("$.result.passed").isEqualTo(true)
         .jsonPath("$.result.registeredSkill.descriptor.skillId").isEqualTo("node-health-read")
+        .jsonPath("$.result.registeredSkill.publicationStatus").isEqualTo("VALIDATED");
+  }
+
+  @Test
+  void validatesWeatherSkillPublicationThroughExplicitAction() {
+    auditTrail.clear();
+    webTestClient.post()
+        .uri("/internal/skills/publications/validate")
+        .headers(headers -> headers.setBearerAuth(token("admin", List.of("ops-admin"), "ops-agent-internal")))
+        .contentType(APPLICATION_JSON)
+        .bodyValue("""
+            {
+              "manifestPath": "weather-current/manifest.json"
+            }
+            """)
+        .exchange()
+        .expectStatus().isOk()
+        .expectBody()
+        .jsonPath("$.result.passed").isEqualTo(true)
+        .jsonPath("$.result.registeredSkill.descriptor.skillId").isEqualTo("weather-current-read")
         .jsonPath("$.result.registeredSkill.publicationStatus").isEqualTo("VALIDATED");
   }
 

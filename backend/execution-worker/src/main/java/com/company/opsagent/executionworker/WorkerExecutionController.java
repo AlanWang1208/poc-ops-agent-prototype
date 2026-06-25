@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
 /**
  * 独立 Worker 的只读执行入口。
@@ -39,6 +40,6 @@ public class WorkerExecutionController {
     return Mono.fromSupplier(() -> {
       authenticator.authenticate(headers, request);
       return worker.execute(request);
-    });
+    }).subscribeOn(Schedulers.boundedElastic());
   }
 }

@@ -1,11 +1,11 @@
 import { useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import {
-  Fingerprint,
   LockKeyhole,
   Search,
-  ShieldCheck,
 } from "lucide-react";
 
+import { loadRecentAuditEvents } from "../../api/audit-api.js";
 import { WorkspacePageFrame } from "../../components/layout/WorkspacePageFrame.jsx";
 import { WorkspaceStatusBar } from "../../components/layout/WorkspaceStatusBar.jsx";
 import styles from "./AuditRecordsPage.module.css";
@@ -71,13 +71,23 @@ const resultFilterOptions = ["全部", "ALLOW", "DENY_WRITE", "VALIDATED", "ACCE
 
 export function AuditRecordsPage() {
   const [query, setQuery] = useState("");
+  const auditQuery = useQuery({
+    queryKey: ["audit-events", 200],
+    queryFn: () => loadRecentAuditEvents({ limit: 200 }),
+  });
+  const liveEntries = auditQuery.data?.events.map(toAuditEntry) ?? [];
+  const displayedEntries = liveEntries.length > 0 ? liveEntries : auditEntries;
   const [eventFilter, setEventFilter] = useState("全部");
   const [resultFilter, setResultFilter] = useState("全部");
+  const skillAuditEntries = useMemo(
+    () => displayedEntries.filter(isSkillExecutionAudit).slice(0, 3),
+    [displayedEntries],
+  );
 
   const filteredEntries = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
 
-    return auditEntries.filter((entry) => {
+    return displayedEntries.filter((entry) => {
       const matchesQuery =
         normalizedQuery.length === 0 ||
         [entry.eventType, entry.hash, entry.result, entry.summary, entry.time]
@@ -90,45 +100,15 @@ export function AuditRecordsPage() {
 
       return matchesQuery && matchesEvent && matchesResult;
     });
-  }, [eventFilter, query, resultFilter]);
+  }, [displayedEntries, eventFilter, query, resultFilter]);
 
-  const missingCount = auditEntries.length - filteredEntries.length;
+  const missingCount = displayedEntries.length - filteredEntries.length;
 
   return (
     <WorkspacePageFrame className={styles.auditCanvas}>
       <WorkspaceStatusBar title="审计记录" />
 
       <section aria-label="审计记录工作区" className={styles.workspaceBody}>
-        <header className={styles.title}>
-          <p className={styles.workspaceTitle}>审计记录</p>
-          <p>查看身份、策略、Skill、Worker 和结果的不可篡改证据链。</p>
-        </header>
-
-        <section className={styles.summaryGrid}>
-          <article className={styles.heroCard}>
-            <span aria-hidden="true" className={styles.seal}>
-              <ShieldCheck size={26} strokeWidth={2.4} />
-            </span>
-            <div>
-              <h2>审计证据链</h2>
-              <p>串联 operator、policy、skill、worker、result 与 hash 摘要。</p>
-            </div>
-          </article>
-
-          <article className={styles.integrityCard}>
-            <PanelHeading
-              detail="sequence 连续，hash 摘要完整"
-              icon={Fingerprint}
-              title="完整性校验"
-            />
-            <div aria-hidden="true" className={styles.hashGrid}>
-              {Array.from({ length: 15 }, (_, index) => (
-                <span key={index} />
-              ))}
-            </div>
-          </article>
-        </section>
-
         <form
           aria-label="审计记录筛选"
           className={styles.filterBar}
@@ -170,6 +150,10 @@ export function AuditRecordsPage() {
           </span>
         </form>
 
+        {skillAuditEntries.length > 0 ? (
+          <SkillAuditHighlights entries={skillAuditEntries} />
+        ) : null}
+
         <div className={styles.auditLayout}>
           <section
             aria-labelledby="audit-ledger-title"
@@ -191,6 +175,7 @@ export function AuditRecordsPage() {
                     <span>{entry.summary}</span>
                   </div>
                   <span className={styles.auditHash}>{entry.hash}</span>
+                  <span className={styles.auditHash}>{entry.result}</span>
                 </article>
               ))}
             </div>
@@ -221,6 +206,76 @@ export function AuditRecordsPage() {
 }
 
 /**
+ * @param {{ entries: ReturnType<typeof toAuditEntry>[] }} props
+ */
+function SkillAuditHighlights({ entries }) {
+  return (
+    <section aria-label="最近 Skill 执行审计" className={styles.skillAuditHighlights}>
+      <div className={styles.skillAuditTitle}>
+        <strong>最近 Skill 执行审计</strong>
+        <span>优先展示 Agent Tool 执行授权结果</span>
+      </div>
+      <div className={styles.skillAuditList}>
+        {entries.map((entry) => (
+          <article
+            className={`${styles.skillAuditItem} ${styles[entry.color]}`}
+            key={`${entry.sequence}-${entry.hash}-highlight`}
+          >
+            <strong>{entry.summary}</strong>
+            <span>{entry.eventType}</span>
+            <span>{entry.result}</span>
+            <small>{entry.hash}</small>
+          </article>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+/**
+ * @param {import("../../schemas/audit-schemas.js").AuditEvent} event
+ * @param {number} index
+ */
+function toAuditEntry(event, index) {
+  return {
+    color: auditTone(event.result),
+    eventType: event.action,
+    hash: event.traceId,
+    result: event.result,
+    sequence: index + 1,
+    summary: event.resource,
+    time: formatAuditTime(event.timestamp),
+  };
+}
+
+/**
+ * @param {string} result
+ */
+function auditTone(result) {
+  if (result.startsWith("DENY")) return "red";
+  if (result === "ALLOW") return "green";
+  return "dark";
+}
+
+/**
+ * @param {ReturnType<typeof toAuditEntry>} entry
+ */
+function isSkillExecutionAudit(entry) {
+  return (
+    entry.eventType === "internal.agent.tool.execute" ||
+    entry.eventType.endsWith(".tool.execute")
+  );
+}
+
+/**
+ * @param {string} timestamp
+ */
+function formatAuditTime(timestamp) {
+  const time = timestamp.match(/T(\d{2}:\d{2}:\d{2})/u);
+  return time?.[1] ?? timestamp;
+}
+
+/**
  * @param {{
  *   label: string,
  *   onChange: (value: string) => void,
@@ -244,26 +299,5 @@ function FilterSelect({ label, onChange, options, value }) {
         ))}
       </select>
     </label>
-  );
-}
-
-/**
- * @param {{
- *   detail: string,
- *   icon: import("lucide-react").LucideIcon,
- *   title: string,
- * }} props
- */
-function PanelHeading({ detail, icon: Icon, title }) {
-  return (
-    <header className={styles.panelHeading}>
-      <span aria-hidden="true">
-        <Icon size={16} strokeWidth={2.4} />
-      </span>
-      <div>
-        <h2>{title}</h2>
-        <p>{detail}</p>
-      </div>
-    </header>
   );
 }

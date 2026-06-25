@@ -47,6 +47,8 @@ public class RestrictedReadOnlyExecutionWorker {
       return result(request, WorkerExecutionStatus.SUCCEEDED, output, null, null, completedAt);
     } catch (IllegalArgumentException exception) {
       return rejected(request, "INVALID_PARAMETERS", exception.getMessage(), completedAt);
+    } catch (WorkerHttpEgressException exception) {
+      return rejected(request, exception.errorCode(), exception.safeMessage(), completedAt);
     } catch (RuntimeException exception) {
       return result(request, WorkerExecutionStatus.FAILED, null, "WORKER_EXECUTION_FAILED",
           "read-only adapter failed", completedAt);

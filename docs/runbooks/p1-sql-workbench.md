@@ -17,7 +17,7 @@
 ## 本地验证
 
 ```powershell
-backend\mvnw.cmd -f backend\pom.xml -pl contracts,control-plane/modules/sqlworkbench,control-plane/bootstrap,execution-worker -am test
+backend\mvnw.cmd -f backend\pom.xml -pl contracts,control-plane/modules/sqlworkbench,control-plane/bootstrap,execution-worker-sqlworkbench,execution-worker -am test
 
 Set-Location frontend\operator-console
 npm run build

@@ -2,6 +2,7 @@ package com.company.opsagent.controlplane.modules.workflow;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.company.opsagent.contracts.agent.AgentToolResult;
 import com.company.opsagent.contracts.agent.AgentTaskRequest;
 import com.company.opsagent.contracts.workflow.OperatorContext;
 import com.company.opsagent.contracts.workflow.PolicyDecisionReference;
@@ -31,7 +32,22 @@ class AgentDiagnosticWorkflowServiceTest {
     var service = new AgentDiagnosticWorkflowService(
         request -> {
           runtimeRequest.set(request);
-          return Mono.just(new AgentRuntimeResult("SUCCEEDED", "node-1 is healthy", 1));
+          return Mono.just(new AgentRuntimeResult(
+              "SUCCEEDED",
+              "node-1 is healthy",
+              1,
+              List.of(new AgentToolResult(
+                  "1.0",
+                  "tool-call-1",
+                  request.taskId(),
+                  request.workflowId(),
+                  "SUCCEEDED",
+                  "node-health-read:1.1.0:output",
+                  com.fasterxml.jackson.databind.node.JsonNodeFactory.instance.objectNode()
+                      .put("status", "UP"),
+                  null,
+                  null,
+                  OffsetDateTime.now(clock)))));
         },
         store,
         clock);
@@ -42,6 +58,7 @@ class AgentDiagnosticWorkflowServiceTest {
           assertEquals("SUCCEEDED", result.status());
           assertEquals("node-1 is healthy", result.summary());
           assertEquals(1, result.toolCallCount());
+          assertEquals("UP", result.toolResults().getFirst().output().path("status").asText());
           assertEquals("workspace-default", runtimeRequest.get().workspaceId());
         })
         .verifyComplete();

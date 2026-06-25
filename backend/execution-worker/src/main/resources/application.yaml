@@ -14,3 +14,21 @@ ops-agent:
     sql-egress:
       allowed-targets: []
       connections: []
+    http-egress:
+      allowed-targets: []
+    configured-http-skills:
+      skills:
+        - skill-id: weather-current-read
+          version: 1.0.0
+          endpoint-url: ""
+          input-parameter-name: location
+          query-parameter-name: location
+          source: weather-read-model
+          timeout: 5s
+          allowed-response-fields:
+            - location
+            - condition
+            - temperatureCelsius
+            - humidityPercent
+            - windSpeedKph
+            - observationTime

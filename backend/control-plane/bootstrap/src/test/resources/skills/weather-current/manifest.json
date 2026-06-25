@@ -1,0 +1,27 @@
+{
+  "skillId": "weather-current-read",
+  "version": "1.0.0",
+  "displayName": "当前天气查询",
+  "description": "读取指定地点的当前天气、温度、湿度和风速摘要。",
+  "category": "PLATFORM_OBSERVABILITY",
+  "riskLevel": "READ_ONLY",
+  "executor": "HTTP",
+  "outputType": "JSON",
+  "readOnly": true,
+  "timeoutSeconds": 15,
+  "owner": "platform-observability",
+  "requiredRoles": ["ROLE_ops-reader", "ROLE_ops-admin"],
+  "tags": ["weather", "current", "environment"],
+  "interceptors": ["AUTHORIZATION", "AUDIT", "SENSITIVE_DATA_MASKING"],
+  "parameters": [
+    {
+      "name": "location",
+      "displayName": "地点",
+      "description": "需要查询当前天气的城市、站点或地理位置。",
+      "type": "STRING",
+      "required": true,
+      "allowedValues": [],
+      "defaultValue": null
+    }
+  ]
+}
