@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, LockKeyhole, SearchCheck, ServerCog, ShieldCheck } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -114,25 +114,12 @@ export function LoginPage() {
           <div className={`${styles.taskCard} ${styles.taskCardAlert}`}>
             <strong>告警分析</strong>
           </div>
-          <div className={styles.capabilityFlow}>
-            <span>提任务</span>
-            <i />
-            <span>选 Skill</span>
-            <i />
-            <span>执行</span>
-            <i />
-            <span>留痕</span>
-          </div>
         </div>
 
         <div className={styles.loginShell}>
-          <span aria-hidden="true" className={styles.frameIonTail} />
           <div className={styles.loginCopy}>
             <span className={styles.loginKicker}>SECURE OPERATOR ENTRY</span>
             <h1>企业智能运维工作台</h1>
-            <p>
-              面向研发、DBA 与运维团队，通过受控的只读诊断链路定位服务、数据库与基础设施问题。
-            </p>
             <div aria-label="平台安全能力" className={styles.loginModeStrip}>
               {safetyModes.map((mode) => (
                 <span key={mode}>{mode}</span>
@@ -144,19 +131,43 @@ export function LoginPage() {
                 <span />
               </div>
               <div className={`${styles.opsNode} ${styles.identityNode}`}>
-                <strong>Identity</strong>
+                <span
+                  aria-hidden="true"
+                  className={`${styles.nodeIcon} ${styles.identityIcon}`}
+                  data-node-icon="identity"
+                >
+                  <ShieldCheck className={styles.nodeIconGlyph} size={28} strokeWidth={2.2} />
+                </span>
                 会话确权
               </div>
               <div className={`${styles.opsNode} ${styles.policyNode}`}>
-                <strong>Policy</strong>
+                <span
+                  aria-hidden="true"
+                  className={`${styles.nodeIcon} ${styles.policyIcon}`}
+                  data-node-icon="policy"
+                >
+                  <ServerCog className={styles.nodeIconGlyph} size={28} strokeWidth={2.2} />
+                </span>
                 服务端授权
               </div>
               <div className={`${styles.opsNode} ${styles.skillNode}`}>
-                <strong>Skill</strong>
+                <span
+                  aria-hidden="true"
+                  className={`${styles.nodeIcon} ${styles.skillIcon}`}
+                  data-node-icon="skill"
+                >
+                  <SearchCheck className={styles.nodeIconGlyph} size={28} strokeWidth={2.2} />
+                </span>
                 只读候选
               </div>
               <div className={`${styles.opsNode} ${styles.workerNode}`}>
-                <strong>Worker</strong>
+                <span
+                  aria-hidden="true"
+                  className={`${styles.nodeIcon} ${styles.workerIcon}`}
+                  data-node-icon="worker"
+                >
+                  <LockKeyhole className={styles.nodeIconGlyph} size={28} strokeWidth={2.2} />
+                </span>
                 受限执行
               </div>
               {nodeIonSpecs.map(({ emphasis, path, route, size }) => (

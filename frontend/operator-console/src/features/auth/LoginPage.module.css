@@ -18,14 +18,18 @@
 }
 
 .screen {
-  --login-frame-height: min(720px, calc(100vh - 132px));
+  --login-frame-anchor-height: min(720px, calc(100vh - 132px));
+  --login-frame-height: min(640px, calc(100vh - 132px));
   --login-frame-top: 116px;
-  --login-frame-y: calc((100vh - var(--login-frame-height)) / 2 - var(--login-frame-top));
+  --login-frame-y: calc((100vh - var(--login-frame-anchor-height)) / 2 - var(--login-frame-top));
   position: relative;
   width: 100vw;
   min-height: max(1060px, 100vh);
   overflow: hidden;
-  background: var(--bg);
+  background:
+    linear-gradient(116deg, rgba(211, 17, 69, 0.045) 0 13%, transparent 13.2%),
+    linear-gradient(139deg, transparent 0 52%, rgba(34, 126, 166, 0.07) 52.2% 57%, transparent 57.2%),
+    var(--bg);
   border: 0;
   box-shadow: none;
 }
@@ -286,10 +290,10 @@
   position: absolute;
   top: calc(var(--login-frame-y) + var(--login-frame-top) - 2px);
   right: max(24px, calc(50% - 646px));
-  z-index: 1;
+  z-index: 3;
   width: 540px;
   height: 284px;
-  transform: translateY(5px);
+  transform: translateY(-5px);
   pointer-events: none;
 }
 
@@ -447,44 +451,6 @@
   animation-delay: -3.1s;
 }
 
-.capabilityFlow {
-  position: absolute;
-  right: 51px;
-  bottom: 10px;
-  left: 73px;
-  display: flex;
-  height: 34px;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  border: 1px solid rgba(185, 208, 222, 0.5);
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.56);
-  box-shadow: 0 12px 30px rgba(31, 41, 51, 0.05);
-  color: var(--muted);
-  font-size: 12px;
-  font-weight: 800;
-}
-
-.capabilityFlow i {
-  position: relative;
-  width: 30px;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(34, 126, 166, 0.55), transparent);
-}
-
-.capabilityFlow i::after {
-  content: "";
-  position: absolute;
-  top: -3px;
-  right: 1px;
-  width: 7px;
-  height: 7px;
-  border-top: 1px solid rgba(34, 126, 166, 0.55);
-  border-right: 1px solid rgba(34, 126, 166, 0.55);
-  transform: rotate(45deg);
-}
-
 .loginShell {
   --frame-height: var(--login-frame-height);
   --frame-inset-x: 24px;
@@ -513,57 +479,15 @@
   z-index: -1;
   border: 1px solid rgba(166, 64, 92, 0.26);
   border-radius: 22px;
-  background: transparent;
+  background:
+    radial-gradient(ellipse at 50% 18%, rgba(255, 255, 255, 0.84), rgba(246, 247, 249, 0.96) 70%),
+    rgba(246, 247, 249, 0.96);
   box-shadow:
     0 0 0 1px rgba(255, 255, 255, 0.72),
     0 18px 56px rgba(31, 41, 51, 0.055),
     0 0 30px rgba(166, 64, 92, 0.04),
     inset 0 1px 0 rgba(255, 255, 255, 0.7),
     inset 0 -1px 0 rgba(166, 64, 92, 0.06);
-  pointer-events: none;
-}
-
-.loginShell::after {
-  content: "";
-  position: absolute;
-  top: var(--frame-top);
-  left: var(--frame-inset-x);
-  z-index: -1;
-  width: 22px;
-  height: 22px;
-  border-radius: 999px;
-  background:
-    radial-gradient(circle, rgba(255, 255, 255, 0.98) 0 34%, transparent 36%),
-    conic-gradient(
-      from 90deg,
-      rgba(211, 17, 69, 0.96),
-      rgba(34, 126, 166, 0.72),
-      rgba(31, 154, 108, 0.62),
-      rgba(211, 17, 69, 0.96)
-    );
-  box-shadow:
-    0 0 0 3px rgba(255, 255, 255, 0.72),
-    0 0 14px rgba(211, 17, 69, 0.24),
-    0 0 22px rgba(34, 126, 166, 0.14);
-  pointer-events: none;
-  transform: translate(-50%, -50%);
-  animation: frame-ion-track 16s linear infinite;
-}
-
-.frameIonTail {
-  position: absolute;
-  top: var(--frame-top);
-  left: var(--frame-inset-x);
-  z-index: -1;
-  width: 72px;
-  height: 5px;
-  border-radius: 999px;
-  background: linear-gradient(90deg, transparent, rgba(211, 17, 69, 0.28), rgba(34, 126, 166, 0.22));
-  filter: blur(0.4px);
-  opacity: 0.82;
-  transform-origin: right center;
-  transform: translate(-100%, -50%);
-  animation: frame-ion-tail 16s linear infinite;
   pointer-events: none;
 }
 
@@ -590,18 +514,10 @@
   max-width: 620px;
   margin: 22px 0 0;
   color: var(--ink);
-  font-size: 32px;
+  font-size: 30px;
   font-weight: 720;
+  letter-spacing: 0.035em;
   line-height: 1.24;
-  letter-spacing: 0.01em;
-}
-
-.loginCopy > p {
-  max-width: 600px;
-  margin: 18px 0 0;
-  color: var(--muted);
-  font-size: 17px;
-  line-height: 1.72;
 }
 
 .loginModeStrip {
@@ -638,16 +554,34 @@
 
 .opsVisual {
   position: relative;
+  isolation: isolate;
   width: 720px;
   height: 344px;
-  margin-top: 32px;
+  margin-top: 52px;
   overflow: hidden;
-  border: 1px solid rgba(34, 126, 166, 0.12);
+  border: 1px solid rgba(34, 126, 166, 0.18);
   border-radius: 18px;
-  background: rgba(255, 255, 255, 0.66);
+  background:
+    linear-gradient(134deg, rgba(255, 255, 255, 0.9), rgba(238, 248, 251, 0.68) 47%, rgba(255, 248, 251, 0.76)),
+    linear-gradient(90deg, rgba(211, 17, 69, 0.07), transparent 32%, rgba(34, 126, 166, 0.08) 68%, rgba(22, 135, 90, 0.06));
   box-shadow:
-    0 24px 70px rgba(31, 41, 51, 0.07),
-    0 0 80px rgba(34, 126, 166, 0.025);
+    0 28px 76px rgba(31, 41, 51, 0.095),
+    0 0 0 1px rgba(255, 255, 255, 0.76) inset,
+    0 0 96px rgba(34, 126, 166, 0.05);
+}
+
+.opsVisual::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background:
+    linear-gradient(104deg, transparent 0 34%, rgba(255, 255, 255, 0.62) 44%, transparent 56%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.54), transparent 42%, rgba(34, 126, 166, 0.045));
+  opacity: 0.72;
+  transform: translateX(-44%);
+  animation: ops-visual-scan 8s ease-in-out infinite;
+  pointer-events: none;
 }
 
 .agentCore {
@@ -748,9 +682,10 @@
   width: 112px;
   height: 90px;
   min-height: 0;
-  align-content: start;
+  align-content: center;
   justify-items: center;
-  padding: 12px 10px 8px;
+  row-gap: 9px;
+  padding: 9px 10px 8px;
   border: 1px solid rgba(34, 126, 166, 0.14);
   border-radius: 12px;
   background: rgba(255, 255, 255, 0.74);
@@ -762,20 +697,58 @@
   text-align: center;
 }
 
-.opsNode::before {
-  content: "";
-  width: 26px;
-  height: 26px;
-  margin-bottom: 7px;
-  border-radius: 9px;
-  background: var(--node);
-  box-shadow: 0 0 0 8px color-mix(in srgb, var(--node), transparent 84%);
+.nodeIcon {
+  position: relative;
+  display: grid;
+  width: 48px;
+  height: 48px;
+  place-items: center;
+  border: 1px solid color-mix(in srgb, var(--node), transparent 58%);
+  border-radius: 14px;
+  background:
+    radial-gradient(circle at 50% 12%, rgba(255, 255, 255, 0.94), transparent 54%),
+    linear-gradient(180deg, color-mix(in srgb, var(--node), rgba(255, 255, 255, 0.95) 88%), rgba(255, 255, 255, 0.88));
+  box-shadow:
+    0 0 0 6px color-mix(in srgb, var(--node), transparent 90%),
+    0 12px 20px rgba(31, 41, 51, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.95),
+    inset 0 -9px 14px color-mix(in srgb, var(--node), transparent 92%);
+  color: color-mix(in srgb, var(--node), var(--ink) 12%);
 }
 
-.opsNode strong {
-  margin-bottom: 8px;
-  color: rgba(51, 61, 71, 0.92);
-  font-size: 14px;
+.nodeIcon::after {
+  content: "";
+  position: absolute;
+  inset: 7px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.42), transparent 54%);
+  pointer-events: none;
+}
+
+.nodeIconGlyph {
+  position: relative;
+  z-index: 1;
+  display: block;
+  width: 28px;
+  height: 28px;
+  stroke: currentColor;
+  filter: drop-shadow(0 2px 3px color-mix(in srgb, var(--node), transparent 76%));
+}
+
+.identityIcon {
+  border-radius: 15px;
+}
+
+.policyIcon {
+  border-radius: 12px;
+}
+
+.skillIcon {
+  border-radius: 16px 12px 16px 12px;
+}
+
+.workerIcon {
+  border-radius: 13px;
 }
 
 .identityNode {
@@ -891,7 +864,7 @@
   justify-self: start;
   width: 560px;
   height: 344px;
-  margin: 328px 0 0;
+  margin: 271px 0 0;
   padding: 30px 36px;
   border: 1px solid rgba(34, 126, 166, 0.2);
   border-radius: 18px;
@@ -929,8 +902,9 @@
   margin: 0;
   padding-right: 120px;
   color: var(--ink);
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 820;
+  letter-spacing: 0.04em;
   line-height: 1.1;
 }
 
@@ -1242,6 +1216,17 @@
   }
 }
 
+@keyframes ops-visual-scan {
+  0%,
+  26% {
+    transform: translateX(-48%);
+  }
+  62%,
+  100% {
+    transform: translateX(48%);
+  }
+}
+
 @keyframes screen-ion-drift {
   0% {
     opacity: 0;
@@ -1363,102 +1348,6 @@
   70%,
   100% {
     transform: translateX(76%) rotate(10deg);
-  }
-}
-
-@keyframes frame-ion-track {
-  0% {
-    top: var(--frame-top);
-    left: var(--frame-inset-x);
-    transform: translate(-50%, -50%);
-  }
-  24% {
-    top: var(--frame-top);
-    left: calc(100% - var(--frame-inset-x));
-    transform: translate(-50%, -50%);
-  }
-  25% {
-    top: var(--frame-top);
-    left: calc(100% - var(--frame-inset-x));
-    transform: translate(-50%, -50%) rotate(90deg);
-  }
-  49% {
-    top: calc(var(--frame-top) + var(--frame-height));
-    left: calc(100% - var(--frame-inset-x));
-    transform: translate(-50%, -50%) rotate(90deg);
-  }
-  50% {
-    top: calc(var(--frame-top) + var(--frame-height));
-    left: calc(100% - var(--frame-inset-x));
-    transform: translate(-50%, -50%) rotate(180deg);
-  }
-  74% {
-    top: calc(var(--frame-top) + var(--frame-height));
-    left: var(--frame-inset-x);
-    transform: translate(-50%, -50%) rotate(180deg);
-  }
-  75% {
-    top: calc(var(--frame-top) + var(--frame-height));
-    left: var(--frame-inset-x);
-    transform: translate(-50%, -50%) rotate(270deg);
-  }
-  99% {
-    top: var(--frame-top);
-    left: var(--frame-inset-x);
-    transform: translate(-50%, -50%) rotate(270deg);
-  }
-  100% {
-    top: var(--frame-top);
-    left: var(--frame-inset-x);
-    transform: translate(-50%, -50%);
-  }
-}
-
-@keyframes frame-ion-tail {
-  0% {
-    top: var(--frame-top);
-    left: var(--frame-inset-x);
-    transform: translate(-100%, -50%);
-  }
-  24% {
-    top: var(--frame-top);
-    left: calc(100% - var(--frame-inset-x));
-    transform: translate(-100%, -50%);
-  }
-  25% {
-    top: var(--frame-top);
-    left: calc(100% - var(--frame-inset-x));
-    transform: translate(-100%, -50%) rotate(90deg);
-  }
-  49% {
-    top: calc(var(--frame-top) + var(--frame-height));
-    left: calc(100% - var(--frame-inset-x));
-    transform: translate(-100%, -50%) rotate(90deg);
-  }
-  50% {
-    top: calc(var(--frame-top) + var(--frame-height));
-    left: calc(100% - var(--frame-inset-x));
-    transform: translate(-100%, -50%) rotate(180deg);
-  }
-  74% {
-    top: calc(var(--frame-top) + var(--frame-height));
-    left: var(--frame-inset-x);
-    transform: translate(-100%, -50%) rotate(180deg);
-  }
-  75% {
-    top: calc(var(--frame-top) + var(--frame-height));
-    left: var(--frame-inset-x);
-    transform: translate(-100%, -50%) rotate(270deg);
-  }
-  99% {
-    top: var(--frame-top);
-    left: var(--frame-inset-x);
-    transform: translate(-100%, -50%) rotate(270deg);
-  }
-  100% {
-    top: var(--frame-top);
-    left: var(--frame-inset-x);
-    transform: translate(-100%, -50%);
   }
 }
 
