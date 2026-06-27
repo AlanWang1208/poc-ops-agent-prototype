@@ -1,0 +1,28 @@
+{
+  "caseId": "certificate-expiry-read-happy-path",
+  "skillId": "certificate-expiry-read",
+  "version": "1.0.0",
+  "description": "读取内部 HTTPS 端点证书有效期成功。",
+  "operator": {
+    "subject": "ops-reader-1",
+    "roles": [
+      "ROLE_ops-reader"
+    ]
+  },
+  "targetEnvironment": "development",
+  "input": {
+    "endpoint": "https://orders.internal.example"
+  },
+  "expected": {
+    "decision": "ALLOW",
+    "status": "SUCCEEDED",
+    "output": {
+      "endpoint": "https://orders.internal.example",
+      "subject": "CN=orders.internal.example",
+      "issuer": "CN=internal-ca",
+      "notAfter": "2026-10-01T00:00:00+08:00",
+      "daysRemaining": 100,
+      "status": "VALID"
+    }
+  }
+}

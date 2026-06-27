@@ -10,9 +10,19 @@
   "readOnly": true,
   "timeoutSeconds": 15,
   "owner": "platform-security",
-  "requiredRoles": ["ROLE_ops-reader", "ROLE_ops-admin"],
-  "tags": ["certificate", "expiry", "security"],
-  "interceptors": ["AUTHORIZATION", "AUDIT"],
+  "requiredRoles": [
+    "ROLE_ops-reader",
+    "ROLE_ops-admin"
+  ],
+  "tags": [
+    "certificate",
+    "expiry",
+    "security"
+  ],
+  "interceptors": [
+    "AUTHORIZATION",
+    "AUDIT"
+  ],
   "parameters": [
     {
       "name": "endpoint",

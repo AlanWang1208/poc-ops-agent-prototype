@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://company.example/ops-agent/skills/weather-current-read/1.0.0/output.schema.json",
+  "title": "weather-current-read 输出",
+  "description": "指定地点当前天气的结构化输出。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "location",
+    "condition",
+    "temperatureCelsius",
+    "humidityPercent",
+    "windSpeedKph",
+    "observationTime",
+    "source",
+    "generatedAt"
+  ],
+  "properties": {
+    "location": {
+      "type": "string",
+      "minLength": 1
+    },
+    "condition": {
+      "type": "string",
+      "minLength": 1
+    },
+    "temperatureCelsius": {
+      "type": "number",
+      "minimum": -90,
+      "maximum": 70
+    },
+    "humidityPercent": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100
+    },
+    "windSpeedKph": {
+      "type": "number",
+      "minimum": 0
+    },
+    "observationTime": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "source": {
+      "type": "string",
+      "minLength": 1
+    },
+    "generatedAt": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+}

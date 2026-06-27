@@ -131,4 +131,7 @@ Assert-SameStringSet `
     -Actual @(Get-QuotedStrings $frontendStatusBlockMatch.Groups["statuses"].Value) `
     -Expected $expectedAgentTaskStatuses
 
+& "$repositoryRoot/tools/skills/skill-package-tool.ps1" validate-all
+& "$repositoryRoot/tools/skills/skill-package-tool.ps1" generate-all --check
+
 Write-Host "Contract baseline check passed."

@@ -93,10 +93,13 @@ backend/contracts/skills/packages/<skill>/
 backend/skills/<skill-id>/
 |-- SKILL.md
 |-- skill.package.yaml
+|-- schemas/
+|   |-- input.schema.json
+|   `-- output.schema.json
 |-- examples/
-|   |-- happy-path.yaml
-|   |-- invalid-parameters.yaml
-|   `-- policy-denied.yaml
+|   |-- happy-path.json
+|   |-- invalid-parameters.json
+|   `-- policy-denied.json
 `-- references/
 ```
 
@@ -104,7 +107,7 @@ backend/skills/<skill-id>/
 
 `skill.package.yaml` 是 Ops Agent 私有注册源。它不面向 AgentScope 泛用宿主，而是用于生成 M03 平台契约包。
 
-`examples/` 和 `references/` 为可选目录。`examples/` 用于生成或校验平台测试样例，`references/` 用于保存补充说明。P1 禁止 `scripts/`，如果源包内存在 `scripts/` 目录或脚本执行声明，校验必须失败。
+`schemas/`、`examples/` 和 `references/` 为可选目录。`schemas/` 用于保存源包输入输出 Schema，工具会复制到生成契约包；缺省时工具可以按参数生成最小输入 Schema 和通用输出 Schema。`examples/` 用于生成或校验平台测试样例，`references/` 用于保存补充说明。P1 禁止 `scripts/`，如果源包内存在 `scripts/` 目录或脚本执行声明，校验必须失败。
 
 ## SKILL.md 规范
 
@@ -244,9 +247,8 @@ backend/contracts/skills/packages/<package-name>/
 ## 生成规则
 
 - `manifest.json` 由 `skill.package.yaml` 映射到现有 `skill-manifest.schema.json`。
-- `input.schema.json` 由 `parameters` 生成。
-- `output.schema.json` 在 P1 先支持默认 JSON object 输出契约；后续可以在 `skill.package.yaml` 增加结构化输出声明，但不得要求开发者手写平台内部产物作为常规路径。
-- `tests/*.json` 优先由 `examples/*.yaml` 转换；缺失时生成最小样例骨架并让校验提示开发者补充。
+- `input.schema.json` 和 `output.schema.json` 优先从源包 `schemas/` 复制；缺失时工具按 `parameters` 生成最小输入 Schema，并生成通用 JSON object 输出契约。
+- `tests/*.json` 优先由 `examples/*.json` 复制；缺失时生成最小样例骨架并让校验提示开发者补充。
 - `manifest.signature.json` 使用仓库当前开发签名机制生成。生产签名方案留到 P2/P3，不在 P1 工具中伪装为正式生产签名。
 
 生成产物仍必须通过现有 contracts 模块测试、M03 加载器校验和发布校验动作。
@@ -366,7 +368,7 @@ P1 发布方式：
 
 ## 验收标准
 
-- 新增一个符合 AgentScope 目录规范的 `backend/skills/<skill>/` 后，开发者只需要维护 `SKILL.md`、`skill.package.yaml` 和可选 `examples/`。
+- 新增一个符合 AgentScope 目录规范的 `backend/skills/<skill>/` 后，开发者只需要维护 `SKILL.md`、`skill.package.yaml` 和可选 `schemas/`、`examples/`。
 - `validate` 能指出缺字段、非只读、禁止字段、`SKILL.md` 与 `skill.package.yaml` 不一致等问题。
 - `generate` 能生成现有 M03 可扫描的 contracts 包。
 - `generate-all --check` 能在 CI 中发现源包和生成产物漂移。
@@ -375,4 +377,3 @@ P1 发布方式：
 - AgentScope Tool Catalog 能包含该 Skill，但真实执行仍必须经过 M05 和 M07。
 - M09 Skill 注册中心能展示该 Skill，并保持上传、安装、升级、卸载和写执行类操作禁用。
 - P1 明确拒绝上传安装、运行时注册、脚本执行、endpoint 或 credential 写入 Skill 包。
-

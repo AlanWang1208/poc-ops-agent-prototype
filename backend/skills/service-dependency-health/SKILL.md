@@ -1,11 +1,6 @@
 ---
 name: service-dependency-health-read
 description: Inspect dependency health for a service through the platform read-only service dependency tool.
-version: 1.0.0
-risk: read_only
-category: application_diagnostics
-platform_tool: service-dependency-health-read
-platform_contract: backend/contracts/skills/packages/service-dependency-health/manifest.json
 ---
 
 # Service Dependency Health Read

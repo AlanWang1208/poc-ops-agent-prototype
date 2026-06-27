@@ -1,0 +1,21 @@
+{
+  "caseId": "node-health-read-invalid-parameters",
+  "skillId": "node-health-read",
+  "version": "1.1.0",
+  "description": "空节点名必须被输入 Schema 拒绝。",
+  "operator": {
+    "subject": "ops-reader-1",
+    "roles": [
+      "ROLE_ops-reader"
+    ]
+  },
+  "targetEnvironment": "development",
+  "input": {
+    "nodeName": ""
+  },
+  "expected": {
+    "decision": "REJECT",
+    "reason": "SCHEMA_VALIDATION_FAILED",
+    "field": "nodeName"
+  }
+}

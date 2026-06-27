@@ -1,0 +1,31 @@
+schemaVersion: ops-agent.skill/v1
+skillId: certificate-expiry-read
+version: 1.0.0
+displayName: "证书到期检查"
+description: "读取指定内部服务端点证书的有效期和剩余天数。"
+category: INFRASTRUCTURE_DIAGNOSTICS
+riskLevel: READ_ONLY
+readOnly: true
+executor: HTTP
+outputType: JSON
+owner: platform-security
+timeoutSeconds: 15
+publishedAt: "2026-06-06T23:20:00+08:00"
+requiredRoles:
+  - ROLE_ops-reader
+  - ROLE_ops-admin
+interceptors:
+  - AUTHORIZATION
+  - AUDIT
+tags:
+  - certificate
+  - expiry
+  - security
+parameters:
+  - name: endpoint
+    displayName: "内部服务端点"
+    description: "需要读取证书有效期的内部 HTTPS 服务端点。"
+    type: STRING
+    required: true
+    allowedValues: []
+    defaultValue: null

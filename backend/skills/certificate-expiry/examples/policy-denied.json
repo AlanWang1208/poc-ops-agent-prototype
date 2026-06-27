@@ -1,0 +1,24 @@
+{
+  "caseId": "certificate-expiry-read-policy-denied",
+  "skillId": "certificate-expiry-read",
+  "version": "1.0.0",
+  "description": "缺少运维只读角色时必须被服务端策略拒绝。",
+  "operator": {
+    "subject": "viewer-1",
+    "roles": [
+      "ROLE_viewer"
+    ]
+  },
+  "targetEnvironment": "development",
+  "input": {
+    "endpoint": "https://orders.internal.example"
+  },
+  "expected": {
+    "decision": "REJECT",
+    "reason": "POLICY_DENIED",
+    "requiredRoles": [
+      "ROLE_ops-reader",
+      "ROLE_ops-admin"
+    ]
+  }
+}

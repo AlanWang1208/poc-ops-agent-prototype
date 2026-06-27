@@ -1,11 +1,6 @@
 ---
 name: node-health-read
 description: Diagnose a single node by reading CPU, memory, disk, and heartbeat status through the platform read-only node health tool.
-version: 1.1.0
-risk: read_only
-category: infrastructure_diagnostics
-platform_tool: node-health-read
-platform_contract: backend/contracts/skills/packages/node-health/manifest.json
 ---
 
 # Node Health Read

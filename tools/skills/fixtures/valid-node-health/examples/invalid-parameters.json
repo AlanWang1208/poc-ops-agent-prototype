@@ -1,0 +1,18 @@
+{
+  "caseId": "valid-node-health-read-invalid-parameters",
+  "skillId": "valid-node-health-read",
+  "version": "1.0.0",
+  "description": "缺少必填节点名称时拒绝。",
+  "operator": {
+    "subject": "ops-reader-1",
+    "roles": [
+      "ROLE_ops-reader"
+    ]
+  },
+  "targetEnvironment": "development",
+  "input": {},
+  "expected": {
+    "decision": "REJECT",
+    "status": "INVALID_PARAMETERS"
+  }
+}

@@ -1,7 +1,7 @@
 {
   "publishedBy": "platform-security",
   "publishedAt": "2026-06-06T23:20:00+08:00",
-  "checksumSha256": "582210eabdb0bb3e4b17ce552f72f8e9695d20f9d15c50204459fda283d63b0f",
+  "checksumSha256": "3591d7371cc3914fb4201526dc49ab295cf69f3edfe937aab528a43a0f55e306",
   "signatureAlgorithm": "HmacSHA256",
-  "signature": "c2303c3b9eb25ea534a335e8d88936553e23337a91f323c93366fc5532bb21fb"
+  "signature": "c630e52e7da5ede533254033183df9a472cd8b21ece8896a19d5e928e0aea56f"
 }

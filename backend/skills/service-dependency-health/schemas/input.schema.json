@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://company.example/ops-agent/skills/service-dependency-health-read/1.0.0/input.schema.json",
+  "title": "service-dependency-health-read 输入",
+  "description": "读取服务依赖健康状态所需的输入参数。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "serviceName"
+  ],
+  "properties": {
+    "serviceName": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9._-]+$",
+      "description": "需要检查依赖健康状态的服务标识。"
+    }
+  }
+}

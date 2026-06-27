@@ -10,9 +10,20 @@
   "readOnly": true,
   "timeoutSeconds": 15,
   "owner": "platform-observability",
-  "requiredRoles": ["ROLE_ops-reader", "ROLE_ops-admin"],
-  "tags": ["weather", "current", "environment"],
-  "interceptors": ["AUTHORIZATION", "AUDIT", "SENSITIVE_DATA_MASKING"],
+  "requiredRoles": [
+    "ROLE_ops-reader",
+    "ROLE_ops-admin"
+  ],
+  "tags": [
+    "weather",
+    "current",
+    "environment"
+  ],
+  "interceptors": [
+    "AUTHORIZATION",
+    "AUDIT",
+    "SENSITIVE_DATA_MASKING"
+  ],
   "parameters": [
     {
       "name": "location",

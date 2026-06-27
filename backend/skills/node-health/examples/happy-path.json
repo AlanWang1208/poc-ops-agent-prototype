@@ -1,0 +1,28 @@
+{
+  "caseId": "node-health-read-happy-path",
+  "skillId": "node-health-read",
+  "version": "1.1.0",
+  "description": "读取开发环境节点健康状态成功。",
+  "operator": {
+    "subject": "ops-reader-1",
+    "roles": [
+      "ROLE_ops-reader"
+    ]
+  },
+  "targetEnvironment": "development",
+  "input": {
+    "nodeName": "node-a"
+  },
+  "expected": {
+    "decision": "ALLOW",
+    "status": "SUCCEEDED",
+    "output": {
+      "nodeName": "node-a",
+      "status": "HEALTHY",
+      "cpuUsagePercent": 17,
+      "memoryUsagePercent": 43,
+      "diskUsagePercent": 68,
+      "lastHeartbeatAt": "2026-06-23T08:00:00+08:00"
+    }
+  }
+}

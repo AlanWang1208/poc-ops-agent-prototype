@@ -1,11 +1,6 @@
 ---
 name: weather-current-read
 description: Read the current weather for a specified location through the platform read-only weather tool.
-version: 1.0.0
-risk: read_only
-category: platform_observability
-platform_tool: weather-current-read
-platform_contract: backend/contracts/skills/packages/weather-current/manifest.json
 ---
 
 # Weather Current Read

@@ -1,11 +1,6 @@
 ---
 name: platform-alert-summary-read
 description: Summarize active platform alerts by severity through the platform read-only alert summary tool.
-version: 1.0.0
-risk: read_only
-category: platform_observability
-platform_tool: platform-alert-summary-read
-platform_contract: backend/contracts/skills/packages/platform-alert-summary/manifest.json
 ---
 
 # Platform Alert Summary Read
