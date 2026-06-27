@@ -20,7 +20,7 @@
   min-height: 0;
   grid-template-rows: auto minmax(0, 1fr);
   gap: 18px;
-  padding: 20px 24px 24px;
+  padding: 20px 0 24px;
 }
 
 .filters,
@@ -204,7 +204,7 @@
 @media (max-width: 720px) {
   .workspaceBody {
     gap: 14px;
-    padding: 16px;
+    padding: 16px 0;
   }
 
   .detailGrid {

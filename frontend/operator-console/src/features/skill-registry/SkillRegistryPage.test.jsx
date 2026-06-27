@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+
 import { http, HttpResponse } from "msw";
 import { MemoryRouter } from "react-router-dom";
 import { render, screen, within } from "@testing-library/react";
@@ -7,6 +9,11 @@ import { describe, expect, test } from "vitest";
 import App from "../../app/App.jsx";
 import { AppProviders } from "../../app/providers.jsx";
 import { server } from "../../test/server.js";
+
+const skillRegistryStyles = readFileSync(
+  "src/features/skill-registry/SkillRegistryPage.module.css",
+  "utf8",
+);
 
 function renderSkillRegistry() {
   return render(
@@ -31,6 +38,14 @@ function useAuthenticatedSession() {
 }
 
 describe("SkillRegistryPage", () => {
+  test("aligns registry body cards with the workspace status bar edges", () => {
+    const workspaceBodyRule =
+      skillRegistryStyles.match(/[.]workspaceBody\s*[{][^}]+[}]/u)?.[0] ?? "";
+
+    expect(workspaceBodyRule).toContain("padding: 20px 0 24px");
+    expect(workspaceBodyRule).not.toContain("padding: 20px 24px 24px");
+  });
+
   test("renders real read-only skills without the page intro block", async () => {
     useAuthenticatedSession();
     server.use(
