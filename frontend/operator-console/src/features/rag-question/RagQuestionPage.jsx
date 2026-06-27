@@ -6,7 +6,9 @@ import {
   SlidersHorizontal,
   UserRound,
 } from "lucide-react";
+import { useState } from "react";
 
+import { NaturalLanguageDialog } from "../../components/conversation/NaturalLanguageDialog.jsx";
 import { WorkspacePageFrame } from "../../components/layout/WorkspacePageFrame.jsx";
 import { WorkspaceStatusBar } from "../../components/layout/WorkspaceStatusBar.jsx";
 import { Badge } from "../../components/primitives/Badge.jsx";
@@ -47,6 +49,10 @@ const retrievalParameters = [
 ];
 
 export function RagQuestionPage() {
+  const [question, setQuestion] = useState(
+    "输入问题，例如：根据最近故障复盘，总结 payment-api 超时的常见原因，并列出引用来源。",
+  );
+
   return (
     <WorkspacePageFrame className={styles.ragCanvas}>
       <WorkspaceStatusBar title="RAG 问答" />
@@ -83,21 +89,20 @@ export function RagQuestionPage() {
             </Message>
           </div>
 
-          <form aria-label="RAG 问题输入区" className={styles.ragComposer}>
-            <textarea
-              aria-label="RAG 问题"
-              className={styles.ragInput}
-              defaultValue="输入问题，例如：根据最近故障复盘，总结 payment-api 超时的常见原因，并列出引用来源。"
-            />
-            <button
-              aria-label="提交 RAG 问题"
-              className={styles.ragSend}
-              disabled
-              type="button"
-            >
-              <SendHorizontal aria-hidden="true" size={19} strokeWidth={2.4} />
-            </button>
-          </form>
+          <NaturalLanguageDialog
+            ariaLabel="RAG 问题输入区"
+            className={styles.ragComposer}
+            inputClassName={styles.ragInput}
+            inputLabel="RAG 问题"
+            onChange={setQuestion}
+            onSubmit={() => {}}
+            placeholder="输入问题，例如：根据最近故障复盘，总结 payment-api 超时的常见原因，并列出引用来源。"
+            submitAriaLabel="提交 RAG 问题"
+            submitClassName={styles.ragSend}
+            submitDisabled
+            submitIcon={<SendHorizontal aria-hidden="true" size={19} strokeWidth={2.4} />}
+            value={question}
+          />
         </section>
 
         <aside className={styles.ragSide} aria-label="RAG 检索上下文">

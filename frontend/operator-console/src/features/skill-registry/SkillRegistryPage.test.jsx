@@ -59,6 +59,7 @@ describe("SkillRegistryPage", () => {
     expect(
       screen.getByRole("searchbox", { name: "搜索 Skill ID、描述、Owner、参数或标签" }),
     ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "搜索" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "内置 Skill" })).toBeInTheDocument();
     const table = await screen.findByRole("table", { name: "内置 Skill 表格" });
     expect(within(table).getByRole("columnheader", { name: "Skill ID" })).toBeInTheDocument();
@@ -119,6 +120,88 @@ describe("SkillRegistryPage", () => {
     expect(screen.queryByText("skill-1-read")).not.toBeInTheDocument();
     expect(screen.getByText("skill-6-read")).toBeInTheDocument();
     expect(screen.getByText("第 2 / 2 页，共 6 条")).toBeInTheDocument();
+  });
+
+  test("applies keyword matching only after submitting the search form", async () => {
+    const user = userEvent.setup();
+    useAuthenticatedSession();
+    server.use(
+      http.get("/internal/skills", () =>
+        HttpResponse.json({
+          total: 6,
+          skills: Array.from({ length: 6 }, (_, index) => skillFixture(index + 1)),
+        }),
+      ),
+    );
+
+    renderSkillRegistry();
+
+    const searchbox = await screen.findByRole("searchbox", {
+      name: "搜索 Skill ID、描述、Owner、参数或标签",
+    });
+    expect(
+      await screen.findByText("6 个匹配项，来源于 M03 已签名发布目录。"),
+    ).toBeInTheDocument();
+    expect(screen.getByText("skill-1-read")).toBeInTheDocument();
+
+    await user.type(searchbox, "Skill 6");
+
+    expect(screen.getByText("6 个匹配项，来源于 M03 已签名发布目录。")).toBeInTheDocument();
+    expect(screen.queryByText("skill-6-read")).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "搜索" }));
+
+    expect(screen.getByText("1 个匹配项，来源于 M03 已签名发布目录。")).toBeInTheDocument();
+    expect(screen.queryByText("skill-1-read")).not.toBeInTheDocument();
+    expect(screen.getByText("skill-6-read")).toBeInTheDocument();
+  });
+
+  test("supports natural-language search through the shared search box", async () => {
+    const user = userEvent.setup();
+    useAuthenticatedSession();
+    server.use(
+      http.get("/internal/skills", () =>
+        HttpResponse.json({
+          total: 2,
+          skills: [
+            {
+              ...registeredSkill,
+              descriptor: {
+                ...registeredSkill.descriptor,
+                skillId: "application-log-summary-read",
+                displayName: "应用日志错误摘要",
+                description: "读取应用日志错误并生成摘要",
+              },
+              manifestPath: "application-log-summary/manifest.json",
+            },
+            {
+              ...registeredSkill,
+              descriptor: {
+                ...registeredSkill.descriptor,
+                skillId: "node-health-read",
+                displayName: "节点健康检查",
+                description: "读取指定节点的 CPU、内存、磁盘和最近心跳状态。",
+              },
+              manifestPath: "node-health/manifest.json",
+            },
+          ],
+        }),
+      ),
+    );
+
+    renderSkillRegistry();
+
+    await screen.findByText("application-log-summary-read");
+    await user.click(screen.getByRole("tab", { name: "自然语言" }));
+    await user.type(
+      screen.getByRole("textbox", { name: "自然语言搜索" }),
+      "我想检查节点健康状态",
+    );
+    await user.click(screen.getByRole("button", { name: "搜索自然语言" }));
+
+    expect(screen.queryByText("application-log-summary-read")).not.toBeInTheDocument();
+    expect(screen.getByText("node-health-read")).toBeInTheDocument();
+    expect(screen.getByText("1 个匹配项，来源于 M03 已签名发布目录。")).toBeInTheDocument();
   });
 
   test("shows an empty registry without example skills", async () => {

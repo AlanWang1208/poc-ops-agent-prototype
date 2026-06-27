@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Eye, Search } from "lucide-react";
+import { Eye } from "lucide-react";
 
 import { ApiError } from "../../api/client.js";
 import { DataTable } from "../../components/data-display/DataTable.jsx";
@@ -8,10 +8,12 @@ import { FeedbackState } from "../../components/feedback/FeedbackState.jsx";
 import { WorkspacePageFrame } from "../../components/layout/WorkspacePageFrame.jsx";
 import { WorkspaceStatusBar } from "../../components/layout/WorkspaceStatusBar.jsx";
 import { Dialog } from "../../components/primitives/Dialog.jsx";
+import { SearchBox } from "../../components/search/SearchBox.jsx";
 import { useSkills } from "./use-skills.js";
 import styles from "./SkillRegistryPage.module.css";
 
 /** @typedef {import("../../schemas/skill-schemas.js").RegisteredSkill} RegisteredSkill */
+/** @typedef {import("../../components/search/SearchBox.jsx").SearchRequest} SearchRequest */
 
 const PAGE_SIZE = 5;
 
@@ -27,13 +29,14 @@ const filterOptions = [
 export function SkillRegistryPage() {
   const skills = useSkills();
   const [activeFilter, setActiveFilter] = useState("ALL");
-  const [keyword, setKeyword] = useState("");
+  const [searchRequest, setSearchRequest] = useState(
+    /** @type {SearchRequest} */ ({ mode: "conditions", query: "" }),
+  );
   const [page, setPage] = useState(1);
   const [detailSkill, setDetailSkill] = useState(/** @type {RegisteredSkill | null} */ (null));
 
   const filteredSkills = useMemo(() => {
     const catalog = skills.data?.skills ?? [];
-    const normalizedKeyword = keyword.trim().toLowerCase();
     return catalog.filter((skill) => {
       const descriptor = skill.descriptor;
       const filterMatched =
@@ -44,24 +47,9 @@ export function SkillRegistryPage() {
       if (!filterMatched) {
         return false;
       }
-      if (!normalizedKeyword) {
-        return true;
-      }
-      return [
-        descriptor.skillId,
-        descriptor.displayName,
-        descriptor.description,
-        descriptor.owner,
-        descriptor.executor,
-        descriptor.outputType,
-        ...descriptor.tags,
-        ...descriptor.parameters.map((parameter) => parameter.name),
-      ]
-        .join(" ")
-        .toLowerCase()
-        .includes(normalizedKeyword);
+      return matchesSkillSearch(skill, searchRequest);
     });
-  }, [activeFilter, keyword, skills.data?.skills]);
+  }, [activeFilter, searchRequest, skills.data?.skills]);
 
   return (
     <WorkspacePageFrame className={styles.registryCanvas}>
@@ -69,20 +57,17 @@ export function SkillRegistryPage() {
 
       <main className={styles.workspaceBody}>
         <section className={styles.filters} aria-label="Skill 条件匹配">
-          <label className={styles.searchBox}>
-            <Search aria-hidden="true" size={16} strokeWidth={2.3} />
-            <span>搜索 Skill</span>
-            <input
-              aria-label="搜索 Skill ID、描述、Owner、参数或标签"
-              onChange={(event) => {
-                setKeyword(event.target.value);
-                setPage(1);
-              }}
-              placeholder="Skill ID / 描述 / Owner / 参数 / 标签"
-              type="search"
-              value={keyword}
-            />
-          </label>
+          <SearchBox
+            ariaLabel="Skill 搜索"
+            className={styles.skillSearch}
+            inputLabel="搜索 Skill ID、描述、Owner、参数或标签"
+            naturalPlaceholder="例如：我想检查节点健康状态"
+            onSearch={(request) => {
+              setSearchRequest(request);
+              setPage(1);
+            }}
+            placeholder="Skill ID / 描述 / Owner / 参数 / 标签"
+          />
 
           <div className={styles.filterChips}>
             {filterOptions.map((option) => (
@@ -389,4 +374,89 @@ function formatRequiredRoles(values) {
 function formatParameters(skill) {
   const names = skill.descriptor.parameters.map((parameter) => parameter.name);
   return names.length > 0 ? names.join(" / ") : "无参数";
+}
+
+/**
+ * @param {RegisteredSkill} skill
+ * @param {SearchRequest} request
+ */
+function matchesSkillSearch(skill, request) {
+  const query = request.query.trim();
+  if (!query) {
+    return true;
+  }
+
+  const searchText = normalizeSearchText([
+    skill.descriptor.skillId,
+    skill.descriptor.displayName,
+    skill.descriptor.description,
+    skill.descriptor.owner,
+    skill.descriptor.executor,
+    skill.descriptor.outputType,
+    skill.descriptor.category,
+    skill.descriptor.riskLevel,
+    skill.publicationStatus,
+    skill.manifestPath,
+    ...skill.descriptor.tags,
+    ...skill.descriptor.requiredRoles,
+    ...skill.descriptor.interceptors,
+    ...skill.descriptor.parameters.map((parameter) => parameter.name),
+  ].join(" "));
+
+  const normalizedQuery = normalizeSearchText(query);
+  if (request.mode === "conditions") {
+    return searchText.includes(normalizedQuery);
+  }
+
+  const naturalTokens = tokenizeNaturalQuery(query);
+  if (naturalTokens.length === 0) {
+    return true;
+  }
+  return searchText.includes(normalizedQuery) || naturalTokens.every((token) => searchText.includes(token));
+}
+
+/**
+ * @param {string} value
+ */
+function normalizeSearchText(value) {
+  return value.toLowerCase().replace(/\s+/gu, " ").trim();
+}
+
+const naturalSearchStopWords = new Set([
+  "a",
+  "an",
+  "find",
+  "for",
+  "i",
+  "me",
+  "please",
+  "search",
+  "show",
+  "skill",
+  "the",
+  "to",
+  "want",
+  "个",
+  "帮",
+  "查",
+  "找",
+  "看",
+  "请",
+  "我",
+  "想",
+  "要",
+  "一",
+  "的",
+]);
+
+/**
+ * @param {string} query
+ */
+function tokenizeNaturalQuery(query) {
+  return query
+    .toLowerCase()
+    .replace(/[\p{P}\p{S}]/gu, " ")
+    .split(/\s+/u)
+    .flatMap((token) => (/[\u4e00-\u9fff]/u.test(token) ? Array.from(token) : [token]))
+    .filter((token) => token.length > 0 && !naturalSearchStopWords.has(token));
 }

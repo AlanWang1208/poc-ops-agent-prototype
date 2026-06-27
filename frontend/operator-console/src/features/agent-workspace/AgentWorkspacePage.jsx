@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { Fragment, useState } from "react";
 
+import { NaturalLanguageDialog } from "../../components/conversation/NaturalLanguageDialog.jsx";
 import { WorkspaceStatusBar } from "../../components/layout/WorkspaceStatusBar.jsx";
 import { Badge } from "../../components/primitives/Badge.jsx";
 import { Button } from "../../components/primitives/Button.jsx";
@@ -56,20 +57,6 @@ export function AgentWorkspacePage() {
     }
     void agentTask.run(currentGoal);
     setTaskGoal("");
-  };
-  /**
-   * @param {import("react").KeyboardEvent<HTMLTextAreaElement>} event
-   */
-  const handleComposerKeyDown = (event) => {
-    if (
-      event.key !== "Enter" ||
-      event.shiftKey ||
-      event.nativeEvent.isComposing
-    ) {
-      return;
-    }
-    event.preventDefault();
-    submitAgentTask(event.currentTarget.value);
   };
 
   return (
@@ -122,26 +109,21 @@ export function AgentWorkspacePage() {
           </div>
 
           <div className={styles.exchangeComposer}>
-            <div className={styles.composerBox}>
-              <textarea
-                aria-label="任务目标"
-                className={styles.composerInput}
-                disabled={agentTask.status === "running"}
-                onChange={(event) => setTaskGoal(event.target.value)}
-                onKeyDown={handleComposerKeyDown}
-                placeholder="输入任务目标，例如：检查 payment-api 最近错误、确认订单库慢查询趋势，并给出只读排查计划。"
-                value={taskGoal}
-              />
-              <Button
-                aria-label="发送任务"
-                className={styles.sendButton}
-                disabled={!canSubmitAgentTask}
-                onClick={() => submitAgentTask()}
-                variant="primary"
-              >
-                <SendHorizontal aria-hidden="true" size={18} />
-              </Button>
-            </div>
+            <NaturalLanguageDialog
+              ariaLabel="任务目标输入区"
+              className={styles.composerBox}
+              disabled={agentTask.status === "running"}
+              inputClassName={styles.composerInput}
+              inputLabel="任务目标"
+              onChange={setTaskGoal}
+              onSubmit={() => submitAgentTask()}
+              placeholder="输入任务目标，例如：检查 payment-api 最近错误、确认订单库慢查询趋势，并给出只读排查计划。"
+              submitAriaLabel="发送任务"
+              submitClassName={styles.sendButton}
+              submitDisabled={!canSubmitAgentTask}
+              submitIcon={<SendHorizontal aria-hidden="true" size={18} />}
+              value={taskGoal}
+            />
           </div>
         </div>
 
