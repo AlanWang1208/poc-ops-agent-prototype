@@ -17,6 +17,10 @@ const workspaceStatusBarCss = readFileSync(
   "src/components/layout/WorkspaceStatusBar.module.css",
   "utf8",
 );
+const dialogCss = readFileSync(
+  "src/components/primitives/Dialog.module.css",
+  "utf8",
+);
 const agentWorkspaceSource = readFileSync(
   "src/features/agent-workspace/AgentWorkspacePage.jsx",
   "utf8",
@@ -80,11 +84,48 @@ describe("AgentWorkspacePage", () => {
     expect(agentWorkspaceSource).not.toContain("logoutMutation");
   });
 
+  test("renders a single-session toolbar without the seeded node-a investigation title", async () => {
+    const { container } = renderPage();
+
+    expect(await screen.findByLabelText("会话工具栏")).toBeInTheDocument();
+    expect(screen.getByText("会话 1")).toBeInTheDocument();
+    expect(screen.getByText("当前会话")).toBeInTheDocument();
+    expect(screen.queryByText("会话列表")).not.toBeInTheDocument();
+    expect(screen.queryByText("node-a 健康排查")).not.toBeInTheDocument();
+    expect(screen.queryByText(/2 个 workflow/u)).not.toBeInTheDocument();
+
+    const sessionIcon = container.querySelector('[data-session-icon="active-conversation"]');
+    const sessionStackIconRule =
+      agentWorkspaceCss.match(/[.]sessionStackIcon\s*[{][^}]+[}]/u)?.[0] ?? "";
+    const sessionStackIconBeforeRule =
+      agentWorkspaceCss.match(/[.]sessionStackIcon::before\s*[{][^}]+[}]/u)?.[0] ?? "";
+
+    expect(sessionIcon).toBeInTheDocument();
+    expect(sessionIcon?.querySelector("svg")).toBeInTheDocument();
+    expect(sessionIcon?.querySelector('[class*="sessionIconNode"]')).toBeInTheDocument();
+    expect(sessionStackIconRule).toContain("conic-gradient");
+    expect(sessionStackIconBeforeRule).toContain("linear-gradient");
+  });
+
+  test("does not present broad route candidates as current task skill before submission", async () => {
+    renderPage();
+
+    expect(await screen.findByText("提交后由服务端路由")).toBeInTheDocument();
+    expect(screen.getByText("Skill 路由状态")).toBeInTheDocument();
+    expect(screen.queryByText("候选 Skill 预览")).not.toBeInTheDocument();
+    expect(screen.queryByText("node-health-read")).not.toBeInTheDocument();
+    expect(screen.queryByText("health")).not.toBeInTheDocument();
+  });
+
   test("keeps right rail summary rows visually compact and consistently aligned", () => {
     const agentLayoutRule =
       agentWorkspaceCss.match(/(?:^|\n)[.]agentLayout\s*[{][^}]+[}]/u)?.[0] ?? "";
     const agentSideRule =
       agentWorkspaceCss.match(/(?:^|\n)[.]agentSide\s*[{][^}]+[}]/u)?.[0] ?? "";
+    const agentPanelRule =
+      agentWorkspaceCss.match(/(?:^|\n)[.]agentPanel\s*[{][^}]+[}]/u)?.[0] ?? "";
+    const panelHeadingRule =
+      agentWorkspaceCss.match(/(?:^|\n)[.]agentPanel h3\s*[{][^}]+[}]/u)?.[0] ?? "";
     const miniRowRule =
       agentWorkspaceCss.match(/(?:^|\n)[.]miniRow\s*[{][^}]+[}]/u)?.[0] ?? "";
     const miniRowValueRule =
@@ -92,29 +133,81 @@ describe("AgentWorkspacePage", () => {
       "";
     const detailButtonRule =
       agentWorkspaceCss.match(/(?:^|\n)[.]detailButton\s*[{][^}]+[}]/u)?.[0] ?? "";
+    const panelDetailButtonRule =
+      agentWorkspaceCss.match(/[.]agentPanel\s*[>]\s*[.]detailButton\s*[{][^}]+[}]/u)?.[0] ?? "";
 
     expect(agentLayoutRule).toContain("align-items: stretch");
     expect(agentSideRule).toContain("max-height: 100%");
     expect(agentSideRule).toContain("align-self: stretch");
+    expect(agentSideRule).toContain("--agent-side-row-gap-share: 16px");
+    expect(agentSideRule).toContain("--agent-side-row-shift: 5px");
+    expect(agentSideRule).toContain(
+      "grid-template-rows: calc(33.333333% - var(--agent-side-row-gap-share) - var(--agent-side-row-shift)) calc(33.333333% - var(--agent-side-row-gap-share)) calc(33.333333% - var(--agent-side-row-gap-share) + var(--agent-side-row-shift))",
+    );
+    expect(agentSideRule).toContain("align-content: stretch");
+    expect(agentSideRule).not.toContain("grid-auto-rows: max-content");
+    expect(agentSideRule).not.toContain("overflow-y: hidden");
+    expect(agentPanelRule).toContain("grid-template-rows: 44px repeat(5, minmax(34px, 1fr)) 32px");
+    expect(agentPanelRule).toContain("align-content: stretch");
+    expect(agentPanelRule).toContain("gap: 6px");
+    expect(agentPanelRule).toContain("overflow: hidden");
+    expect(agentPanelRule).not.toContain("minmax(38px, 1fr)");
+    expect(agentWorkspaceCss).not.toContain(".agentPanel:has(> .statusNote)");
+    expect(panelHeadingRule).toContain("min-height: 40px");
     expect(miniRowRule).toContain("display: grid");
-    expect(miniRowRule).toContain("min-height: 32px");
+    expect(miniRowRule).toContain("min-height: 30px");
     expect(miniRowRule).toContain("grid-template-columns: minmax(0, 1fr) minmax(72px, 52%)");
     expect(miniRowRule).toContain("align-items: center");
     expect(miniRowValueRule).toContain("box-sizing: border-box");
     expect(miniRowValueRule).toContain("max-width: 100%");
     expect(miniRowValueRule).toContain("height: 22px");
     expect(detailButtonRule).toContain("min-height: 32px");
-    expect(detailButtonRule).toContain("margin-top: 4px");
+    expect(detailButtonRule).toContain("margin-top: 0");
+    expect(panelDetailButtonRule).toContain("align-self: stretch");
   });
 
-  test("renders the read-only workspace from real routing candidates", async () => {
+  test("keeps the single-track Skill route animation compact", () => {
+    const skillRouteAnimationRule =
+      agentWorkspaceCss.match(/[.]flowAnimation\[data-flow-animation="skill-route"\]\s*[{][^}]+[}]/u)?.[0] ??
+      "";
+    const skillRouteFlattenRule =
+      agentWorkspaceCss.match(
+        /[.]flowAnimation\[data-flow-animation="skill-route"\]\s+[.]flowTrack,\s*\n[.]flowAnimation\[data-flow-animation="skill-route"\]\s+[.]flowTrackHeader\s*[{][^}]+[}]/u,
+      )?.[0] ?? "";
+    const skillRouteStepListRule =
+      agentWorkspaceCss.match(
+        /[.]flowAnimation\[data-flow-animation="skill-route"\]\s+[.]flowStepList\s*[{][^}]+[}]/u,
+      )?.[0] ?? "";
+    const routeHeaderPillRule =
+      agentWorkspaceCss.match(/[.]flowAnimationHeader strong,\s*\n[.]flowTrackHeader strong\s*[{][^}]+[}]/u)?.[0] ??
+      "";
+
+    expect(agentWorkspaceSource).toContain("const routeSummary");
+    expect(agentWorkspaceSource).toContain("summary={routeSummary}");
+    expect(agentWorkspaceSource).not.toContain("<span>路由演示</span>");
+    expect(skillRouteAnimationRule).toContain("grid-template-columns: minmax(0, 1fr) max-content");
+    expect(skillRouteAnimationRule).toContain("gap: 8px 10px");
+    expect(skillRouteAnimationRule).toContain("padding: 10px 12px 12px");
+    expect(skillRouteFlattenRule).toContain("display: contents");
+    expect(agentWorkspaceCss).not.toContain(
+      '.flowAnimation[data-flow-animation="skill-route"] .flowAnimationHeader strong',
+    );
+    expect(routeHeaderPillRule).toContain("min-width: 76px");
+    expect(routeHeaderPillRule).toContain("justify-content: center");
+    expect(skillRouteStepListRule).toContain("grid-column: 1 / -1");
+    expect(skillRouteStepListRule).toContain("grid-row: 2");
+  });
+
+  test("renders the read-only workspace without a broad route candidate preview", async () => {
     renderPage();
 
     expect(await screen.findByText("工作会话")).toBeInTheDocument();
     expect(await screen.findByText("ops.reader")).toBeInTheDocument();
     expect(screen.getByText("ID operator-1")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "登出当前账号" })).toBeEnabled();
-    expect(await screen.findByText("health")).toBeInTheDocument();
+    expect(await screen.findByText("提交后由服务端路由")).toBeInTheDocument();
+    expect(screen.queryByText("node-health-read")).not.toBeInTheDocument();
+    expect(screen.queryByText("health")).not.toBeInTheDocument();
     expect(screen.getByText("ROLE_agent-reader · policy-v1 · READ_ONLY")).toBeInTheDocument();
     expect(screen.getByRole("textbox", { name: "任务目标" })).toHaveValue("");
     expect(screen.getByRole("button", { name: "发送任务" })).toBeDisabled();
@@ -138,7 +231,7 @@ describe("AgentWorkspacePage", () => {
 
     renderPage();
 
-    expect(await screen.findByText("health")).toBeInTheDocument();
+    expect(await screen.findByText("提交后由服务端路由")).toBeInTheDocument();
     await user.type(
       screen.getByRole("textbox", { name: "任务目标" }),
       "检查 node-a 健康状态并总结风险",
@@ -155,7 +248,8 @@ describe("AgentWorkspacePage", () => {
     expect(await screen.findByText("31.2°C")).toBeInTheDocument();
     expect(await screen.findByText("对话执行状态")).toBeInTheDocument();
     expect(screen.getByText("当前输入")).toBeInTheDocument();
-    expect(screen.getAllByText("检查 node-a 健康状态并总结风险")).toHaveLength(2);
+    expect(screen.getByText("已完成")).toBeInTheDocument();
+    expect(screen.getAllByText("检查 node-a 健康状态并总结风险")).toHaveLength(1);
     expect(await screen.findByText("已执行 Skill")).toBeInTheDocument();
     expect(screen.getByText("weather-current-read")).toBeInTheDocument();
     expect(screen.getByText("执行链")).toBeInTheDocument();
@@ -173,26 +267,55 @@ describe("AgentWorkspacePage", () => {
     expect(screen.queryByText(/"location": "Shanghai"/u)).not.toBeInTheDocument();
     expect(screen.queryByText("weather-current-read@1.0.0")).not.toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "查看对话执行详情" }));
-    expect(await screen.findByRole("dialog", { name: "对话执行详情" })).toBeInTheDocument();
+    const taskDialog = await screen.findByRole("dialog", { name: "对话执行详情" });
+    expect(taskDialog).toBeInTheDocument();
+    const taskDialogIcon = taskDialog.querySelector("[data-dialog-title-icon]");
+    expect(taskDialogIcon?.className).toContain("dialogTitleIcon");
+    expect(taskDialogIcon?.className).not.toContain("panelIconTask");
+    expect(taskDialogIcon?.querySelector("svg")).toBeInTheDocument();
+    expect(screen.queryByText("P1 只读诊断")).not.toBeInTheDocument();
     expect(document.documentElement.style.overflow).toBe("hidden");
     expect(document.body.style.overflow).toBe("hidden");
     expect(screen.getByText("输入意图")).toBeInTheDocument();
+    expect(screen.getAllByText("检查 node-a 健康状态并总结风险")).toHaveLength(2);
     expect(screen.getByText("development")).toBeInTheDocument();
     expect(screen.getByText(agentTaskResult.taskId)).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "关闭详情" }));
     expect(document.documentElement.style.overflow).toBe("");
     expect(document.body.style.overflow).toBe("");
     await user.click(screen.getByRole("button", { name: "查看 Skill 调用详情" }));
-    expect(await screen.findByRole("dialog", { name: "Skill 调用详情" })).toBeInTheDocument();
-    expect(screen.getByText("tool-call-weather-1")).toBeInTheDocument();
+    const skillDialog = await screen.findByRole("dialog", { name: "Skill 调用详情" });
+    expect(skillDialog).toBeInTheDocument();
+    expect(skillDialog.querySelector("[data-dialog-title-icon] svg")).toBeInTheDocument();
+    const skillRouteAnimation = screen.getByLabelText("Skill 路由动画");
+    expect(skillRouteAnimation).toHaveAttribute("data-flow-animation", "skill-route");
+    expect(screen.getByText("Skill 路由流程")).toBeInTheDocument();
+    expect(screen.getByText("目录筛选")).toBeInTheDocument();
+    expect(screen.getByText("参数契约")).toBeInTheDocument();
+    expect(screen.getByText("入参要求")).toBeInTheDocument();
+    expect(screen.getByText("出参要求")).toBeInTheDocument();
+    expect(screen.getByText("Agent inputParameters")).toBeInTheDocument();
     expect(screen.getByText("weather-current-read:1.0.0:output")).toBeInTheDocument();
+    expect(screen.getByText("tool-call-weather-1")).toBeInTheDocument();
     expect(screen.getByText("Agent 请求入参")).toBeInTheDocument();
     expect(screen.getByText(/Skill 原始入参未包含在 AgentTaskResult 中/u)).toBeInTheDocument();
     expect(screen.getByText("Skill 出参")).toBeInTheDocument();
     expect(screen.getByText(/"location": "Shanghai"/u)).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "关闭详情" }));
     await user.click(screen.getByRole("button", { name: "查看执行链详情" }));
-    expect(await screen.findByRole("dialog", { name: "执行链详情" })).toBeInTheDocument();
+    const chainDialog = await screen.findByRole("dialog", { name: "执行链详情" });
+    expect(chainDialog).toBeInTheDocument();
+    expect(chainDialog.querySelector("[data-dialog-title-icon] svg")).toBeInTheDocument();
+    const flowAnimation = screen.getByLabelText("执行流程动画");
+    expect(flowAnimation).toHaveAttribute("data-flow-animation", "agent-chain");
+    expect(screen.getByText("Agent 主链路")).toBeInTheDocument();
+    expect(screen.getByText("Skill 调用流程")).toBeInTheDocument();
+    expect(screen.getByText("意图接入")).toBeInTheDocument();
+    expect(screen.getByText("策略校验")).toBeInTheDocument();
+    expect(screen.getByText("路由匹配")).toBeInTheDocument();
+    expect(screen.getByText("授权校验")).toBeInTheDocument();
+    expect(screen.getByText("Worker 只读执行")).toBeInTheDocument();
+    expect(screen.getByText("输出契约校验")).toBeInTheDocument();
     expect(screen.getByText("操作员意图")).toBeInTheDocument();
     expect(screen.getByText("weather-current-read@1.0.0")).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "关闭详情" }));
@@ -234,7 +357,7 @@ describe("AgentWorkspacePage", () => {
 
     const { container } = renderPage();
 
-    expect(await screen.findByText("health")).toBeInTheDocument();
+    expect(await screen.findByText("提交后由服务端路由")).toBeInTheDocument();
     await user.type(screen.getByRole("textbox", { name: "任务目标" }), "今天天气怎么样");
     const sendButton = screen.getByRole("button", { name: "发送任务" });
     await waitFor(() => expect(sendButton).toBeEnabled());
@@ -263,7 +386,7 @@ describe("AgentWorkspacePage", () => {
 
     const { container } = renderPage();
 
-    expect(await screen.findByText("health")).toBeInTheDocument();
+    expect(await screen.findByText("提交后由服务端路由")).toBeInTheDocument();
     await user.type(screen.getByRole("textbox", { name: "任务目标" }), "今天天气怎么样{enter}");
 
     await waitFor(() => expect(diagnosticRequests).toHaveLength(1));
@@ -398,7 +521,7 @@ describe("AgentWorkspacePage", () => {
 
     const { container } = renderPage();
 
-    expect(await screen.findByText("health")).toBeInTheDocument();
+    expect(await screen.findByText("提交后由服务端路由")).toBeInTheDocument();
     await user.type(screen.getByRole("textbox", { name: "任务目标" }), "检查 node-a 健康状态");
     const sendButton = screen.getByRole("button", { name: "发送任务" });
     await waitFor(() => expect(sendButton).toBeEnabled());
@@ -412,7 +535,9 @@ describe("AgentWorkspacePage", () => {
     expect(agentMessages[0]).toHaveTextContent(
       "AGENT_RUNTIME_DISABLED: Agent runtime is disabled for this environment.",
     );
-    expect(await screen.findAllByText("失败")).toHaveLength(2);
+    expect(await screen.findAllByText("失败")).toHaveLength(3);
+    expect(screen.getByText("当前输入")).toBeInTheDocument();
+    expect(screen.getAllByText("检查 node-a 健康状态")).toHaveLength(1);
     expect(screen.queryByLabelText("当前 Agent 诊断任务")).not.toBeInTheDocument();
     expect(fixedSkillRequests).toEqual([]);
   });
@@ -430,7 +555,8 @@ describe("AgentWorkspacePage", () => {
 
     renderPage();
 
-    expect(await screen.findAllByText("unavailable")).not.toHaveLength(0);
+    expect(await screen.findByText("提交后由服务端路由")).toBeInTheDocument();
+    expect(screen.queryByText("unavailable")).not.toBeInTheDocument();
     await user.type(screen.getByRole("textbox", { name: "任务目标" }), "检查 node-a 健康状态");
     const sendButton = screen.getByRole("button", { name: "发送任务" });
     await waitFor(() => expect(sendButton).toBeEnabled());
@@ -469,7 +595,7 @@ describe("AgentWorkspacePage", () => {
     expect(workspaceStatusBarCss).not.toContain(".workdayCountdownAvatar");
   });
 
-  test("keeps long operator IDs contained and inspectable in the operator dock", async () => {
+  test("keeps long operator IDs contained and inspectable in the operator actions", async () => {
     const longOperatorId =
       "operator-central-observability-readonly-user-20260616-abcdef1234567890";
     server.use(
@@ -503,58 +629,53 @@ describe("AgentWorkspacePage", () => {
     const logoutButtonRule =
       workspaceStatusBarCss.match(/[.]logoutButton\s*[{][^}]+[}]/u)?.[0] ?? "";
     const logoutIconBadgeRule =
-      workspaceStatusBarCss.match(/[.]logoutIconBadge\s*[{][^}]+[}]/u)?.[0] ?? "";
+      [...workspaceStatusBarCss.matchAll(/[.]logoutIconBadge\s*[{][^}]+[}]/gu)].at(-1)?.[0] ?? "";
+    const actionIconBaseRule =
+      workspaceStatusBarCss.match(/[.]countdownGlyph,\s*\n[.]logoutIconBadge\s*[{][^}]+[}]/u)?.[0] ?? "";
     const operatorIdentityTextRule =
       workspaceStatusBarCss.match(/[.]operatorIdentity strong,\s*\n[.]operatorIdentity small\s*[{][^}]+[}]/u)?.[0] ?? "";
 
     expect(operatorIdText).toHaveTextContent(`ID ${longOperatorId}`);
     expect(operatorProfile).toBeInTheDocument();
-    expect(operatorDockRule).toContain("width: max-content");
     expect(operatorDockRule).toContain("min-width: 0");
-    expect(operatorDockRule).toContain("grid-template-columns: 198px 128px 92px");
-    expect(operatorDockRule).toContain("column-gap: 12px");
-    expect(operatorDockRule).toContain("background: transparent");
-    expect(operatorDockRule).toContain("box-shadow: none");
+    expect(operatorDockRule).toContain("grid-template-columns: minmax(150px, 190px) 132px 92px");
+    expect(operatorDockRule).toContain("gap: 9px");
     expect(operatorDockRule).not.toContain("backdrop-filter");
-    expect(operatorProfileRule).toContain("width: 176px");
     expect(operatorProfileRule).toContain("min-width: 0");
-    expect(operatorProfileRule).toContain("grid-template-columns: 42px minmax(0, 1fr)");
-    expect(operatorProfileRule).toContain("height: 42px");
-    expect(operatorProfileRule).toContain("border: 1px solid rgba(37, 132, 169, 0.14)");
-    expect(operatorProfileRule).toContain("border-radius: 14px");
-    expect(operatorAvatarRule).toContain("width: 32px");
-    expect(operatorAvatarRule).toContain("height: 32px");
+    expect(operatorProfileRule).toContain("grid-template-columns: 36px minmax(0, 1fr)");
+    expect(operatorProfileRule).toContain("height: 48px");
+    expect(operatorProfileRule).toContain("border: 1px solid var(--toolbar-line)");
+    expect(operatorProfileRule).toContain("border-radius: 13px");
+    expect(operatorAvatarRule).toContain("width: 34px");
+    expect(operatorAvatarRule).toContain("height: 34px");
     expect(operatorIdentityRule).toContain("min-width: 0");
-    expect(operatorIdentityRule).toContain("max-width: clamp(136px, 12vw, 230px)");
     expect(operatorIdentityRule).not.toContain("border-right");
-    expect(workdayCountdownRule).toContain("width: 128px");
-    expect(workdayCountdownRule).toContain("height: 42px");
+    expect(workdayCountdownRule).toContain("width: 132px");
+    expect(workdayCountdownRule).toContain("height: 48px");
     expect(logoutButtonRule).toContain("width: 92px");
-    expect(logoutButtonRule).toContain("height: 42px");
-    expect(logoutButtonRule).toContain("border: 1px solid rgba(216, 11, 70, 0.18)");
-    expect(logoutButtonRule).toContain("border-radius: 14px");
-    expect(logoutButtonRule).toContain("radial-gradient(circle at 88% 22%, rgba(216, 11, 70, 0.16), transparent 2.4rem)");
-    expect(logoutButtonRule).toContain("box-shadow:");
-    expect(countdownGlyphRule).toContain("width: 32px");
-    expect(countdownGlyphRule).toContain("height: 32px");
-    expect(logoutIconBadgeRule).toContain("width: 32px");
-    expect(logoutIconBadgeRule).toContain("height: 32px");
-    expect(logoutIconBadgeRule).toContain("border-radius: 11px");
+    expect(logoutButtonRule).toContain("height: 48px");
+    expect(logoutButtonRule).toContain("border: 1px solid oklch");
+    expect(logoutButtonRule).toContain("border-radius: 13px");
+    expect(actionIconBaseRule).toContain("width: 34px");
+    expect(actionIconBaseRule).toContain("height: 34px");
+    expect(actionIconBaseRule).toContain("border-radius: 11px");
+    expect(countdownGlyphRule).toContain("var(--toolbar-blue)");
+    expect(logoutIconBadgeRule).toContain("var(--toolbar-red)");
     expect(operatorIdentityTextRule).toContain("text-overflow: ellipsis");
   });
 
-  test("renders the operator avatar as a creative mark instead of text initials", async () => {
+  test("renders the operator avatar as a restrained icon instead of text initials", async () => {
     const { container } = renderPage();
 
     expect(await screen.findByText("ops.reader")).toBeInTheDocument();
 
-    const operatorAvatar = container.querySelector("[data-creative-avatar='operator']");
+    const operatorAvatar = container.querySelector("[class*='operatorAvatar']");
 
     expect(operatorAvatar).toBeInTheDocument();
     expect(operatorAvatar?.textContent).toBe("");
-    expect(operatorAvatar?.children).toHaveLength(2);
-    expect(workspaceStatusBarCss).toContain(".operatorAvatarCore");
-    expect(workspaceStatusBarCss).toContain(".operatorAvatarOrbit");
+    expect(operatorAvatar?.querySelector("svg")).toBeInTheDocument();
+    expect(workspaceStatusBarCss).not.toContain(".operatorAvatarCore");
+    expect(workspaceStatusBarCss).not.toContain(".operatorAvatarOrbit");
   });
 
   test("keeps the outer glass frame separated from inner card borders", async () => {
@@ -596,15 +717,17 @@ describe("AgentWorkspacePage", () => {
     expect(exchangeBodyRule).toContain("overflow-y: auto");
   });
 
-  test("renders detail dialogs as centered viewport overlays without nested JSON scrolling", async () => {
+  test("uses the shared dialog standard for detail overlays without nested JSON scrolling", async () => {
     renderPage();
 
     expect(await screen.findByText("工作会话")).toBeInTheDocument();
 
     const backdropRule =
-      agentWorkspaceCss.match(/[.]detailDialogBackdrop\s*[{][^}]+[}]/u)?.[0] ?? "";
+      dialogCss.match(/[.]dialogBackdrop\s*[{][^}]+[}]/u)?.[0] ?? "";
     const dialogRule =
-      agentWorkspaceCss.match(/[.]detailDialog\s*[{][^}]+[}]/u)?.[0] ?? "";
+      dialogCss.match(/[.]dialogSurface\s*[{][^}]+[}]/u)?.[0] ?? "";
+    const wideDialogRule =
+      dialogCss.match(/[.]dialogSurface\[data-dialog-size="wide"\]\s*[{][^}]+[}]/u)?.[0] ?? "";
     const preRule =
       agentWorkspaceCss.match(/[.]ioBlock pre\s*[{][^}]+[}]/u)?.[0] ?? "";
 
@@ -612,9 +735,16 @@ describe("AgentWorkspacePage", () => {
     expect(backdropRule).toContain("inset: 0");
     expect(backdropRule).toContain("align-items: center");
     expect(backdropRule).toContain("justify-items: center");
-    expect(backdropRule).toContain("padding: 32px 40px");
-    expect(dialogRule).toContain("width: min(1180px, calc(100vw - 80px))");
-    expect(dialogRule).toContain("max-height: calc(100vh - 64px)");
+    expect(dialogRule).toContain("grid-template-rows: auto minmax(0, 1fr)");
+    expect(wideDialogRule).toContain("width: min(1180px, calc(100vw - 80px))");
+    expect(wideDialogRule).toContain("max-height: calc(100vh - 64px)");
+    expect(agentWorkspaceSource).toContain("from \"../../components/primitives/Dialog.jsx\"");
+    expect(agentWorkspaceSource).toContain("iconByPanel");
+    expect(agentWorkspaceSource).toContain("icon={iconByPanel[activePanel]}");
+    expect(agentWorkspaceSource).not.toContain('eyebrow="P1 只读诊断"');
+    expect(agentWorkspaceSource).not.toContain("createPortal");
+    expect(agentWorkspaceCss).not.toContain(".detailDialogBackdrop");
+    expect(agentWorkspaceCss).not.toContain(".dialogCloseButton");
     expect(preRule).not.toContain("max-height");
     expect(preRule).toContain("overflow: hidden");
   });
@@ -648,7 +778,7 @@ describe("AgentWorkspacePage", () => {
     await waitFor(() => expect(window.location.pathname).toBe("/login"));
   });
 
-  test("shows route preview refusal without disabling main Agent submission", async () => {
+  test("ignores route preview refusal without disabling main Agent submission", async () => {
     server.use(
       http.post("/internal/routing/skills/search", () =>
         HttpResponse.json(
@@ -660,7 +790,8 @@ describe("AgentWorkspacePage", () => {
 
     renderPage();
 
-    expect(await screen.findAllByText("unavailable")).not.toHaveLength(0);
+    expect(await screen.findByText("提交后由服务端路由")).toBeInTheDocument();
+    expect(screen.queryByText("unavailable")).not.toBeInTheDocument();
     expect(screen.getAllByText("等待发送").length).toBeGreaterThan(0);
     expect(screen.getByRole("button", { name: "发送任务" })).toBeDisabled();
     await userEvent.type(
@@ -670,7 +801,7 @@ describe("AgentWorkspacePage", () => {
     expect(screen.getByRole("button", { name: "发送任务" })).toBeEnabled();
   });
 
-  test("shows an empty route preview state without disabling main Agent submission", async () => {
+  test("ignores an empty route preview state without disabling main Agent submission", async () => {
     server.use(
       http.post("/internal/routing/skills/search", () =>
         HttpResponse.json({ total: 0, candidates: [] }),
@@ -679,7 +810,8 @@ describe("AgentWorkspacePage", () => {
 
     renderPage();
 
-    expect(await screen.findAllByText("无候选")).not.toHaveLength(0);
+    expect(await screen.findByText("提交后由服务端路由")).toBeInTheDocument();
+    expect(screen.queryByText("无候选")).not.toBeInTheDocument();
     expect(screen.getAllByText("等待发送").length).toBeGreaterThan(0);
     expect(screen.getByRole("button", { name: "发送任务" })).toBeDisabled();
     await userEvent.type(
@@ -698,24 +830,24 @@ describe("AgentWorkspacePage", () => {
 
     const appCapsuleRule =
       workspaceStatusBarCss.match(/[.]appCapsule\s*[{][^}]+[}]/u)?.[0] ?? "";
-    const brandLockupRule =
-      workspaceStatusBarCss.match(/[.]brandLockup\s*[{][^}]+[}]/u)?.[0] ?? "";
+    const brandPlateRule =
+      workspaceStatusBarCss.match(/[.]brandPlate\s*[{][^}]+[}]/u)?.[0] ?? "";
+    const brandPlateBeforeRule =
+      workspaceStatusBarCss.match(/[.]brandPlate::before\s*[{][^}]+[}]/u)?.[0] ?? "";
+    const brandPlateAfterRule =
+      workspaceStatusBarCss.match(/[.]brandPlate::after\s*[{][^}]+[}]/u)?.[0] ?? "";
     const brandNameRule =
       workspaceStatusBarCss.match(/[.]brandName\s*[{][^}]+[}]/u)?.[0] ?? "";
-    const brandNameBeforeRule =
-      [...workspaceStatusBarCss.matchAll(/[.]brandName::before\s*[{][^}]+[}]/gu)].at(-1)?.[0] ??
-      "";
-    const brandNameAfterRule =
-      [...workspaceStatusBarCss.matchAll(/[.]brandName::after\s*[{][^}]+[}]/gu)].at(-1)?.[0] ??
-      "";
-    const brandAgentPillRule =
-      workspaceStatusBarCss.match(/[.]brandName strong\s*[{][^}]+[}]/u)?.[0] ?? "";
+    const workspaceContextRule =
+      workspaceStatusBarCss.match(/[.]workspaceContext\s*[{][^}]+[}]/u)?.[0] ?? "";
+    const signalRailRule =
+      workspaceStatusBarCss.match(/[.]signalRail\s*[{][^}]+[}]/u)?.[0] ?? "";
+    const operatorDockRule =
+      workspaceStatusBarCss.match(/[.]operatorDock\s*[{][^}]+[}]/u)?.[0] ?? "";
     const agentCanvasRule =
       agentWorkspaceCss.match(/[.]agentCanvas\s*[{][^}]+[}]/u)?.[0] ?? "";
     const capsuleHeadingRule =
       workspaceStatusBarCss.match(/[.]capsuleHeading\s*[{][^}]+[}]/u)?.[0] ?? "";
-    const capsuleHeadingAccentRule =
-      workspaceStatusBarCss.match(/[.]capsuleHeading::after\s*[{][^}]+[}]/u)?.[0] ?? "";
     const exchangeWindowRule =
       agentWorkspaceCss.match(/[.]exchangeWindow\s*[{][^}]+[}]/u)?.[0] ?? "";
     const agentPanelRule =
@@ -749,31 +881,40 @@ describe("AgentWorkspacePage", () => {
     expect(agentCanvasRule).toContain("font-family: var(--agent-font-sans)");
     expect(agentCanvasRule).toContain("0 18px 56px rgba(31, 41, 51, 0.055)");
     expect(agentIonFieldRule).toContain("pointer-events: none");
-    expect(appCapsuleRule).toContain("rgba(166, 64, 92, 0.26)");
-    expect(appCapsuleRule).toContain("rgba(255, 255, 255, 0.78)");
-    expect(appCapsuleRule).toContain("backdrop-filter: blur(18px)");
-    expect(brandLockupRule).toContain("border: 1px solid rgba(37, 132, 169, 0.14)");
-    expect(brandLockupRule).toContain("background:");
-    expect(brandLockupRule).toContain("rgba(255, 255, 255, 0.48)");
-    expect(brandLockupRule).toContain("border-radius: 999px");
-    expect(brandNameRule).toContain("font-size: 15px");
-    expect(brandNameRule).toContain("font-weight: 820");
-    expect(brandNameRule).toContain("color: color-mix(in srgb, var(--agent-blue) 58%, var(--agent-ink))");
+    expect(appCapsuleRule).toContain("min-height: 84px");
+    expect(appCapsuleRule).toContain("grid-template-columns: minmax(260px, 360px) minmax(360px, 1fr) max-content");
+    expect(appCapsuleRule).toContain("border: 1px solid oklch");
+    expect(appCapsuleRule).toContain("border-radius: 18px");
+    expect(appCapsuleRule).toContain("background: oklch");
+    expect(appCapsuleRule).not.toContain("backdrop-filter");
+    expect(brandPlateRule).toContain("grid-template-columns: 58px minmax(0, 1fr)");
+    expect(brandPlateRule).toContain("position: relative");
+    expect(brandPlateRule).toContain("isolation: isolate");
+    expect(brandPlateRule).toContain("overflow: hidden");
+    expect(brandPlateRule).toContain("radial-gradient");
+    expect(brandPlateRule).not.toContain("repeating-linear-gradient");
+    expect(brandPlateBeforeRule).toContain("radial-gradient");
+    expect(brandPlateBeforeRule).toContain("mask-image: linear-gradient");
+    expect(brandPlateBeforeRule).not.toContain("repeating-linear-gradient");
+    expect(brandPlateBeforeRule).not.toContain("linear-gradient(90deg, transparent 0 60px");
+    expect(brandPlateAfterRule).toContain("height: 2px");
+    expect(brandNameRule).toContain("font-size: 0.73rem");
+    expect(brandNameRule).toContain("font-weight: 830");
     expect(brandNameRule).not.toContain("font-weight: 950");
-    expect(brandNameBeforeRule).toContain("linear-gradient(180deg, var(--agent-red), var(--agent-blue))");
-    expect(brandNameAfterRule).toMatch(
-      /linear-gradient[(]\s*90deg,\s*transparent,\s*rgba[(]216,\s*11,\s*70,\s*0[.]42[)],\s*rgba[(]37,\s*132,\s*169,\s*0[.]35[)],\s*transparent\s*[)]/u,
-    );
-    expect(brandAgentPillRule).toContain("background: rgba(255, 255, 255, 0.68)");
-    expect(brandAgentPillRule).toContain("color: var(--agent-red)");
-    expect(capsuleHeadingRule).toContain("font-family: var(--agent-font-display)");
-    expect(capsuleHeadingRule).toContain("color: color-mix(in srgb, var(--agent-blue) 52%, var(--agent-ink))");
-    expect(capsuleHeadingRule).toContain("font-weight: 760");
-    expect(capsuleHeadingRule).not.toContain("color: var(--agent-ink)");
-    expect(capsuleHeadingRule).not.toContain("font-weight: 850");
-    expect(capsuleHeadingAccentRule).toContain("width: clamp(16px, 3vw, 62px)");
-    expect(capsuleHeadingAccentRule).toContain("border: 2px solid var(--agent-red)");
-    expect(capsuleHeadingAccentRule).toContain("radial-gradient(circle, var(--agent-red) 0 3px, transparent 4px)");
+    expect(workspaceContextRule).toContain("grid-template-columns: 38px minmax(112px, 0.7fr) max-content minmax(118px, 1fr)");
+    expect(signalRailRule).toContain("min-width: 118px");
+    expect(operatorDockRule).toContain("grid-template-columns: minmax(150px, 190px) 132px 92px");
+    expect(capsuleHeadingRule).toContain("font-family: var(--font-heading");
+    expect(capsuleHeadingRule).toContain("font-size: 1.06rem");
+    expect(capsuleHeadingRule).toContain("font-synthesis-weight: none");
+    expect(capsuleHeadingRule).toContain("font-weight: 680");
+    expect(capsuleHeadingRule).toContain("line-height: 1.16");
+    expect(capsuleHeadingRule).toContain("-webkit-font-smoothing: antialiased");
+    expect(capsuleHeadingRule).toContain("white-space: nowrap");
+    expect(workspaceStatusBarCss).not.toContain(".brandLockup");
+    expect(workspaceStatusBarCss).not.toContain(".workspaceTrail");
+    expect(workspaceStatusBarCss).not.toContain(".trailItem");
+    expect(workspaceStatusBarCss).not.toContain("frame-glass-sheen");
     expect(primaryActionRule).toContain("linear-gradient(90deg, var(--agent-red), #e01851 48%, var(--agent-red-dark))");
     expect(exchangeWindowRule).toContain("rgba(255, 255, 255, 0.68)");
     expect(exchangeWindowRule).toContain("backdrop-filter: blur(18px)");

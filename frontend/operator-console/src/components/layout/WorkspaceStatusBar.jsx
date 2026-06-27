@@ -1,4 +1,4 @@
-import { LogOut, TimerReset } from "lucide-react";
+import { Activity, LogOut, TimerReset, UserRound } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -40,23 +40,33 @@ export function WorkspaceStatusBar({
 
   return (
     <section aria-label="当前工作台" className={styles.appCapsule}>
-      <div aria-hidden="true" className={styles.logo}>
-        EA
-      </div>
-      <div className={styles.brandLockup}>
-        <span className={styles.brandName}>
-          <span>企业智能</span>
-          <strong>Agent</strong>
+      <div className={styles.brandPlate}>
+        <span aria-hidden="true" className={styles.logoMark}>
+          <span>EA</span>
+        </span>
+        <span className={styles.brandCopy}>
+          <span className={styles.brandName}>企业智能 Agent</span>
+          <h1 className={styles.capsuleHeading}>{title}</h1>
         </span>
       </div>
-      <div className={styles.capsuleCurrent}>
-        <h1 className={styles.capsuleHeading}>{title}</h1>
-      </div>
-      <div aria-hidden="true" className={styles.brandSignal}>
-        <i />
-        <i />
-        <i />
-      </div>
+      <section aria-label="工作台状态" className={styles.workspaceContext}>
+        <span aria-hidden="true" className={styles.contextIcon}>
+          <Activity size={16} strokeWidth={2.4} />
+        </span>
+        <span className={styles.contextCopy}>
+          <span>运行状态</span>
+          <strong>受控操作会话</strong>
+        </span>
+        <span className={styles.statusPills}>
+          <span className={styles.statusPill}>P1 只读控制台</span>
+          <span className={`${styles.statusPill} ${styles.statusPillLive}`}>会话在线</span>
+        </span>
+        <span aria-hidden="true" className={styles.signalRail}>
+          <i />
+          <i />
+          <i />
+        </span>
+      </section>
       <OperatorDock
         isLogoutPending={logoutMutation.isPending}
         onLogout={() => logoutMutation.mutate()}
@@ -81,9 +91,8 @@ function OperatorDock({ isLogoutPending, onLogout, operatorId, username }) {
   return (
     <section aria-label="当前登录人" className={styles.operatorDock}>
       <div className={styles.operatorProfile} data-operator-profile="">
-        <span aria-hidden="true" className={styles.operatorAvatar} data-creative-avatar="operator">
-          <span className={styles.operatorAvatarCore} />
-          <span className={styles.operatorAvatarOrbit} />
+        <span aria-hidden="true" className={styles.operatorAvatar}>
+          <UserRound size={17} strokeWidth={2.4} />
         </span>
         <span className={styles.operatorIdentity}>
           <strong title={username}>{username}</strong>
@@ -166,7 +175,7 @@ export function WorkdayCountdown({ compact = false }) {
       role="timer"
     >
       <span aria-hidden="true" className={styles.countdownGlyph}>
-        <TimerReset size={14} strokeWidth={2.6} />
+        <TimerReset size={14} strokeWidth={2.5} />
       </span>
       <span className={styles.countdownContent}>
         <span>{countdown.label}</span>

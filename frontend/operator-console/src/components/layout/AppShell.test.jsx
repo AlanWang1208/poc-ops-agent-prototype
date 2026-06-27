@@ -9,6 +9,12 @@ const appShellCss = readFileSync(
 const appShellSource = readFileSync("src/components/layout/AppShell.jsx", "utf8");
 
 describe("AppShell styles", () => {
+  it("lifts the whole sidebar navigation stack by three pixels", () => {
+    const navRule = appShellCss.match(/[.]nav\s*[{][^}]+[}]/u)?.[0] ?? "";
+
+    expect(navRule).toContain("transform: translateY(-3px)");
+  });
+
   it("renders sidebar menu buttons with login-aligned glass highlights", () => {
     const sidebarRule = appShellCss.match(/[.]sidebar\s*[{][^}]+[}]/u)?.[0] ?? "";
     const navLinkRule = appShellCss.match(/[.]navLink\s*[{][^}]+[}]/u)?.[0] ?? "";

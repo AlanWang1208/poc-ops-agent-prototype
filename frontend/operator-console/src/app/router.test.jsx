@@ -34,10 +34,6 @@ const workspaceStatusBarCss = readFileSync(
   "src/components/layout/WorkspaceStatusBar.module.css",
   "utf8",
 );
-const agentWorkspaceCss = readFileSync(
-  "src/features/agent-workspace/AgentWorkspacePage.module.css",
-  "utf8",
-);
 
 /**
  * @param {string} path
@@ -103,7 +99,7 @@ describe("operator console routes", () => {
     expect(
       screen.getByRole("link", { name: "审计记录" }),
     ).toBeInTheDocument();
-    expect(await screen.findByText("会话列表")).toBeInTheDocument();
+    expect(await screen.findByText("会话 1")).toBeInTheDocument();
     expect(screen.getByText("执行链")).toBeInTheDocument();
   });
 
@@ -111,7 +107,7 @@ describe("operator console routes", () => {
     const user = userEvent.setup();
     renderAt("/agent");
 
-    await screen.findByText("会话列表");
+    await screen.findByText("会话 1");
     await user.click(screen.getByRole("link", { name: "SQL 工作区" }));
 
     expect(
@@ -278,87 +274,47 @@ describe("operator console routes", () => {
     expect(screen.queryByRole("button", { name: "执行写操作" })).not.toBeInTheDocument();
   });
 
-  it("uses the main branch capsule status bar on the overview page", async () => {
+  it("uses the redesigned shared workspace status bar on the overview page", async () => {
     const appCapsuleRule =
       workspaceStatusBarCss.match(/[.]appCapsule\s*[{][^}]+[}]/u)?.[0] ?? "";
-    const capsuleHeadingRule =
-      workspaceStatusBarCss.match(/[.]capsuleHeading\s*[{][^}]+[}]/u)?.[0] ?? "";
+    const brandPlateRule =
+      workspaceStatusBarCss.match(/[.]brandPlate\s*[{][^}]+[}]/u)?.[0] ?? "";
+    const workspaceContextRule =
+      workspaceStatusBarCss.match(/[.]workspaceContext\s*[{][^}]+[}]/u)?.[0] ?? "";
+    const signalRailRule =
+      workspaceStatusBarCss.match(/[.]signalRail\s*[{][^}]+[}]/u)?.[0] ?? "";
     const operatorDockRule =
-      workspaceStatusBarCss.match(/[.]appCapsule [.]operatorDock\s*[{][^}]+[}]/u)?.[0] ?? "";
-    const sharedBrandLockupRule =
-      workspaceStatusBarCss.match(/[.]brandLockup\s*[{][^}]+[}]/u)?.[0] ?? "";
-    const sharedBrandNameRule =
-      workspaceStatusBarCss.match(/[.]brandName\s*[{][^}]+[}]/u)?.[0] ?? "";
-    const sharedBrandNameBeforeRule =
-      workspaceStatusBarCss.match(/[.]brandName::before\s*[{][^}]+[}]/u)?.[0] ?? "";
-    const sharedBrandNameAfterRule =
-      workspaceStatusBarCss.match(/[.]brandName::after\s*[{][^}]+[}]/u)?.[0] ?? "";
-    const sharedBrandPillRule =
-      workspaceStatusBarCss.match(/[.]brandName strong\s*[{][^}]+[}]/u)?.[0] ?? "";
-    const sharedOperatorDockRule =
       workspaceStatusBarCss.match(/[.]operatorDock\s*[{][^}]+[}]/u)?.[0] ?? "";
-    const sharedOperatorProfileRule =
+    const operatorProfileRule =
       workspaceStatusBarCss.match(/[.]operatorProfile\s*[{][^}]+[}]/u)?.[0] ?? "";
-    const sharedOperatorAvatarRule =
-      workspaceStatusBarCss.match(/[.]operatorAvatar\s*[{][^}]+[}]/u)?.[0] ?? "";
-    const sharedOperatorIdentityRule =
-      workspaceStatusBarCss.match(/[.]operatorIdentity\s*[{][^}]+[}]/u)?.[0] ?? "";
-    const sharedWorkdayCountdownRule =
-      workspaceStatusBarCss.match(/[.]workdayCountdown\s*[{][^}]+[}]/u)?.[0] ?? "";
-    const sharedCountdownGlyphRule =
-      workspaceStatusBarCss.match(/[.]countdownGlyph\s*[{][^}]+[}]/u)?.[0] ?? "";
-    const sharedLogoutButtonRule =
-      workspaceStatusBarCss.match(/[.]logoutButton\s*[{][^}]+[}]/u)?.[0] ?? "";
-    const sharedLogoutIconBadgeRule =
-      workspaceStatusBarCss.match(/[.]logoutIconBadge\s*[{][^}]+[}]/u)?.[0] ?? "";
-    const agentBrandLockupRule =
-      agentWorkspaceCss.match(/[.]brandLockup\s*[{][^}]+[}]/u)?.[0] ?? "";
-    const agentBrandNameRule =
-      agentWorkspaceCss.match(/[.]brandName\s*[{][^}]+[}]/u)?.[0] ?? "";
-    const agentBrandNameBeforeRule =
-      agentWorkspaceCss.match(/[.]brandName::before\s*[{][^}]+[}]/u)?.[0] ?? "";
-    const agentBrandNameAfterRule =
-      agentWorkspaceCss.match(/[.]brandName::after\s*[{][^}]+[}]/u)?.[0] ?? "";
-    const agentBrandPillRule =
-      agentWorkspaceCss.match(/[.]brandName strong\s*[{][^}]+[}]/u)?.[0] ?? "";
-    const agentOperatorDockRule =
-      agentWorkspaceCss.match(/[.]operatorDock\s*[{][^}]+[}]/u)?.[0] ?? "";
-    const agentOperatorAvatarRule =
-      agentWorkspaceCss.match(/[.]operatorAvatar\s*[{][^}]+[}]/u)?.[0] ?? "";
-    const agentOperatorIdentityRule =
-      agentWorkspaceCss.match(/[.]operatorIdentity\s*[{][^}]+[}]/u)?.[0] ?? "";
-    const agentWorkdayCountdownRule =
-      agentWorkspaceCss.match(/[.]workdayCountdown\s*[{][^}]+[}]/u)?.[0] ?? "";
-    const agentCountdownGlyphRule =
-      agentWorkspaceCss.match(/[.]countdownGlyph\s*[{][^}]+[}]/u)?.[0] ?? "";
-    const agentLogoutButtonRule =
-      agentWorkspaceCss.match(/[.]logoutButton\s*[{][^}]+[}]/u)?.[0] ?? "";
-    const agentLogoutIconBadgeRule =
-      agentWorkspaceCss.match(/[.]logoutIconBadge\s*[{][^}]+[}]/u)?.[0] ?? "";
 
     renderAt("/overview");
 
     expect(await screen.findByRole("heading", { name: "平台总览" })).toBeInTheDocument();
-    expect(screen.queryByText("READ_ONLY")).not.toBeInTheDocument();
+    const statusBar = screen.getByLabelText("当前工作台");
+    expect(statusBar).toBeInTheDocument();
+    expect(within(statusBar).getByLabelText("工作台状态")).toBeInTheDocument();
+    expect(within(statusBar).getByText("P1 只读控制台")).toBeInTheDocument();
+    expect(within(statusBar).getByText("会话在线")).toBeInTheDocument();
+    expect(within(statusBar).queryByRole("list", { name: "只读执行链路" })).not.toBeInTheDocument();
+    expect(within(statusBar).queryByText("M01")).not.toBeInTheDocument();
+    expect(within(statusBar).queryByText("M02")).not.toBeInTheDocument();
+    expect(within(statusBar).queryByText("M05")).not.toBeInTheDocument();
+    expect(within(statusBar).queryByText("M07")).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "启动诊断" })).not.toBeInTheDocument();
-    expect(appCapsuleRule).toContain("height: 76px");
-    expect(appCapsuleRule).toContain("border: 1px solid rgba(166, 64, 92, 0.26)");
-    expect(capsuleHeadingRule).toContain("color: color-mix(in srgb, var(--agent-blue) 52%, var(--agent-ink))");
-    expect(operatorDockRule).toContain("grid-template-columns: 176px 120px 84px");
-    expect(sharedBrandLockupRule).toBe(agentBrandLockupRule);
-    expect(sharedBrandNameRule).toBe(agentBrandNameRule);
-    expect(sharedBrandNameBeforeRule).toBe(agentBrandNameBeforeRule);
-    expect(sharedBrandNameAfterRule).toBe(agentBrandNameAfterRule);
-    expect(sharedBrandPillRule).toBe(agentBrandPillRule);
-    expect(sharedOperatorDockRule).toBe(agentOperatorDockRule);
-    expect(sharedOperatorProfileRule).toContain("width: 176px");
-    expect(sharedOperatorProfileRule).toContain("min-width: 0");
-    expect(sharedOperatorAvatarRule).toBe(agentOperatorAvatarRule);
-    expect(sharedOperatorIdentityRule).toBe(agentOperatorIdentityRule);
-    expect(sharedWorkdayCountdownRule).toBe(agentWorkdayCountdownRule);
-    expect(sharedCountdownGlyphRule).toBe(agentCountdownGlyphRule);
-    expect(sharedLogoutButtonRule).toBe(agentLogoutButtonRule);
-    expect(sharedLogoutIconBadgeRule).toBe(agentLogoutIconBadgeRule);
+    expect(appCapsuleRule).toContain("min-height: 84px");
+    expect(appCapsuleRule).toContain("grid-template-columns: minmax(260px, 360px) minmax(360px, 1fr) max-content");
+    expect(appCapsuleRule).toContain("border-radius: 18px");
+    expect(appCapsuleRule).toContain("background: oklch");
+    expect(brandPlateRule).toContain("grid-template-columns: 58px minmax(0, 1fr)");
+    expect(workspaceContextRule).toContain("grid-template-columns: 38px minmax(112px, 0.7fr) max-content minmax(118px, 1fr)");
+    expect(signalRailRule).toContain("min-width: 118px");
+    expect(operatorDockRule).toContain("grid-template-columns: minmax(150px, 190px) 132px 92px");
+    expect(operatorProfileRule).toContain("min-width: 0");
+    expect(workspaceStatusBarCss).not.toContain(".brandLockup");
+    expect(workspaceStatusBarCss).not.toContain(".workspaceTrail");
+    expect(workspaceStatusBarCss).not.toContain(".trailItem");
+    expect(workspaceStatusBarCss).not.toContain("frame-glass-sheen");
   });
 
   it("redirects the legacy agent overview query to the top-level overview route", async () => {
@@ -568,7 +524,8 @@ describe("operator console routes", () => {
       "inset: var(--frame-top) var(--frame-inset-x) auto",
     );
     expect(loginShellFrameRule).toContain("height: var(--frame-height)");
-    expect(loginShellFrameRule).toContain("border: 1px solid rgba(166, 64, 92, 0.26)");
+    expect(loginShellFrameRule).toContain("border: 1px solid rgba(76, 112, 136, 0.2)");
+    expect(loginShellFrameRule).not.toContain("rgba(166, 64, 92");
     expect(loginShellFrameRule).toContain("rgba(246, 247, 249, 0.96)");
     expect(loginShellFrameRule).not.toContain("background: transparent");
     expect(loginShellFrameRule).toContain("0 18px 56px rgba(31, 41, 51, 0.055)");
