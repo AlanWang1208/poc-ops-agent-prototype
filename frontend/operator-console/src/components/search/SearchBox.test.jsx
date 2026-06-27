@@ -103,6 +103,28 @@ describe("SearchBox", () => {
     });
   });
 
+  test("uses the Agent workspace composer treatment for natural-language search", async () => {
+    const user = userEvent.setup();
+
+    render(
+      <SearchBox
+        ariaLabel="Skill 搜索"
+        onSearch={() => {}}
+        placeholder="Skill ID / 描述 / Owner"
+      />,
+    );
+
+    await user.click(screen.getByRole("tab", { name: "自然语言" }));
+
+    const naturalSearch = screen.getByRole("search", { name: "Skill 搜索自然语言" });
+    const naturalInput = screen.getByRole("textbox", { name: "自然语言搜索" });
+    const naturalSubmit = screen.getByRole("button", { name: "搜索自然语言" });
+
+    expect(naturalSearch.className).toContain("agentComposer");
+    expect(naturalInput.className).toContain("agentComposerInput");
+    expect(naturalSubmit.className).toContain("agentComposerSubmit");
+  });
+
   test("clears the query and emits an empty search", async () => {
     const user = userEvent.setup();
     const onSearch = vi.fn();

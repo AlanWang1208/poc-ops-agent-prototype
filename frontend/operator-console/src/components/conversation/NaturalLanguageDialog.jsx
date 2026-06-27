@@ -1,3 +1,5 @@
+import styles from "./NaturalLanguageDialog.module.css";
+
 /**
  * @typedef {object} NaturalLanguageDialogProps
  * @property {string} ariaLabel
@@ -14,6 +16,7 @@
  * @property {import("react").ReactNode} [submitIcon]
  * @property {string} [submitLabel]
  * @property {string} [submitClassName]
+ * @property {"plain" | "agent-composer"} [variant]
  */
 
 /**
@@ -33,9 +36,20 @@ export function NaturalLanguageDialog({
   submitDisabled = false,
   submitIcon = null,
   submitLabel = "",
+  variant = "plain",
   value,
 }) {
   const isSubmitDisabled = disabled || submitDisabled;
+  const variantClasses = variant === "agent-composer"
+    ? {
+        form: styles.agentComposer,
+        input: styles.agentComposerInput,
+        submit: styles.agentComposerSubmit,
+      }
+    : { form: "", input: "", submit: "" };
+  const formClassName = [variantClasses.form, className].filter(Boolean).join(" ");
+  const textareaClassName = [variantClasses.input, inputClassName].filter(Boolean).join(" ");
+  const buttonClassName = [variantClasses.submit, submitClassName].filter(Boolean).join(" ");
 
   function submit() {
     if (isSubmitDisabled) {
@@ -47,7 +61,7 @@ export function NaturalLanguageDialog({
   return (
     <form
       aria-label={ariaLabel}
-      className={className}
+      className={formClassName}
       onSubmit={(event) => {
         event.preventDefault();
         submit();
@@ -56,7 +70,7 @@ export function NaturalLanguageDialog({
     >
       <textarea
         aria-label={inputLabel}
-        className={inputClassName}
+        className={textareaClassName}
         disabled={disabled}
         onChange={(event) => onChange(event.target.value)}
         onKeyDown={(event) => {
@@ -75,7 +89,7 @@ export function NaturalLanguageDialog({
       />
       <button
         aria-label={submitAriaLabel}
-        className={submitClassName}
+        className={buttonClassName}
         disabled={isSubmitDisabled}
         type="submit"
       >

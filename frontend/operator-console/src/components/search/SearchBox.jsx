@@ -1,4 +1,4 @@
-import { Search, X } from "lucide-react";
+import { Search, SendHorizontal, X } from "lucide-react";
 import { useId, useMemo, useState } from "react";
 
 import { NaturalLanguageDialog } from "../conversation/NaturalLanguageDialog.jsx";
@@ -191,18 +191,15 @@ export function SearchBox({
         >
           <NaturalLanguageDialog
             ariaLabel={`${ariaLabel}自然语言`}
-            className={styles.naturalDialog}
-            inputClassName={styles.naturalInput}
             inputLabel="自然语言搜索"
             onChange={setNaturalQuery}
             onSubmit={() => submitSearch("natural", naturalQuery)}
             placeholder={naturalPlaceholder}
             submitAriaLabel="搜索自然语言"
-            submitClassName={styles.naturalSubmit}
             submitDisabled={naturalQuery.trim().length === 0}
-            submitIcon={<Search aria-hidden="true" size={15} strokeWidth={2.35} />}
-            submitLabel="搜索自然语言"
+            submitIcon={<SendHorizontal aria-hidden="true" size={18} strokeWidth={2.4} />}
             value={naturalQuery}
+            variant="agent-composer"
           />
         </div>
       ) : null}

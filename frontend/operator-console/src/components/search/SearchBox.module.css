@@ -17,8 +17,7 @@
 
 .tabList button,
 .clearButton,
-.submitButton,
-.naturalSubmit {
+.submitButton {
   appearance: none;
   border: 0;
   cursor: pointer;
@@ -147,56 +146,6 @@
   background: #ffffff;
 }
 
-.naturalDialog {
-  display: grid;
-  min-width: 0;
-  grid-template-columns: minmax(220px, 1fr) auto;
-  gap: 10px;
-}
-
-.naturalInput {
-  box-sizing: border-box;
-  width: 100%;
-  min-height: 72px;
-  resize: vertical;
-  padding: 10px 12px;
-  border: 1px solid #dbe2ea;
-  border-radius: 8px;
-  background: #f9fbfc;
-  color: #34404d;
-  font: inherit;
-  font-size: 13px;
-  font-weight: 720;
-  line-height: 1.45;
-}
-
-.naturalInput:focus {
-  border-color: rgba(37, 132, 169, 0.34);
-  outline: 2px solid rgba(37, 132, 169, 0.14);
-  outline-offset: 2px;
-}
-
-.naturalSubmit {
-  min-width: 118px;
-  min-height: 50px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  padding: 0 14px;
-  border: 1px solid #2584a9;
-  border-radius: 8px;
-  background: #2584a9;
-  color: #fbfdff;
-  font-size: 12px;
-  font-weight: 850;
-}
-
-.naturalSubmit:disabled {
-  cursor: not-allowed;
-  opacity: 0.66;
-}
-
 .conditionFilters {
   display: flex;
   min-width: 0;
@@ -233,15 +182,13 @@
     grid-template-columns: 1fr;
   }
 
-  .conditionControls,
-  .naturalDialog {
+  .conditionControls {
     grid-template-columns: 1fr;
   }
 
   .tabList,
   .clearButton,
-  .submitButton,
-  .naturalSubmit {
+  .submitButton {
     width: 100%;
   }
 }

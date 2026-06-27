@@ -123,6 +123,7 @@ export function AgentWorkspacePage() {
               submitDisabled={!canSubmitAgentTask}
               submitIcon={<SendHorizontal aria-hidden="true" size={18} />}
               value={taskGoal}
+              variant="agent-composer"
             />
           </div>
         </div>
