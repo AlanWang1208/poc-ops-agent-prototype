@@ -1,10 +1,33 @@
+import { readFileSync } from "node:fs";
+
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, test, vi } from "vitest";
 
 import { SearchBox } from "./SearchBox.jsx";
 
+const searchBoxCss = readFileSync(
+  "src/components/search/SearchBox.module.css",
+  "utf8",
+);
+
 describe("SearchBox", () => {
+  test("lays out mode tabs above a single active search panel", () => {
+    const searchBoxRule =
+      searchBoxCss.match(/[.]searchBox\s*[{][^}]+[}]/u)?.[0] ?? "";
+    const tabListRule =
+      searchBoxCss.match(/[.]tabList\s*[{][^}]+[}]/u)?.[0] ?? "";
+    const conditionPanelRule =
+      searchBoxCss.match(/[.]conditionPanel\s*[{][^}]+[}]/u)?.[0] ?? "";
+    const naturalPanelRule =
+      searchBoxCss.match(/[.]naturalPanel\s*[{][^}]+[}]/u)?.[0] ?? "";
+
+    expect(searchBoxRule).toContain("grid-template-columns: 1fr");
+    expect(tabListRule).toContain("grid-column: 1 / -1");
+    expect(conditionPanelRule).toContain("grid-column: 1 / -1");
+    expect(naturalPanelRule).toContain("grid-column: 1 / -1");
+  });
+
   test("submits a traditional condition search", async () => {
     const user = userEvent.setup();
     const onSearch = vi.fn();
