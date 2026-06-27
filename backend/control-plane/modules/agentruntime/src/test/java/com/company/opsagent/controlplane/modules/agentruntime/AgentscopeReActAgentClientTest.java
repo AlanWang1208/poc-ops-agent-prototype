@@ -102,6 +102,9 @@ class AgentscopeReActAgentClientTest {
           assertEquals("SUCCEEDED", response.status());
           assertEquals("node-1 is healthy", response.summary());
           assertEquals(1, response.toolCallCount());
+          assertEquals(1, response.toolResults().size());
+          assertEquals("SUCCEEDED", response.toolResults().getFirst().status());
+          assertEquals("UP", response.toolResults().getFirst().output().path("status").asText());
         })
         .verifyComplete();
 

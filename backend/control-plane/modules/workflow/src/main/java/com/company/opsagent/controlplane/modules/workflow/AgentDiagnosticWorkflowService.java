@@ -7,6 +7,7 @@ import com.company.opsagent.controlplane.modules.agentruntime.AgentRuntimeResult
 import com.company.opsagent.controlplane.modules.agentruntime.AgentRuntimeService;
 import java.time.Clock;
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.UUID;
 import reactor.core.publisher.Mono;
 
@@ -89,7 +90,8 @@ public class AgentDiagnosticWorkflowService {
             runtimeResult.status(),
             runtimeResult.summary(),
             runtimeResult.toolCallCount(),
-            completedAt));
+            completedAt,
+            runtimeResult.toolResults()));
   }
 
   private Mono<AgentTaskResult> completeWithRuntimeFailure(
@@ -111,7 +113,8 @@ public class AgentDiagnosticWorkflowService {
             FAILED_TERMINAL,
             RUNTIME_FAILURE_SUMMARY,
             0,
-            completedAt));
+            completedAt,
+            List.of()));
   }
 
   /**
@@ -134,7 +137,8 @@ public class AgentDiagnosticWorkflowService {
           workflow.resultStatus(),
           workflow.resultSummary(),
           workflow.resultToolCallCount(),
-          workflow.completedAt() == null ? workflow.updatedAt() : workflow.completedAt()));
+          workflow.completedAt() == null ? workflow.updatedAt() : workflow.completedAt(),
+          List.of()));
     }
     return workflowStore.findToolStepsAfter(workflow.workspaceId(), workflow.workflowId(), 0)
         .count()
@@ -145,7 +149,8 @@ public class AgentDiagnosticWorkflowService {
             workflow.status().name(),
             reusedSummary(workflow.status()),
             Math.toIntExact(toolStepCount),
-            workflow.completedAt() == null ? workflow.updatedAt() : workflow.completedAt()));
+            workflow.completedAt() == null ? workflow.updatedAt() : workflow.completedAt(),
+            List.of()));
   }
 
   private boolean isTerminal(StoredWorkflowStatus status) {

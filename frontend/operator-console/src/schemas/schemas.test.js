@@ -365,6 +365,25 @@ const agentTaskResult = {
   summary: "已完成只读诊断，未发现阻塞风险。",
   toolCallCount: 1,
   completedAt: "2026-06-23T08:00:00Z",
+  toolResults: [
+    {
+      schemaVersion: "1.0",
+      toolCallId: "tool-call-weather-1",
+      taskId: "task-0001",
+      workflowId: "00000000-0000-4000-8000-000000000301",
+      status: "SUCCEEDED",
+      outputSchemaId: "weather-current-read:1.0.0:output",
+      output: {
+        location: "Shanghai",
+        condition: "Sunny",
+        temperatureCelsius: 31.2,
+        observedAt: "2026-06-24T10:00:00+08:00",
+      },
+      errorCode: null,
+      errorMessage: null,
+      completedAt: "2026-06-23T08:00:00Z",
+    },
+  ],
 };
 
 const nodeHealthOutput = {

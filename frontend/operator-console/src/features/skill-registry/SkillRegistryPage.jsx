@@ -42,11 +42,6 @@ export function SkillRegistryPage() {
       <WorkspaceStatusBar title="Skill 注册中心" />
 
       <main className={styles.workspaceBody}>
-        <header className={styles.title}>
-          <p className={styles.workspaceTitle}>Skill 注册中心</p>
-          <p>查看 P1 只读诊断 Skill 的版本、风险、角色、签名和治理拦截器。</p>
-        </header>
-
         <section className={styles.filters} aria-label="Skill 分类筛选">
           <div className={styles.filterChips}>
             {filterOptions.map((option) => (

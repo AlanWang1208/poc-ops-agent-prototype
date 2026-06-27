@@ -18,8 +18,17 @@
 - 在运行时从公网安装依赖。
 - 将 Job Object 或 WDAC 视为完整隔离。
 
+## 配置型 HTTP/JSON Skill 边界
+
+- 简单第三方 HTTP/JSON 只读 Skill 优先通过 `ConfiguredHttpReadOnlySkillAdapter` 配置接入，不为每个 Skill 新增专用 Java 适配器。
+- Worker 在发起 HTTP 请求前会先执行 `ops-agent.worker.http-egress.allowed-targets` allowlist；默认 allowlist 为空，拒绝所有 HTTP 目标。
+- 配置型适配器只支持单查询参数、JSON 响应和响应字段白名单；不执行第三方脚本，不读取环境变量，不支持在配置中保存 API Key。
+- 需要密钥、专用认证、SDK、复杂协议或目标系统会话的 Skill，必须先完成安全评审，并以专用适配器或内部受控网关方式接入。
+- 当前 `weather-current-read:1.0.0` 使用该通用适配器配置；默认 `endpoint-url` 为空，因此未配置受控天气源时会失败关闭。
+
 ## SQL 工作台 P1 边界
 
+- SQL 工作台 Worker 侧代码位于 `backend/execution-worker-sqlworkbench`，由 `execution-worker` 作为运行时依赖加载；这不新增部署服务或模块编号。
 - SQL 查询入口会在 Worker 内再次使用 AST 校验，只接受单条 `SELECT`。
 - Worker 在解析 JDBC `DataSource` 前会先执行本地 SQL 出口 allowlist；默认 allowlist 为空，因此未显式配置的连接会被拒绝。
 - SQL 连接目录只允许 `development` 和 `test` 环境，并且只保存连接元数据和凭据别名，不保存真实密码或密钥。
@@ -38,4 +47,7 @@
 
 ## 构建结构
 
-执行 Worker 现在是标准 Maven 模块，包含 `pom.xml`、`src/main/java` 和 `src/test/java`。
+执行 Worker 现在拆分为两个 Maven 构建模块：
+
+- `execution-worker`：通用 Worker 启动、传输认证、HTTP 边界和配置型只读 Skill 适配器。
+- `execution-worker-sqlworkbench`：SQL 工作台 Worker 侧只读拒绝、SQL 出口 allowlist、JDBC 执行和短期结果存储适配器。

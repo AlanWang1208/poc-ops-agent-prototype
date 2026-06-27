@@ -1,0 +1,31 @@
+schemaVersion: ops-agent.skill/v1
+skillId: service-dependency-health-read
+version: 1.0.0
+displayName: "服务依赖健康检查"
+description: "读取指定服务的依赖可达性和最近健康状态。"
+category: APPLICATION_DIAGNOSTICS
+riskLevel: READ_ONLY
+readOnly: true
+executor: HTTP
+outputType: JSON
+owner: application-ops
+timeoutSeconds: 20
+publishedAt: "2026-06-06T23:20:00+08:00"
+requiredRoles:
+  - ROLE_ops-reader
+  - ROLE_ops-admin
+interceptors:
+  - AUTHORIZATION
+  - AUDIT
+tags:
+  - service
+  - dependency
+  - health
+parameters:
+  - name: serviceName
+    displayName: "服务名称"
+    description: "需要检查依赖健康状态的服务标识。"
+    type: STRING
+    required: true
+    allowedValues: []
+    defaultValue: null

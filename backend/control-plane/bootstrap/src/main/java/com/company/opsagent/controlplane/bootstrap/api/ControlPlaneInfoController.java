@@ -6,6 +6,8 @@ import com.company.opsagent.controlplane.modules.audit.AuditTrail;
 import com.company.opsagent.controlplane.bootstrap.service.ModuleCatalogService;
 import jakarta.validation.constraints.NotBlank;
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -88,5 +90,25 @@ public class ControlPlaneInfoController {
     return Mono.just(Map.of(
         "count", auditTrail.snapshot().size(),
         "latest", latest));
+  }
+
+  /**
+   * 返回最近的审计事件，按最新事件优先排序。
+   */
+  @GetMapping("/audit/events")
+  public Mono<AuditEventsResponse> recentAuditEvents(
+      @RequestParam(name = "limit", defaultValue = "50") int limit) {
+    List<AuditEvent> snapshot = auditTrail.snapshot();
+    int boundedLimit = Math.max(1, Math.min(limit, 200));
+    List<AuditEvent> recent = new ArrayList<>();
+    for (int index = snapshot.size() - 1; index >= 0 && recent.size() < boundedLimit; index--) {
+      recent.add(snapshot.get(index));
+    }
+    return Mono.just(new AuditEventsResponse(snapshot.size(), recent));
+  }
+
+  public record AuditEventsResponse(
+      int total,
+      List<AuditEvent> events) {
   }
 }

@@ -1,9 +1,11 @@
 package com.company.opsagent.contracts;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.company.opsagent.contracts.agent.AgentTaskResult;
+import com.company.opsagent.contracts.agent.AgentToolResult;
 import com.company.opsagent.contracts.events.AgentToolCallCompletedPayload;
 import com.company.opsagent.contracts.events.AgentToolCallRejectedPayload;
 import com.company.opsagent.contracts.events.AgentToolCallRequestedPayload;
@@ -20,6 +22,7 @@ import com.company.opsagent.contracts.workflow.SkillReference;
 import com.company.opsagent.contracts.workflow.TraceContext;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -165,6 +168,43 @@ class ContractsTest {
   }
 
   @Test
+  void acceptsAgentTaskResultWithStructuredToolResults() throws Exception {
+    ObjectMapper mapper = new ObjectMapper();
+    JsonNode output = mapper.createObjectNode()
+        .put("location", "Shanghai")
+        .put("condition", "Sunny")
+        .put("temperatureCelsius", 31.2);
+    AgentToolResult toolResult = new AgentToolResult(
+        "1.0",
+        "tool-call-weather-1",
+        "task-weather-1",
+        "workflow-weather-1",
+        "SUCCEEDED",
+        "weather-current-read:1.0.0:output",
+        output,
+        null,
+        null,
+        OffsetDateTime.now());
+
+    AgentTaskResult result = new AgentTaskResult(
+        "1.0",
+        "task-weather-1",
+        "workflow-weather-1",
+        "SUCCEEDED",
+        "weather query completed",
+        1,
+        OffsetDateTime.now(),
+        List.of(toolResult));
+
+    assertEquals(1, result.toolResults().size());
+    JsonNode schema = mapper.readTree(Path.of("agent/agent-task-result-v1.schema.json").toFile());
+    assertTrue(schema.path("properties").has("toolResults"));
+    assertTrue(StreamSupport.stream(schema.path("required").spliterator(), false)
+        .map(JsonNode::asText)
+        .anyMatch("toolResults"::equals));
+  }
+
+  @Test
   void rejectsObsoleteAgentTaskResultStatus() {
     // 旧的 FAILED 状态信息量不足，不能继续作为跨模块契约状态传递。
     assertThrows(IllegalArgumentException.class, () -> new AgentTaskResult(
@@ -175,5 +215,38 @@ class ContractsTest {
         "diagnostic failed",
         0,
         OffsetDateTime.now()));
+  }
+
+  @Test
+  void providesWeatherCurrentSkillPackageForAgentScopeAndRegistry() throws Exception {
+    Path skillPackage = Path.of("skills/packages/weather-current");
+    Path agentScopeSkill = Path.of("../skills/weather-current/SKILL.md");
+
+    assertTrue(Files.exists(agentScopeSkill));
+    assertTrue(Files.exists(skillPackage.resolve("manifest.json")));
+    assertTrue(Files.exists(skillPackage.resolve("manifest.signature.json")));
+    assertTrue(Files.exists(skillPackage.resolve("input.schema.json")));
+    assertTrue(Files.exists(skillPackage.resolve("output.schema.json")));
+    assertTrue(Files.exists(skillPackage.resolve("tests/happy-path.json")));
+    assertTrue(Files.exists(skillPackage.resolve("tests/invalid-parameters.json")));
+    assertTrue(Files.exists(skillPackage.resolve("tests/policy-denied.json")));
+
+    ObjectMapper mapper = new ObjectMapper();
+    JsonNode manifest = mapper.readTree(skillPackage.resolve("manifest.json").toFile());
+    assertTrue("weather-current-read".equals(manifest.path("skillId").asText()));
+    assertTrue("1.0.0".equals(manifest.path("version").asText()));
+    assertTrue(manifest.path("readOnly").asBoolean());
+    assertTrue("READ_ONLY".equals(manifest.path("riskLevel").asText()));
+
+    JsonNode inputSchema = mapper.readTree(skillPackage.resolve("input.schema.json").toFile());
+    assertTrue(inputSchema.path("properties").has("location"));
+    assertTrue(StreamSupport.stream(inputSchema.path("required").spliterator(), false)
+        .map(JsonNode::asText)
+        .anyMatch("location"::equals));
+
+    JsonNode outputSchema = mapper.readTree(skillPackage.resolve("output.schema.json").toFile());
+    assertTrue(outputSchema.path("$id").asText().contains("weather-current-read/1.0.0/output.schema.json"));
+    assertTrue(outputSchema.path("properties").has("condition"));
+    assertTrue(outputSchema.path("properties").has("temperatureCelsius"));
   }
 }

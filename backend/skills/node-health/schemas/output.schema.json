@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://company.example/ops-agent/skills/node-health-read/1.1.0/output.schema.json",
+  "title": "node-health-read 输出",
+  "description": "节点健康检查的结构化输出。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "nodeName",
+    "status",
+    "cpuUsagePercent",
+    "memoryUsagePercent",
+    "diskUsagePercent",
+    "lastHeartbeatAt"
+  ],
+  "properties": {
+    "nodeName": {
+      "type": "string",
+      "minLength": 1
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "HEALTHY",
+        "DEGRADED",
+        "UNHEALTHY",
+        "UNKNOWN"
+      ]
+    },
+    "cpuUsagePercent": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 100
+    },
+    "memoryUsagePercent": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 100
+    },
+    "diskUsagePercent": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 100
+    },
+    "lastHeartbeatAt": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+}

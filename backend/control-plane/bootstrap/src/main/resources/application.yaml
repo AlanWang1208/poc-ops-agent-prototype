@@ -82,6 +82,9 @@ ops-agent:
       internal.agent.diagnostics.read:
         - ROLE_ops-reader
         - ROLE_ops-admin
+      internal.agent.tool.execute:
+        - ROLE_ops-reader
+        - ROLE_ops-admin
       internal.identity.password-reset:
         - ROLE_ops-admin
   worker:

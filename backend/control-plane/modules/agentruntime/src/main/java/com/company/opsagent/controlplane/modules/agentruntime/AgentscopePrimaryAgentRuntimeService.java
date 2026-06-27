@@ -38,7 +38,8 @@ public final class AgentscopePrimaryAgentRuntimeService implements AgentRuntimeS
         .map(response -> new AgentRuntimeResult(
             response.status(),
             response.summary(),
-            response.toolCallCount()))
+            response.toolCallCount(),
+            response.toolResults()))
         .onErrorReturn(new AgentRuntimeResult(
             "AGENT_RUNTIME_FAILED",
             "AgentScope runtime failed before producing a valid result.",

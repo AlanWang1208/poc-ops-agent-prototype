@@ -1,6 +1,7 @@
 package com.company.opsagent.executionworker;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.net.http.HttpClient;
 import java.time.Clock;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Value;
@@ -13,7 +14,11 @@ import org.springframework.context.annotation.Configuration;
  * Worker 允许列表和执行核心装配。
  */
 @Configuration
-@EnableConfigurationProperties({WorkerTransportAuthProperties.class, WorkerSqlEgressProperties.class})
+@EnableConfigurationProperties({
+    WorkerTransportAuthProperties.class,
+    WorkerHttpEgressProperties.class,
+    ConfiguredHttpReadOnlySkillProperties.class
+})
 public class ExecutionWorkerConfiguration {
 
   /**
@@ -33,13 +38,41 @@ public class ExecutionWorkerConfiguration {
   }
 
   /**
+   * 构建 Worker 本地 HTTP 出口策略，默认空配置即拒绝所有 HTTP 目标。
+   */
+  @Bean
+  WorkerHttpEgressPolicy workerHttpEgressPolicy(WorkerHttpEgressProperties properties) {
+    return properties.toPolicy();
+  }
+
+  /**
+   * 注册配置型 HTTP/JSON 只读适配器。简单第三方 HTTP Skill 应优先走该适配器配置。
+   */
+  @Bean
+  ConfiguredHttpReadOnlySkillAdapter configuredHttpReadOnlySkillAdapter(
+      ObjectMapper objectMapper,
+      WorkerHttpEgressPolicy workerHttpEgressPolicy,
+      Clock workerClock,
+      ConfiguredHttpReadOnlySkillProperties properties) {
+    return new ConfiguredHttpReadOnlySkillAdapter(
+        HttpClient.newHttpClient(),
+        objectMapper,
+        workerClock,
+        workerHttpEgressPolicy,
+        properties);
+  }
+
+  /**
    * 构建受限 Worker 核心，明确传入允许列表。
    */
   @Bean
   RestrictedReadOnlyExecutionWorker restrictedReadOnlyExecutionWorker(
       NodeHealthReadAdapter nodeHealthReadAdapter,
+      ConfiguredHttpReadOnlySkillAdapter configuredHttpReadOnlySkillAdapter,
       Clock workerClock) {
-    return new RestrictedReadOnlyExecutionWorker(List.of(nodeHealthReadAdapter), workerClock);
+    return new RestrictedReadOnlyExecutionWorker(
+        List.of(nodeHealthReadAdapter, configuredHttpReadOnlySkillAdapter),
+        workerClock);
   }
 
   /**
@@ -53,46 +86,6 @@ public class ExecutionWorkerConfiguration {
   }
 
   /**
-   * 构建 Worker 本地 SQL 出口策略，默认空配置即拒绝所有 SQL 目标。
-   */
-  @Bean
-  WorkerSqlEgressPolicy workerSqlEgressPolicy(WorkerSqlEgressProperties properties) {
-    return properties.toPolicy();
-  }
-
-  /**
-   * SQL 结果短期存储，P1 仅用于只读诊断结果暂存。
-   */
-  @Bean
-  SqlResultStore sqlResultStore(Clock workerClock) {
-    return new InMemorySqlResultStore(workerClock);
-  }
-
-  /**
-   * SQL 数据源解析边界，真实连接配置接入前仍先强制执行出口 allowlist。
-   */
-  @Bean
-  SqlDataSourceRegistry sqlDataSourceRegistry(WorkerSqlEgressPolicy workerSqlEgressPolicy) {
-    return new PolicyEnforcedSqlDataSourceRegistry(
-        workerSqlEgressPolicy,
-        request -> {
-          throw new IllegalStateException("AS/400 connection and KeyStore are not configured");
-        });
-  }
-
-  /**
-   * 构建阻塞 JDBC 只读查询执行器。
-   */
-  @Bean
-  SqlQueryExecutor sqlQueryExecutor(
-      SqlDataSourceRegistry sqlDataSourceRegistry,
-      SqlResultStore sqlResultStore,
-      ObjectMapper objectMapper,
-      Clock workerClock) {
-    return new JdbcSqlQueryExecutor(sqlDataSourceRegistry, sqlResultStore, objectMapper, workerClock);
-  }
-
-  /**
    * 启动时阻止未认证 Worker 绑定到非回环地址。
    */
   @Bean
@@ -102,13 +95,4 @@ public class ExecutionWorkerConfiguration {
     return args -> new WorkerBindingSafetyGuard(serverAddress, properties).validate();
   }
 
-  @Bean
-  RestrictedSqlQueryExecutionWorker restrictedSqlQueryExecutionWorker(
-      Clock workerClock,
-      SqlQueryExecutor sqlQueryExecutor) {
-    return new RestrictedSqlQueryExecutionWorker(
-        new CalciteSqlReadOnlyGuard(),
-        sqlQueryExecutor,
-        workerClock);
-  }
 }

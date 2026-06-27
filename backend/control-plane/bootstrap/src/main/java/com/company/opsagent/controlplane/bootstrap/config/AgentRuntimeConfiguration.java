@@ -8,6 +8,7 @@ import com.company.opsagent.controlplane.modules.agentruntime.AgentscopeAgentCli
 import com.company.opsagent.controlplane.modules.agentruntime.AgentscopeAgentResponse;
 import com.company.opsagent.controlplane.modules.agentruntime.AgentscopePrimaryAgentRuntimeService;
 import com.company.opsagent.controlplane.modules.agentruntime.AgentscopeReActAgentClientFactory;
+import com.company.opsagent.controlplane.modules.agentruntime.LocalWeatherSmokeAgentClient;
 import com.company.opsagent.controlplane.modules.skillregistry.RegisteredSkill;
 import com.company.opsagent.controlplane.modules.skillregistry.SkillPublicationStatus;
 import com.company.opsagent.controlplane.modules.skillregistry.SkillRegistryService;
@@ -42,6 +43,9 @@ public class AgentRuntimeConfiguration {
 
   @Bean
   AgentscopeAgentClient agentscopeAgentClient(AgentRuntimeProperties properties) {
+    if ("local-weather-smoke".equals(properties.getProvider())) {
+      return new LocalWeatherSmokeAgentClient();
+    }
     String apiKey = resolvedApiKey(properties);
     if (isBlank(properties.getModelName()) || isBlank(apiKey)) {
       return notConfiguredClient();

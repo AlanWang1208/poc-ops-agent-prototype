@@ -1,0 +1,20 @@
+schemaVersion: ops-agent.skill/v1
+skillId: invalid-frontmatter-read
+version: 1.0.0
+displayName: 非法 Frontmatter
+description: 用于验证平台字段拒绝。
+category: PLATFORM_OBSERVABILITY
+riskLevel: READ_ONLY
+readOnly: true
+executor: HTTP
+outputType: JSON
+owner: platform-observability
+timeoutSeconds: 10
+requiredRoles:
+  - ROLE_ops-reader
+interceptors:
+  - AUTHORIZATION
+  - AUDIT
+tags:
+  - invalid
+parameters: []

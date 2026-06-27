@@ -35,7 +35,7 @@
 ## 安全边界
 
 - Worker 默认仅监听 `127.0.0.1:8091`，不得直接作为生产部署配置。
-- Worker 仅允许内置 `node-health-read:1.1.0`，不会加载任意脚本。
+- Worker 仅允许显式注册的只读适配器，不会加载任意脚本；`node-health-read:1.1.0` 可直接执行，配置型 HTTP/JSON Skill 默认因未配置出口和端点而失败关闭。
 - 控制面诊断入口必须通过身份、策略和审计过滤器。
 - 控制面会把只读工作流持久化到 `var/workflow/control-plane` 下的本地 H2 文件库。
 - 控制面启动时会执行版本化迁移脚本 `sql/migrations/V001__workflow_schema.sql` 初始化 M05 事实表。

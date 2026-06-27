@@ -24,19 +24,31 @@ POST /internal/routing/skills/explain
 
 ## 主链路运行条件
 
-在目标环境中启用主链路前，必须配置模型供应方、API Key 注入方式和 P1 只读约束：
+控制面默认关闭 Agent Runtime。需要真正走模型和 Skill Tool Call 时，优先启用已提交的 `agent-runtime` Spring profile。该 profile 文件位于 `backend/control-plane/bootstrap/src/main/resources/application-agent-runtime.yaml`，只保存非敏感配置：
 
 ```yaml
 ops-agent:
   agent-runtime:
     enabled: true
     provider: agentscope
-    model-name: "<openai-compatible-model>"
-    base-url: "<openai-compatible-base-url>"
-    api-key-env: AGENTSCOPE_API_KEY
+    model-name: ${OPS_AGENT_AGENT_RUNTIME_MODEL_NAME:gpt-4.1-mini}
+    base-url: ${OPS_AGENT_AGENT_RUNTIME_BASE_URL:https://api.openai.com/v1}
+    api-key-env: OPENAI_API_KEY
 ```
 
-密钥必须通过运行环境注入，不得写入源码、配置样例、日志或测试数据。
+真实 API Key 必须通过运行环境、部署密钥系统或受保护的外部 Spring 配置源注入，不得写入源码、配置样例、日志、Prompt、制品或测试数据。使用 OpenAI 时，运行环境中提供名为 `OPENAI_API_KEY` 的密钥；使用百炼千问时，在目标环境专用配置中覆盖 `model-name`、`base-url` 和 `api-key-env`，仍不得提交真实密钥。
+
+真实 Tool Call 还需要 M02 策略动作 `internal.agent.tool.execute`。基础 `application.yaml` 已为 `ROLE_ops-reader` 和 `ROLE_ops-admin` 配置该动作，避免模型发起工具调用后被平台策略默认拒绝。
+
+不依赖 PowerShell 的启用方式：
+
+```bash
+export SPRING_PROFILES_ACTIVE=agent-runtime
+export OPENAI_API_KEY="<由密钥系统注入的真实值>"
+./mvnw -pl control-plane/bootstrap spring-boot:run
+```
+
+也可以在 systemd、Docker、Kubernetes Secret、CI/CD 变量或外部 Spring 配置文件中设置同等配置；原则是 profile 和非敏感模型参数可以进配置文件，真实 Key 只进密钥通道。
 
 未配置模型供应方、API Key 或启用开关时，主入口必须失败关闭，返回明确错误，不得静默改走未审计路径。
 
@@ -58,7 +70,7 @@ ops-agent:
 
 ## 验证命令
 
-从 `backend` 目录运行：
+从 `backend` 目录运行。Windows 环境：
 
 ```powershell
 .\mvnw.cmd -pl control-plane/modules/agentruntime -am test
@@ -68,6 +80,17 @@ ops-agent:
 .\mvnw.cmd -pl control-plane/modules/agentruntime,control-plane/modules/agentrouting,control-plane/modules/workflow,control-plane/bootstrap -am test
 .\mvnw.cmd -pl control-plane/modules/agentruntime -am '-Dtest=AgentscopeReActAgentClientTest' '-Dsurefire.failIfNoSpecifiedTests=false' test
 .\mvnw.cmd -pl control-plane/bootstrap -am dependency:tree '-Dincludes=io.modelcontextprotocol.sdk:*'
+```
+
+Linux、macOS 或容器环境：
+
+```bash
+./mvnw -pl control-plane/modules/agentruntime -am test
+./mvnw -pl control-plane/modules/workflow -am test
+./mvnw -pl control-plane/bootstrap -am test
+./mvnw -pl control-plane/modules/agentruntime,control-plane/modules/workflow,control-plane/bootstrap -am test
+./mvnw -pl control-plane/modules/agentruntime -am -Dtest=AgentscopeReActAgentClientTest -Dsurefire.failIfNoSpecifiedTests=false test
+./mvnw -pl control-plane/bootstrap -am dependency:tree -Dincludes=io.modelcontextprotocol.sdk:*
 ```
 
 期望：
@@ -82,7 +105,7 @@ ops-agent:
 | 现象 | 处理 |
 |---|---|
 | 返回 `AGENT_RUNTIME_DISABLED` | 检查 `ops-agent.agent-runtime.enabled` 是否为 `true` |
-| 返回 `AGENT_RUNTIME_NOT_CONFIGURED` | 检查 `model-name`、`base-url` 和 `api-key-env` 指向的运行环境变量 |
-| 返回 `POLICY_DENIED` | 检查调用身份是否具备 `internal.agent.diagnostics.read` 对应角色 |
+| 返回 `AGENT_RUNTIME_NOT_CONFIGURED` | 检查 `agent-runtime` profile、`model-name`、`base-url` 和 `api-key-env` 指向的运行环境变量 |
+| 返回 `POLICY_DENIED` | 检查调用身份是否具备 `internal.agent.diagnostics.read` 和 `internal.agent.tool.execute` 对应角色 |
 | Agent 输出为空 | 检查模型供应方响应；平台只返回最终文本摘要，不暴露模型内部推理 |
 | 出现非只读工具调用 | 保持 P1 拒绝，不得临时放宽策略；先补安全评审和 ADR |

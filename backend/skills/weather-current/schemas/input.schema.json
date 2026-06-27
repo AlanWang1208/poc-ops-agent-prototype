@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://company.example/ops-agent/skills/weather-current-read/1.0.0/input.schema.json",
+  "title": "weather-current-read 输入",
+  "description": "读取当前天气所需的输入参数。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "location"
+  ],
+  "properties": {
+    "location": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 120,
+      "description": "城市、站点或地理位置。"
+    }
+  }
+}

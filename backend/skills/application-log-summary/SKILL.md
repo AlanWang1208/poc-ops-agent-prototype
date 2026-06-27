@@ -1,11 +1,6 @@
 ---
 name: application-log-summary-read
 description: Summarize recent application error logs through the platform read-only log summary tool.
-version: 1.0.0
-risk: read_only
-category: application_diagnostics
-platform_tool: application-log-summary-read
-platform_contract: backend/contracts/skills/packages/application-log-summary/manifest.json
 ---
 
 # Application Log Summary Read

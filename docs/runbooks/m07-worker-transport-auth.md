@@ -62,6 +62,46 @@ ops-agent:
 4. 请求环境、连接目录环境和 allowlist 目标必须同时匹配。
 5. 该机制是 Worker 应用层出口控制，不替代防火墙、私有网络、mTLS、短期目标系统凭据、Windows 隔离或网络层出口策略。
 
+## HTTP 出口 allowlist 与配置型 Skill
+
+简单 HTTP/JSON 只读 Skill 应优先走配置型 Worker 适配器，不为每个第三方 Skill 新增专用 Java 类。Worker 发起 HTTP 请求前会校验 `scheme + host + port` 是否命中 `http-egress.allowed-targets`；默认配置为空，表示拒绝所有 HTTP 目标。
+
+示例：
+
+```yaml
+ops-agent:
+  worker:
+    http-egress:
+      allowed-targets:
+        - scheme: https
+          host: weather-gateway.internal
+          port: 443
+    configured-http-skills:
+      skills:
+        - skill-id: weather-current-read
+          version: 1.0.0
+          endpoint-url: https://weather-gateway.internal/current
+          input-parameter-name: location
+          query-parameter-name: location
+          source: weather-read-model
+          timeout: 5s
+          allowed-response-fields:
+            - location
+            - condition
+            - temperatureCelsius
+            - humidityPercent
+            - windSpeedKph
+            - observationTime
+```
+
+配置要求：
+
+1. `endpoint-url` 必须是不含用户名、密码、query 和 fragment 的基础 URL。
+2. `configured-http-skills` 只保存非敏感元数据、端点和响应字段白名单，不得保存 API Key、Token、Cookie 或 Basic Auth 信息。
+3. 如第三方天气源需要密钥，应先通过内部受控网关或后续短期凭据机制接入；不得把第三方密钥写入 Worker 配置。
+4. 响应只会透传 `allowed-response-fields` 中列出的字段，并由适配器补充 `source` 和 `generatedAt`。
+5. 该机制是 Worker 应用层出口控制，不替代防火墙、私有网络、mTLS、短期目标系统凭据、Windows 隔离或网络层出口策略。
+
 ## 启用步骤
 
 1. 确认控制面和 Worker 主机时间同步，建议接入同一 NTP 源。
@@ -121,4 +161,5 @@ P1 M07 验收至少提供：
 - 错误签名请求 `401` 证据。
 - 非回环绑定且认证禁用时启动失败的自动化测试证据。
 - SQL 出口 allowlist 默认拒绝、未知连接拒绝、禁用连接拒绝、环境不匹配拒绝和 host/port 不在 allowlist 时拒绝的自动化测试证据。
+- HTTP 出口 allowlist 默认拒绝、未配置 HTTP Skill 端点拒绝、query 参数安全编码和响应字段白名单的自动化测试证据。
 - 后端测试、契约检查和密钥扫描结果。

@@ -17,7 +17,7 @@
 1. 浏览器和控制面之间：输入和 Bearer Token 均视为不可信。
 2. 控制面模块之间：跨模块行为使用明确接口和共享契约。
 3. 控制面和 Worker 之间：仅发送已授权、带版本、短期有效的只读请求。
-4. Worker 和目标系统之间：P1 只允许显式注册的只读适配器；SQL 查询还必须命中 Worker 本地开发或测试出口 allowlist。
+4. Worker 和目标系统之间：P1 只允许显式注册的只读适配器；SQL 查询必须命中 Worker 本地开发或测试出口 allowlist；配置型 HTTP/JSON Skill 必须命中 Worker 本地 HTTP 出口 allowlist。
 
 ## 主要威胁与当前控制
 
@@ -29,6 +29,7 @@
 | 重放 Worker 请求 | 幂等键、请求 ID、30 秒过期时间 | 持久化幂等存储尚未实现 |
 | 绕过控制面直接调用 Worker | 开发 Worker 默认仅绑定 `127.0.0.1`；控制面到 Worker 支持 HMAC 签名；非回环绑定未启用认证时启动失败 | mTLS、网络层出口策略和部署隔离仍需生产 ADR 与演练 |
 | Worker 连接未批准 SQL 目标 | SQL Worker 在创建 JDBC 连接前执行本地连接目录和 host/port allowlist；默认空 allowlist 拒绝所有 SQL 目标；P1 禁止生产 SQL 连接目录 | 该控制仍属于应用层保护，不能替代防火墙、私有网络、mTLS、短期凭据和 Windows 隔离 |
+| Worker 连接未批准 HTTP 目标 | 配置型 HTTP/JSON Skill 在请求前执行 `scheme + host + port` allowlist；默认空 allowlist 和空 `endpoint-url` 会失败关闭；响应字段按白名单透传 | 该控制仍属于应用层保护，不能替代防火墙、私有网络、mTLS、短期凭据、内部网关和 Windows 隔离 |
 | 事件内容欺骗操作台 | 强类型事件和载荷，前端边界解析 | SSE 当前在工作流完成后批量输出 |
 | 敏感数据进入日志和事件 | Skill 拦截器声明、结构化事件 | 全链路脱敏策略仍需扩展 |
 
@@ -40,3 +41,4 @@
 - 不得接受 `READ_ONLY` 以外的命令类型。
 - 不得由前端、Prompt 或 Worker 自行授予权限。
 - 不得在 P1 配置生产 SQL 连接目录或绕过 Worker SQL 出口 allowlist。
+- 不得在配置型 HTTP/JSON Skill 中保存 API Key、Token、Cookie、Basic Auth 信息或绕过 Worker HTTP 出口 allowlist。

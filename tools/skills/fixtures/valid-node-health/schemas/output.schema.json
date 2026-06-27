@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://company.example/ops-agent/skills/valid-node-health-read/1.0.0/output.schema.json",
+  "title": "valid-node-health-read 输出",
+  "description": "节点健康检查输出。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "nodeName",
+    "status"
+  ],
+  "properties": {
+    "nodeName": {
+      "type": "string",
+      "minLength": 1
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "HEALTHY",
+        "UNKNOWN"
+      ]
+    }
+  }
+}

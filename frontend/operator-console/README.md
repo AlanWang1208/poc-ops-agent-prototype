@@ -85,7 +85,7 @@ npm install
 npm run dev
 ```
 
-开发服务器会把 `/auth` 和 `/internal` 请求代理到本机控制面 `http://127.0.0.1:8080`。
+开发服务器会把 `/auth`、`/api` 和 `/internal` 请求代理到本机控制面 `http://127.0.0.1:8080`。
 
 ## 本地验证
 

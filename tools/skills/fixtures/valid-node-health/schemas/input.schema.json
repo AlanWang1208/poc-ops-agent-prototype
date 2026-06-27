@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://company.example/ops-agent/skills/valid-node-health-read/1.0.0/input.schema.json",
+  "title": "valid-node-health-read 输入",
+  "description": "读取节点健康状态所需的输入参数。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "nodeName"
+  ],
+  "properties": {
+    "nodeName": {
+      "type": "string",
+      "minLength": 1,
+      "description": "需要检查的节点标识。"
+    }
+  }
+}

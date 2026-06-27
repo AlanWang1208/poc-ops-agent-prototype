@@ -10,9 +10,19 @@
   "readOnly": true,
   "timeoutSeconds": 20,
   "owner": "application-ops",
-  "requiredRoles": ["ROLE_ops-reader", "ROLE_ops-admin"],
-  "tags": ["service", "dependency", "health"],
-  "interceptors": ["AUTHORIZATION", "AUDIT"],
+  "requiredRoles": [
+    "ROLE_ops-reader",
+    "ROLE_ops-admin"
+  ],
+  "tags": [
+    "service",
+    "dependency",
+    "health"
+  ],
+  "interceptors": [
+    "AUTHORIZATION",
+    "AUDIT"
+  ],
   "parameters": [
     {
       "name": "serviceName",

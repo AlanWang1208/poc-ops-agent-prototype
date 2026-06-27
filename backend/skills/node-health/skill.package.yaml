@@ -1,0 +1,31 @@
+schemaVersion: ops-agent.skill/v1
+skillId: node-health-read
+version: 1.1.0
+displayName: "节点健康检查"
+description: "读取指定节点的 CPU、内存、磁盘和最近心跳状态。"
+category: INFRASTRUCTURE_DIAGNOSTICS
+riskLevel: READ_ONLY
+readOnly: true
+executor: SHELL
+outputType: JSON
+owner: platform-observability
+timeoutSeconds: 20
+publishedAt: "2026-06-06T22:10:00+08:00"
+requiredRoles:
+  - ROLE_ops-reader
+  - ROLE_ops-admin
+interceptors:
+  - AUTHORIZATION
+  - AUDIT
+tags:
+  - node
+  - health
+  - diagnostics
+parameters:
+  - name: nodeName
+    displayName: "节点名称"
+    description: "需要检查的节点标识。"
+    type: STRING
+    required: true
+    allowedValues: []
+    defaultValue: null

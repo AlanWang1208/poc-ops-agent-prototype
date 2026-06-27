@@ -1,0 +1,29 @@
+schemaVersion: ops-agent.skill/v1
+skillId: valid-node-health-read
+version: 1.0.0
+displayName: 有效节点健康检查
+description: 读取指定节点的健康状态。
+category: INFRASTRUCTURE_DIAGNOSTICS
+riskLevel: READ_ONLY
+readOnly: true
+executor: HTTP
+outputType: JSON
+owner: platform-observability
+timeoutSeconds: 20
+requiredRoles:
+  - ROLE_ops-reader
+  - ROLE_ops-admin
+interceptors:
+  - AUTHORIZATION
+  - AUDIT
+tags:
+  - node
+  - health
+parameters:
+  - name: nodeName
+    displayName: 节点名称
+    description: 需要检查的节点标识。
+    type: STRING
+    required: true
+    allowedValues: []
+    defaultValue: null

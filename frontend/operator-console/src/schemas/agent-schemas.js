@@ -70,6 +70,25 @@ export const agentTaskStatusValues = [
   "AGENT_RUNTIME_FAILED",
 ];
 
+export const agentToolResultSchema = z
+  .object({
+    schemaVersion: z.literal("1.0"),
+    toolCallId: nonBlankString,
+    taskId: nonBlankString,
+    workflowId: nonBlankString,
+    status: z.enum(["SUCCEEDED", "FAILED", "REJECTED", "TIMEOUT"]),
+    outputSchemaId: nonBlankString,
+    output: z.record(z.string(), z.unknown()),
+    errorCode: nonBlankString.nullable(),
+    errorMessage: nonBlankString.nullable(),
+    completedAt: z.iso.datetime({ offset: true }),
+  })
+  .strict();
+
+/**
+ * @typedef {z.infer<typeof agentToolResultSchema>} AgentToolResult
+ */
+
 export const agentTaskResultSchema = z
   .object({
     schemaVersion: z.literal("1.0"),
@@ -79,6 +98,7 @@ export const agentTaskResultSchema = z
     summary: nonBlankString,
     toolCallCount: z.number().int().nonnegative(),
     completedAt: z.iso.datetime({ offset: true }),
+    toolResults: z.array(agentToolResultSchema),
   })
   .strict();
 
@@ -100,6 +120,26 @@ export const nodeHealthOutputSchema = z
 /**
  * @typedef {z.infer<typeof nodeHealthOutputSchema>} NodeHealthOutput
  */
+
+export const weatherCurrentOutputSchema = z
+  .object({
+    location: nonBlankString,
+    condition: nonBlankString,
+    temperatureCelsius: z.number().min(-90).max(70),
+    humidityPercent: z.number().int().min(0).max(100).optional(),
+    windSpeedKph: z.number().min(0).optional(),
+    observationTime: z.iso.datetime({ offset: true }).optional(),
+    observedAt: z.iso.datetime({ offset: true }).optional(),
+    source: nonBlankString.optional(),
+    generatedAt: z.iso.datetime({ offset: true }).optional(),
+  })
+  .strict();
+
+/**
+ * @typedef {z.infer<typeof weatherCurrentOutputSchema>} WeatherCurrentOutput
+ */
+
+export const workflowIdParameterSchema = z.uuid();
 
 const skillReleaseSnapshotSchema = z
   .object({

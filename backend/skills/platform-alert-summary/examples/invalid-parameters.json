@@ -1,0 +1,21 @@
+{
+  "caseId": "platform-alert-summary-read-invalid-parameters",
+  "skillId": "platform-alert-summary-read",
+  "version": "1.0.0",
+  "description": "未知严重级别必须被输入 Schema 拒绝。",
+  "operator": {
+    "subject": "ops-reader-1",
+    "roles": [
+      "ROLE_ops-reader"
+    ]
+  },
+  "targetEnvironment": "development",
+  "input": {
+    "severity": "BLOCKER"
+  },
+  "expected": {
+    "decision": "REJECT",
+    "reason": "SCHEMA_VALIDATION_FAILED",
+    "field": "severity"
+  }
+}

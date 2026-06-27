@@ -238,6 +238,9 @@ public class PolicyEnforcementWebFilter implements WebFilter {
       if (method == HttpMethod.GET && "/internal/audit/latest".equals(path)) {
         return new ActionDescriptor("internal.audit.read", path);
       }
+      if (method == HttpMethod.GET && "/internal/audit/events".equals(path)) {
+        return new ActionDescriptor("internal.audit.read", path);
+      }
       if (method == HttpMethod.GET && "/internal/skills".equals(path)) {
         return new ActionDescriptor("internal.skills.read", path);
       }

@@ -1,9 +1,11 @@
 package com.company.opsagent.contracts.agent;
 
+import static com.company.opsagent.contracts.ContractValues.required;
 import static com.company.opsagent.contracts.ContractValues.requiredText;
 import static com.company.opsagent.contracts.ContractValues.requiredTime;
 
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -19,7 +21,8 @@ public record AgentTaskResult(
     String status,
     String summary,
     int toolCallCount,
-    OffsetDateTime completedAt) {
+    OffsetDateTime completedAt,
+    List<AgentToolResult> toolResults) {
 
   /**
    * P1 Agent 诊断结果允许的状态集合。
@@ -49,5 +52,25 @@ public record AgentTaskResult(
       throw new IllegalArgumentException("toolCallCount must not be negative");
     }
     completedAt = requiredTime(completedAt, "completedAt");
+    toolResults = List.copyOf(required(toolResults, "toolResults"));
+  }
+
+  public AgentTaskResult(
+      String schemaVersion,
+      String taskId,
+      String workflowId,
+      String status,
+      String summary,
+      int toolCallCount,
+      OffsetDateTime completedAt) {
+    this(
+        schemaVersion,
+        taskId,
+        workflowId,
+        status,
+        summary,
+        toolCallCount,
+        completedAt,
+        List.of());
   }
 }

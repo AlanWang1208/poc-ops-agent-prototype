@@ -1,0 +1,24 @@
+{
+  "caseId": "valid-node-health-read-happy-path",
+  "skillId": "valid-node-health-read",
+  "version": "1.0.0",
+  "description": "读取开发环境节点健康状态成功。",
+  "operator": {
+    "subject": "ops-reader-1",
+    "roles": [
+      "ROLE_ops-reader"
+    ]
+  },
+  "targetEnvironment": "development",
+  "input": {
+    "nodeName": "node-a"
+  },
+  "expected": {
+    "decision": "ALLOW",
+    "status": "SUCCEEDED",
+    "output": {
+      "nodeName": "node-a",
+      "status": "HEALTHY"
+    }
+  }
+}

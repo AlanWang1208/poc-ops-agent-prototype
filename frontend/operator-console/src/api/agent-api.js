@@ -5,8 +5,15 @@ import {
   semanticEventSchema,
   skillRoutingRequestSchema,
   skillRoutingResponseSchema,
+  workflowIdParameterSchema,
 } from "../schemas/agent-schemas.js";
-import { ApiError, requestJson } from "./client.js";
+import {
+  ApiError,
+  createApiErrorFromResponse,
+  createSessionExpiredApiError,
+  isLoginHtmlResponse,
+  requestJson,
+} from "./client.js";
 
 /**
  * @param {unknown} criteria
@@ -75,19 +82,69 @@ export async function streamReadOnlyDiagnosticEvents(input, options = {}) {
   }
 
   if (!response.ok) {
-    const errorBody = await readOptionalJson(response).catch(() => undefined);
-    const structuredError = readStructuredError(errorBody);
+    throw await createApiErrorFromResponse(response);
+  }
+
+  return readSemanticEventStream(response, options);
+}
+
+/**
+ * @param {unknown} workflowIdInput
+ * @param {{afterSequence?: number, onEvent?: (event: import("../schemas/agent-schemas.js").SemanticEvent) => void, signal?: AbortSignal}} [options]
+ * @returns {Promise<import("../schemas/agent-schemas.js").SemanticEvent[]>}
+ */
+export async function loadWorkflowEvents(workflowIdInput, options = {}) {
+  let workflowId;
+  try {
+    workflowId = workflowIdParameterSchema.parse(workflowIdInput);
+  } catch (cause) {
     throw new ApiError({
-      status: response.status,
-      kind:
-        response.status === 401
-          ? "unauthorized"
-          : response.status === 403
-            ? "forbidden"
-            : "request",
-      code: structuredError.code,
-      message: structuredError.message ?? `Request failed with HTTP ${response.status}`,
+      status: 0,
+      kind: "contract",
+      message: "Workflow id did not match the expected contract",
+      cause,
     });
+  }
+
+  const requestedAfterSequence = options.afterSequence;
+  const afterSequence = typeof requestedAfterSequence === "number" &&
+    Number.isInteger(requestedAfterSequence) &&
+    requestedAfterSequence >= 0
+    ? requestedAfterSequence
+    : 0;
+  let response;
+  try {
+    response = await fetch(
+      `/internal/diagnostics/read-only/workflows/${encodeURIComponent(workflowId)}/events?afterSequence=${afterSequence}`,
+      {
+        credentials: "include",
+        headers: { Accept: "text/event-stream" },
+        signal: options.signal,
+      },
+    );
+  } catch (cause) {
+    throw new ApiError({
+      status: 0,
+      kind: "network",
+      message: "Network request failed",
+      cause,
+    });
+  }
+
+  if (!response.ok) {
+    throw await createApiErrorFromResponse(response);
+  }
+
+  return readSemanticEventStream(response, options);
+}
+
+/**
+ * @param {Response} response
+ * @param {{onEvent?: (event: import("../schemas/agent-schemas.js").SemanticEvent) => void}} options
+ */
+async function readSemanticEventStream(response, options) {
+  if (isLoginHtmlResponse(response)) {
+    throw createSessionExpiredApiError(response);
   }
 
   let streamText;
@@ -155,39 +212,4 @@ function parseServerSentEventFrames(text) {
       }
       return dataLines.join("\n");
     });
-}
-
-/**
- * @param {Response} response
- * @returns {Promise<unknown>}
- */
-async function readOptionalJson(response) {
-  const text = await response.text();
-  if (!text) {
-    return undefined;
-  }
-  return JSON.parse(text);
-}
-
-/**
- * @param {unknown} value
- * @returns {{code?: string, message?: string}}
- */
-function readStructuredError(value) {
-  if (typeof value !== "object" || value === null) {
-    return {};
-  }
-  const error = /** @type {Record<string, unknown>} */ (value);
-  return {
-    code: readNonBlankString(error.code) ?? readNonBlankString(error.errorCode),
-    message: readNonBlankString(error.message),
-  };
-}
-
-/**
- * @param {unknown} value
- * @returns {string | undefined}
- */
-function readNonBlankString(value) {
-  return typeof value === "string" && value.trim() ? value : undefined;
 }

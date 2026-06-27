@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://company.example/ops-agent/skills/application-log-summary-read/1.0.0/output.schema.json",
+  "title": "application-log-summary-read 输出",
+  "description": "应用错误日志摘要的结构化输出。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "applicationName",
+    "timeWindowMinutes",
+    "errorCount",
+    "topKeywords",
+    "summaryMarkdown",
+    "generatedAt"
+  ],
+  "properties": {
+    "applicationName": {
+      "type": "string",
+      "minLength": 1
+    },
+    "timeWindowMinutes": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 1440
+    },
+    "errorCount": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "topKeywords": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "summaryMarkdown": {
+      "type": "string",
+      "minLength": 1
+    },
+    "generatedAt": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+}

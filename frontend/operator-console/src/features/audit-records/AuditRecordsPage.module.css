@@ -20,47 +20,13 @@
 .workspaceBody {
   display: grid;
   min-height: 0;
-  grid-template-rows: auto auto auto minmax(0, 1fr);
+  grid-template-rows: auto auto minmax(0, 1fr);
   gap: 20px;
   padding: 20px 24px 24px;
 }
 
-.title {
-  display: grid;
-  gap: 10px;
-  padding-top: 4px;
-}
-
-.title p,
-.workspaceTitle {
-  margin: 0;
-}
-
-.title .workspaceTitle {
-  color: var(--audit-ink);
-  font-family: var(--font-display);
-  font-size: 38px;
-  font-weight: 760;
-  letter-spacing: 0;
-  line-height: 1.18;
-}
-
-.title p {
-  color: var(--audit-muted);
-  font-size: 16px;
-  font-weight: 680;
-  line-height: 1.5;
-}
-
-.summaryGrid {
-  display: grid;
-  grid-template-columns: minmax(0, 1.65fr) minmax(280px, 0.86fr);
-  gap: 18px;
-}
-
-.heroCard,
-.integrityCard,
 .filterBar,
+.skillAuditHighlights,
 .ledger,
 .detail {
   min-width: 0;
@@ -76,45 +42,89 @@
     inset 0 1px 0 rgba(255, 255, 255, 0.72);
 }
 
-.heroCard {
+.skillAuditHighlights {
   display: grid;
-  min-height: 108px;
-  grid-template-columns: 68px minmax(0, 1fr);
+  grid-template-columns: minmax(190px, 0.24fr) minmax(0, 1fr);
   gap: 16px;
-  align-items: center;
-  padding: 20px 22px;
+  align-items: stretch;
+  padding: 16px 18px;
 }
 
-.seal {
-  position: relative;
+.skillAuditTitle {
   display: grid;
-  width: 60px;
-  height: 60px;
-  place-items: center;
-  border: 2px solid rgba(211, 17, 69, 0.24);
-  border-radius: 50%;
+  align-content: center;
+  gap: 5px;
+  min-width: 0;
+}
+
+.skillAuditTitle strong {
+  color: var(--audit-ink);
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 760;
+  line-height: 1.2;
+}
+
+.skillAuditTitle span {
+  color: var(--audit-muted);
+  font-size: 12px;
+  font-weight: 760;
+  line-height: 1.35;
+}
+
+.skillAuditList {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  min-width: 0;
+}
+
+.skillAuditItem {
+  --entry-color: var(--audit-blue);
+  display: grid;
+  min-width: 0;
+  gap: 6px;
+  padding: 11px 12px;
+  border: 1px solid color-mix(in srgb, var(--entry-color) 18%, var(--audit-border));
+  border-left: 4px solid var(--entry-color);
+  border-radius: 8px;
   background:
-    radial-gradient(circle, rgba(211, 17, 69, 0.08), transparent 58%),
-    rgba(255, 255, 255, 0.72);
-  color: var(--audit-red);
+    radial-gradient(circle at 0% 18%, color-mix(in srgb, var(--entry-color) 14%, transparent), transparent 8rem),
+    rgba(255, 255, 255, 0.78);
 }
 
-.seal::before,
-.seal::after {
-  position: absolute;
-  inset: -8px;
-  border: 1px solid rgba(211, 17, 69, 0.12);
-  border-radius: 50%;
-  content: "";
+.skillAuditItem strong,
+.skillAuditItem span,
+.skillAuditItem small {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.seal::after {
-  inset: -14px -6px;
-  transform: rotate(16deg);
+.skillAuditItem strong {
+  color: var(--audit-ink);
+  font-size: 13px;
+  font-weight: 900;
 }
 
-.heroCard h2,
-.integrityCard h2,
+.skillAuditItem span,
+.skillAuditItem small {
+  color: var(--audit-muted);
+  font-size: 11px;
+  font-weight: 820;
+}
+
+.skillAuditItem span:nth-of-type(2) {
+  width: max-content;
+  max-width: 100%;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--entry-color) 10%, #fff);
+  color: color-mix(in srgb, var(--entry-color) 70%, var(--audit-ink));
+  font-weight: 900;
+}
+
 .ledger h2,
 .detail h2 {
   margin: 0;
@@ -124,72 +134,6 @@
   font-weight: 760;
   letter-spacing: 0;
   line-height: 1.14;
-}
-
-.heroCard p,
-.integrityCard p {
-  margin: 8px 0 0;
-  color: var(--audit-muted);
-  font-size: 13px;
-  font-weight: 720;
-  line-height: 1.45;
-}
-
-.integrityCard {
-  display: grid;
-  min-height: 108px;
-  grid-template-rows: auto minmax(0, 1fr);
-  gap: 14px;
-  padding: 18px 20px;
-}
-
-.panelHeading {
-  display: grid;
-  grid-template-columns: 34px minmax(0, 1fr);
-  gap: 9px;
-  align-items: center;
-}
-
-.panelHeading > span {
-  display: grid;
-  width: 34px;
-  height: 34px;
-  place-items: center;
-  border: 1px solid rgba(34, 126, 166, 0.22);
-  border-radius: 8px;
-  background: #227ea6;
-  color: #fff;
-  box-shadow:
-    0 8px 16px rgba(34, 126, 166, 0.14),
-    inset 0 1px 0 rgba(255, 255, 255, 0.32);
-}
-
-.panelHeading p,
-.panelHeading h2 {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.hashGrid {
-  display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 6px;
-}
-
-.hashGrid span {
-  height: 9px;
-  border-radius: 999px;
-  background: rgba(34, 126, 166, 0.14);
-}
-
-.hashGrid span:nth-child(3n) {
-  background: rgba(22, 135, 90, 0.18);
-}
-
-.hashGrid span:nth-child(5n) {
-  background: rgba(211, 17, 69, 0.16);
 }
 
 .filterBar {
@@ -493,8 +437,12 @@
 }
 
 @media (max-width: 1180px) {
-  .summaryGrid,
+  .skillAuditHighlights,
   .auditLayout {
+    grid-template-columns: 1fr;
+  }
+
+  .skillAuditList {
     grid-template-columns: 1fr;
   }
 
@@ -517,11 +465,6 @@
     padding: 18px;
   }
 
-  .title .workspaceTitle {
-    font-size: 30px;
-  }
-
-  .heroCard,
   .auditEntry {
     grid-template-columns: 1fr;
   }

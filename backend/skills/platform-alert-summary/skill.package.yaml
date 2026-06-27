@@ -1,0 +1,32 @@
+schemaVersion: ops-agent.skill/v1
+skillId: platform-alert-summary-read
+version: 1.0.0
+displayName: "平台告警摘要"
+description: "读取平台当前活跃告警并按严重级别汇总。"
+category: PLATFORM_OBSERVABILITY
+riskLevel: READ_ONLY
+readOnly: true
+executor: HTTP
+outputType: JSON
+owner: platform-observability
+timeoutSeconds: 20
+publishedAt: "2026-06-06T23:20:00+08:00"
+requiredRoles:
+  - ROLE_ops-reader
+  - ROLE_ops-admin
+interceptors:
+  - AUTHORIZATION
+  - AUDIT
+  - SENSITIVE_DATA_MASKING
+tags:
+  - platform
+  - alert
+  - summary
+parameters:
+  - name: severity
+    displayName: "最低严重级别"
+    description: "仅返回达到指定严重级别的活跃告警。"
+    type: ENUM
+    required: false
+    allowedValues: [INFO, WARNING, CRITICAL]
+    defaultValue: "WARNING"

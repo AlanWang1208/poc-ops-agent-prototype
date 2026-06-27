@@ -1,11 +1,6 @@
 ---
 name: certificate-expiry-read
 description: Check the expiry status of an internal HTTPS endpoint certificate through the platform read-only certificate tool.
-version: 1.0.0
-risk: read_only
-category: infrastructure_diagnostics
-platform_tool: certificate-expiry-read
-platform_contract: backend/contracts/skills/packages/certificate-expiry/manifest.json
 ---
 
 # Certificate Expiry Read

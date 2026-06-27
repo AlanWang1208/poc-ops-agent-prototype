@@ -10,9 +10,20 @@
   "readOnly": true,
   "timeoutSeconds": 20,
   "owner": "platform-observability",
-  "requiredRoles": ["ROLE_ops-reader", "ROLE_ops-admin"],
-  "tags": ["platform", "alert", "summary"],
-  "interceptors": ["AUTHORIZATION", "AUDIT", "SENSITIVE_DATA_MASKING"],
+  "requiredRoles": [
+    "ROLE_ops-reader",
+    "ROLE_ops-admin"
+  ],
+  "tags": [
+    "platform",
+    "alert",
+    "summary"
+  ],
+  "interceptors": [
+    "AUTHORIZATION",
+    "AUDIT",
+    "SENSITIVE_DATA_MASKING"
+  ],
   "parameters": [
     {
       "name": "severity",
@@ -20,7 +31,11 @@
       "description": "仅返回达到指定严重级别的活跃告警。",
       "type": "ENUM",
       "required": false,
-      "allowedValues": ["INFO", "WARNING", "CRITICAL"],
+      "allowedValues": [
+        "INFO",
+        "WARNING",
+        "CRITICAL"
+      ],
       "defaultValue": "WARNING"
     }
   ]

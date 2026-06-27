@@ -1,5 +1,6 @@
 package com.company.opsagent.controlplane.modules.agentruntime;
 
+import com.company.opsagent.contracts.agent.AgentToolResult;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.agentscope.core.ReActAgent;
 import io.agentscope.core.message.Msg;
@@ -10,6 +11,7 @@ import java.time.Clock;
 import java.time.Duration;
 import java.util.List;
 import java.util.Locale;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicLong;
 import reactor.core.publisher.Mono;
 
@@ -58,6 +60,10 @@ public final class AgentscopeReActAgentClient implements AgentscopeAgentClient {
   @Override
   public Mono<AgentscopeAgentResponse> run(AgentscopeAgentInvocation invocation) {
     AtomicLong stepSequence = new AtomicLong();
+    List<AgentToolResult> toolResults = new CopyOnWriteArrayList<>();
+    AgentToolExecutor recordingToolExecutor = (runtimeRequest, toolCall) -> invocation.toolExecutor()
+        .execute(runtimeRequest, toolCall)
+        .doOnNext(toolResults::add);
     Toolkit toolkit = new Toolkit();
     /*
      * 必须注册真实 AgentTool，而不是 registerSchemas。registerSchemas 会创建
@@ -69,7 +75,7 @@ public final class AgentscopeReActAgentClient implements AgentscopeAgentClient {
         .map(tool -> new AgentscopePlatformAgentTool(
             invocation.request(),
             tool,
-            invocation.toolExecutor(),
+            recordingToolExecutor,
             stepSequence,
             objectMapper,
             clock))
@@ -86,7 +92,8 @@ public final class AgentscopeReActAgentClient implements AgentscopeAgentClient {
         .map(message -> new AgentscopeAgentResponse(
             "SUCCEEDED",
             summary(message),
-            Math.toIntExact(stepSequence.get())));
+            Math.toIntExact(stepSequence.get()),
+            List.copyOf(toolResults)));
   }
 
   private Msg toUserMessage(AgentscopeAgentInvocation invocation) {

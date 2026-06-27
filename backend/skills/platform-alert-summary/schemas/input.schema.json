@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://company.example/ops-agent/skills/platform-alert-summary-read/1.0.0/input.schema.json",
+  "title": "platform-alert-summary-read 输入",
+  "description": "读取平台告警摘要所需的输入参数。",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "severity": {
+      "type": "string",
+      "enum": [
+        "INFO",
+        "WARNING",
+        "CRITICAL"
+      ],
+      "default": "WARNING",
+      "description": "最低严重级别。"
+    }
+  }
+}

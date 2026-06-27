@@ -1,5 +1,7 @@
 import { Activity, RotateCcw, Workflow } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 
+import { loadWorkflowEvents } from "../../api/agent-api.js";
 import { WorkspaceStatusBar } from "../../components/layout/WorkspaceStatusBar.jsx";
 import { WorkspacePageFrame } from "../../components/layout/WorkspacePageFrame.jsx";
 import styles from "./WorkflowEventsPage.module.css";
@@ -62,6 +64,27 @@ const statusCards = [
 ];
 
 export function WorkflowEventsPage() {
+  const lastWorkflowId = readLastWorkflowId();
+  const eventsQuery = useQuery({
+    enabled: Boolean(lastWorkflowId),
+    queryKey: ["workflow-events", lastWorkflowId],
+    queryFn: () => loadWorkflowEvents(lastWorkflowId ?? ""),
+  });
+  const liveEvents = eventsQuery.data?.map(toWorkflowEvent) ?? [];
+  const displayedEvents = liveEvents.length > 0 ? liveEvents : workflowEvents;
+  const displayedStatusCards = liveEvents.length > 0
+    ? [
+        ["SSE", eventsQuery.isFetching ? "loading" : "replayed", "green"],
+        ["Workflow", lastWorkflowId ?? "pending", "blue"],
+        ["Policy", "policy-v1 / READ_ONLY", "red"],
+        ["Checkpoint", `${liveEvents.length} events / 0 gap`, "yellow"],
+        ["Recovery", "支持从 seq 继续回放", "dark"],
+      ]
+    : statusCards;
+  const workflowCounter = liveEvents.length > 0
+    ? `${liveEvents.length} 条事件 / 0 gap`
+    : "13 条事件 / 0 gap";
+
   return (
     <WorkspacePageFrame>
       <WorkspaceStatusBar title="工作流事件" />
@@ -97,14 +120,14 @@ export function WorkflowEventsPage() {
               <span>{value}</span>
             </span>
           ))}
-          <span className={styles.workflowCounter}>13 条事件 / 0 gap</span>
+          <span className={styles.workflowCounter}>{workflowCounter}</span>
         </section>
 
         <div className={styles.workflowLayout}>
           <section aria-label="事件流主轴" className={styles.workflowStream}>
             <PanelTitle icon={Activity} title="事件流主轴" />
             <div className={styles.eventStream}>
-              {workflowEvents.map((event) => (
+              {displayedEvents.map((event) => (
                 <WorkflowEvent event={event} key={event.sequence} />
               ))}
             </div>
@@ -113,7 +136,7 @@ export function WorkflowEventsPage() {
           <aside aria-label="状态快照" className={styles.workflowSide}>
             <PanelTitle icon={RotateCcw} title="状态快照" />
             <div className={styles.sideStack}>
-              {statusCards.map(([title, value, tone]) => (
+              {displayedStatusCards.map(([title, value, tone]) => (
                 <StatusCard key={title} title={title} tone={tone} value={value} />
               ))}
             </div>
@@ -122,6 +145,74 @@ export function WorkflowEventsPage() {
       </section>
     </WorkspacePageFrame>
   );
+}
+
+function readLastWorkflowId() {
+  try {
+    return window.localStorage?.getItem("ops-agent:last-workflow-id") ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * @param {import("../../schemas/agent-schemas.js").SemanticEvent} event
+ */
+function toWorkflowEvent(event) {
+  return {
+    badge: eventBadge(event),
+    description: eventDescription(event),
+    sequence: `seq ${String(event.sequence).padStart(3, "0")}`,
+    time: formatEventTime(event.timestamp),
+    title: event.type,
+    tone: eventTone(event.type),
+  };
+}
+
+/**
+ * @param {import("../../schemas/agent-schemas.js").SemanticEvent} event
+ */
+function eventDescription(event) {
+  const payload = event.payload;
+  if ("skillId" in payload && "skillVersion" in payload) {
+    return `${payload.skillId}@${payload.skillVersion}`;
+  }
+  if ("outputSchemaId" in payload) {
+    return payload.outputSchemaId;
+  }
+  return event.workflowId;
+}
+
+/**
+ * @param {import("../../schemas/agent-schemas.js").SemanticEvent} event
+ */
+function eventBadge(event) {
+  const payload = event.payload;
+  if ("status" in payload) {
+    return payload.status.toLowerCase();
+  }
+  if ("targetEnvironment" in payload) {
+    return payload.targetEnvironment;
+  }
+  return "persisted";
+}
+
+/**
+ * @param {string} type
+ */
+function eventTone(type) {
+  if (type.endsWith("REJECTED") || type.endsWith("FAILED")) return "red";
+  if (type.endsWith("COMPLETED")) return "green";
+  if (type.endsWith("REQUESTED")) return "blue";
+  return "dark";
+}
+
+/**
+ * @param {string} timestamp
+ */
+function formatEventTime(timestamp) {
+  const time = timestamp.match(/T(\d{2}:\d{2}:\d{2})/u);
+  return time?.[1] ?? timestamp;
 }
 
 /**

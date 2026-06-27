@@ -104,7 +104,7 @@ describe("operator console routes", () => {
       screen.getByRole("link", { name: "审计记录" }),
     ).toBeInTheDocument();
     expect(await screen.findByText("会话列表")).toBeInTheDocument();
-    expect(screen.getByText("会话上下文")).toBeInTheDocument();
+    expect(screen.getByText("执行链")).toBeInTheDocument();
   });
 
   it("navigates between implemented protected pages", async () => {
@@ -264,8 +264,9 @@ describe("operator console routes", () => {
     expect(await screen.findByRole("heading", { name: "审计记录" })).toBeInTheDocument();
     expect(screen.getByLabelText("当前工作台")).toBeInTheDocument();
     expect(screen.getByRole("region", { name: "审计记录工作区" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "审计证据链" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "完整性校验" })).toBeInTheDocument();
+    expect(screen.queryByText("查看身份、策略、Skill、Worker 和结果的不可篡改证据链。")).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "审计证据链" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "完整性校验" })).not.toBeInTheDocument();
     expect(screen.getByRole("search", { name: "审计记录筛选" })).toBeInTheDocument();
     expect(screen.getByRole("region", { name: "审计账本" })).toBeInTheDocument();
     expect(screen.getByRole("complementary", { name: "证据详情" })).toBeInTheDocument();
@@ -645,6 +646,12 @@ const defaultHandlers = [
   http.get("/internal/skills", () =>
     HttpResponse.json({
       skills: [registeredSkill],
+    }),
+  ),
+  http.get("/internal/audit/events", () =>
+    HttpResponse.json({
+      total: 0,
+      events: [],
     }),
   ),
   http.post("/internal/routing/skills/search", () =>

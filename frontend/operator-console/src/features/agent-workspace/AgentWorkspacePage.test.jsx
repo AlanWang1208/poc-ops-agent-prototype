@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 
 import { http, HttpResponse } from "msw";
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
@@ -26,6 +26,7 @@ const agentWorkspaceSource = readFileSync(
 let diagnosticRequests = [];
 
 beforeEach(() => {
+  installWebStorageMocks();
   diagnosticRequests = [];
   server.use(...defaultHandlers);
 });
@@ -43,6 +44,31 @@ function renderPage() {
   );
 }
 
+function installWebStorageMocks() {
+  Object.defineProperty(window, "localStorage", {
+    configurable: true,
+    value: storageMock(),
+  });
+  Object.defineProperty(window, "sessionStorage", {
+    configurable: true,
+    value: storageMock(),
+  });
+}
+
+function storageMock() {
+  /** @type {Map<string, string>} */
+  const values = new Map();
+  return {
+    clear: () => values.clear(),
+    /** @param {string} key */
+    getItem: (key) => values.get(key) ?? null,
+    /** @param {string} key */
+    removeItem: (key) => values.delete(key),
+    /** @param {string} key @param {string} value */
+    setItem: (key, value) => values.set(key, String(value)),
+  };
+}
+
 describe("AgentWorkspacePage", () => {
   test("uses the shared workspace status bar instead of a local capsule implementation", () => {
     expect(agentWorkspaceSource).toContain("WorkspaceStatusBar");
@@ -54,6 +80,33 @@ describe("AgentWorkspacePage", () => {
     expect(agentWorkspaceSource).not.toContain("logoutMutation");
   });
 
+  test("keeps right rail summary rows visually compact and consistently aligned", () => {
+    const agentLayoutRule =
+      agentWorkspaceCss.match(/(?:^|\n)[.]agentLayout\s*[{][^}]+[}]/u)?.[0] ?? "";
+    const agentSideRule =
+      agentWorkspaceCss.match(/(?:^|\n)[.]agentSide\s*[{][^}]+[}]/u)?.[0] ?? "";
+    const miniRowRule =
+      agentWorkspaceCss.match(/(?:^|\n)[.]miniRow\s*[{][^}]+[}]/u)?.[0] ?? "";
+    const miniRowValueRule =
+      agentWorkspaceCss.match(/(?:^|\n)[.]miniRow strong\s*[{][^}]*display:\s*inline-flex;[^}]+[}]/u)?.[0] ??
+      "";
+    const detailButtonRule =
+      agentWorkspaceCss.match(/(?:^|\n)[.]detailButton\s*[{][^}]+[}]/u)?.[0] ?? "";
+
+    expect(agentLayoutRule).toContain("align-items: stretch");
+    expect(agentSideRule).toContain("max-height: 100%");
+    expect(agentSideRule).toContain("align-self: stretch");
+    expect(miniRowRule).toContain("display: grid");
+    expect(miniRowRule).toContain("min-height: 32px");
+    expect(miniRowRule).toContain("grid-template-columns: minmax(0, 1fr) minmax(72px, 52%)");
+    expect(miniRowRule).toContain("align-items: center");
+    expect(miniRowValueRule).toContain("box-sizing: border-box");
+    expect(miniRowValueRule).toContain("max-width: 100%");
+    expect(miniRowValueRule).toContain("height: 22px");
+    expect(detailButtonRule).toContain("min-height: 32px");
+    expect(detailButtonRule).toContain("margin-top: 4px");
+  });
+
   test("renders the read-only workspace from real routing candidates", async () => {
     renderPage();
 
@@ -61,13 +114,22 @@ describe("AgentWorkspacePage", () => {
     expect(await screen.findByText("ops.reader")).toBeInTheDocument();
     expect(screen.getByText("ID operator-1")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "登出当前账号" })).toBeEnabled();
-    expect(await screen.findByText(/node-health-read/u)).toBeInTheDocument();
+    expect(await screen.findByText("health")).toBeInTheDocument();
     expect(screen.getByText("ROLE_agent-reader · policy-v1 · READ_ONLY")).toBeInTheDocument();
     expect(screen.getByRole("textbox", { name: "任务目标" })).toHaveValue("");
     expect(screen.getByRole("button", { name: "发送任务" })).toBeDisabled();
     expect(screen.queryByText("任务会话")).not.toBeInTheDocument();
     expect(screen.queryByText("只读模式")).not.toBeInTheDocument();
     expect(screen.queryByText("模型内部推理")).not.toBeInTheDocument();
+    expect(screen.queryByText("服务依赖健康检查")).not.toBeInTheDocument();
+    expect(screen.queryByText(/wf-042/u)).not.toBeInTheDocument();
+    expect(screen.queryByText(/wf-043/u)).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("帮我检查 node-a 的健康状态和关键依赖，只做只读诊断，并关联 INC-2841。"),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("已拆分为两个独立只读任务。当前会话来自评审模板，符合范围的任务将在服务端策略通过后自动执行。"),
+    ).not.toBeInTheDocument();
   });
 
   test("submits typed task goals through the main AgentScope diagnostic endpoint", async () => {
@@ -76,7 +138,7 @@ describe("AgentWorkspacePage", () => {
 
     renderPage();
 
-    expect(await screen.findByText(/node-health-read/u)).toBeInTheDocument();
+    expect(await screen.findByText("health")).toBeInTheDocument();
     await user.type(
       screen.getByRole("textbox", { name: "任务目标" }),
       "检查 node-a 健康状态并总结风险",
@@ -85,13 +147,76 @@ describe("AgentWorkspacePage", () => {
     await waitFor(() => expect(sendButton).toBeEnabled());
     await user.click(sendButton);
 
-    const currentWorkflowCard = await screen.findByLabelText("当前 Agent 诊断任务");
-    expect(within(currentWorkflowCard).getByText("已完成")).toBeInTheDocument();
-    expect(within(currentWorkflowCard).getByText("AGENT_TASK_COMPLETED")).toBeInTheDocument();
-    expect(
-      within(currentWorkflowCard).getByText("已完成只读诊断，未发现阻塞风险。"),
-    ).toBeInTheDocument();
-    expect(await screen.findByText("tool calls 1")).toBeInTheDocument();
+    expect(await screen.findByText("已完成只读诊断，未发现阻塞风险。")).toBeInTheDocument();
+    expect(await screen.findByText("AGENT_TASK_RESULT")).toBeInTheDocument();
+    expect(await screen.findByText("tools 1")).toBeInTheDocument();
+    expect(await screen.findByText("Shanghai")).toBeInTheDocument();
+    expect(await screen.findByText("Sunny")).toBeInTheDocument();
+    expect(await screen.findByText("31.2°C")).toBeInTheDocument();
+    expect(await screen.findByText("对话执行状态")).toBeInTheDocument();
+    expect(screen.getByText("当前输入")).toBeInTheDocument();
+    expect(screen.getAllByText("检查 node-a 健康状态并总结风险")).toHaveLength(2);
+    expect(await screen.findByText("已执行 Skill")).toBeInTheDocument();
+    expect(screen.getByText("weather-current-read")).toBeInTheDocument();
+    expect(screen.getByText("执行链")).toBeInTheDocument();
+    expect(screen.getByText("READ_ONLY 策略")).toBeInTheDocument();
+    expect(screen.getByText("M07 Worker")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "查看对话执行详情" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "查看 Skill 调用详情" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "查看执行链详情" })).toBeEnabled();
+    expect(screen.queryByText(agentTaskResult.taskId)).not.toBeInTheDocument();
+    expect(screen.queryByText("tool-call-weather-1")).not.toBeInTheDocument();
+    expect(screen.queryByText("weather-current-read:1.0.0:output")).not.toBeInTheDocument();
+    expect(screen.queryByText("Agent 请求入参")).not.toBeInTheDocument();
+    expect(screen.queryByText(/Skill 原始入参未包含在 AgentTaskResult 中/u)).not.toBeInTheDocument();
+    expect(screen.queryByText("Skill 出参")).not.toBeInTheDocument();
+    expect(screen.queryByText(/"location": "Shanghai"/u)).not.toBeInTheDocument();
+    expect(screen.queryByText("weather-current-read@1.0.0")).not.toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "查看对话执行详情" }));
+    expect(await screen.findByRole("dialog", { name: "对话执行详情" })).toBeInTheDocument();
+    expect(document.documentElement.style.overflow).toBe("hidden");
+    expect(document.body.style.overflow).toBe("hidden");
+    expect(screen.getByText("输入意图")).toBeInTheDocument();
+    expect(screen.getByText("development")).toBeInTheDocument();
+    expect(screen.getByText(agentTaskResult.taskId)).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "关闭详情" }));
+    expect(document.documentElement.style.overflow).toBe("");
+    expect(document.body.style.overflow).toBe("");
+    await user.click(screen.getByRole("button", { name: "查看 Skill 调用详情" }));
+    expect(await screen.findByRole("dialog", { name: "Skill 调用详情" })).toBeInTheDocument();
+    expect(screen.getByText("tool-call-weather-1")).toBeInTheDocument();
+    expect(screen.getByText("weather-current-read:1.0.0:output")).toBeInTheDocument();
+    expect(screen.getByText("Agent 请求入参")).toBeInTheDocument();
+    expect(screen.getByText(/Skill 原始入参未包含在 AgentTaskResult 中/u)).toBeInTheDocument();
+    expect(screen.getByText("Skill 出参")).toBeInTheDocument();
+    expect(screen.getByText(/"location": "Shanghai"/u)).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "关闭详情" }));
+    await user.click(screen.getByRole("button", { name: "查看执行链详情" }));
+    expect(await screen.findByRole("dialog", { name: "执行链详情" })).toBeInTheDocument();
+    expect(screen.getByText("操作员意图")).toBeInTheDocument();
+    expect(screen.getByText("weather-current-read@1.0.0")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "关闭详情" }));
+    expect(document.documentElement.style.overflow).toBe("");
+    expect(document.body.style.overflow).toBe("");
+    expect(screen.queryByText("INC-2841")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("当前 Agent 诊断任务")).not.toBeInTheDocument();
+    expect(window.localStorage.getItem("ops-agent:last-workflow-id")).toBe(agentTaskResult.workflowId);
+    expect(JSON.parse(window.sessionStorage.getItem("ops-agent:last-agent-result") ?? "{}"))
+      .toMatchObject({
+        workflowId: agentTaskResult.workflowId,
+        toolResults: [
+          {
+            outputSchemaId: "weather-current-read:1.0.0:output",
+          },
+        ],
+      });
+    expect(JSON.parse(window.sessionStorage.getItem("ops-agent:last-agent-exchange") ?? "{}"))
+      .toMatchObject({
+        userIntent: "检查 node-a 健康状态并总结风险",
+        result: {
+          workflowId: agentTaskResult.workflowId,
+        },
+      });
     expect(diagnosticRequests).toEqual([
       {
         targetEnvironment: "development",
@@ -101,6 +226,151 @@ describe("AgentWorkspacePage", () => {
         inputParameters: {},
       },
     ]);
+  });
+
+  test("renders the submitted weather question and Agent answer as chat bubbles", async () => {
+    vi.spyOn(crypto, "randomUUID").mockReturnValue("00000000-0000-4000-8000-000000000002");
+    const user = userEvent.setup();
+
+    const { container } = renderPage();
+
+    expect(await screen.findByText("health")).toBeInTheDocument();
+    await user.type(screen.getByRole("textbox", { name: "任务目标" }), "今天天气怎么样");
+    const sendButton = screen.getByRole("button", { name: "发送任务" });
+    await waitFor(() => expect(sendButton).toBeEnabled());
+    await user.click(sendButton);
+
+    await waitFor(() =>
+      expect(container.querySelectorAll('[data-message-tone="operator"]')).toHaveLength(1),
+    );
+    await waitFor(() =>
+      expect(container.querySelectorAll('[data-message-tone="agent"]')).toHaveLength(1),
+    );
+    const weatherQuestion = container.querySelector('[data-message-tone="operator"]');
+    const weatherAnswerBubble = container.querySelector('[data-message-tone="agent"]');
+
+    expect(weatherQuestion).toHaveTextContent("今天天气怎么样");
+    expect(weatherQuestion?.className).toContain("operator");
+    expect(weatherAnswerBubble).toHaveTextContent("Shanghai");
+    expect(weatherAnswerBubble?.className).toContain("agent");
+    expect(container.querySelectorAll('[data-message-tone="operator"]')).toHaveLength(1);
+    expect(container.querySelectorAll('[data-message-tone="agent"]')).toHaveLength(1);
+  });
+
+  test("submits the task goal when pressing Enter in the composer", async () => {
+    vi.spyOn(crypto, "randomUUID").mockReturnValue("00000000-0000-4000-8000-000000000010");
+    const user = userEvent.setup();
+
+    const { container } = renderPage();
+
+    expect(await screen.findByText("health")).toBeInTheDocument();
+    await user.type(screen.getByRole("textbox", { name: "任务目标" }), "今天天气怎么样{enter}");
+
+    await waitFor(() => expect(diagnosticRequests).toHaveLength(1));
+    expect(diagnosticRequests[0]).toMatchObject({
+      targetEnvironment: "development",
+      idempotencyKey:
+        "agent-workspace-task-00000000-0000-4000-8000-000000000010",
+      userIntent: "今天天气怎么样",
+      inputParameters: {},
+    });
+    await waitFor(() =>
+      expect(container.querySelector('[data-message-tone="operator"]')).toHaveTextContent(
+        "今天天气怎么样",
+      ),
+    );
+  });
+
+  test("keeps the send action inside the composer shell and hides unused shortcut buttons", async () => {
+    const { container } = renderPage();
+
+    expect(await screen.findByText("工作会话")).toBeInTheDocument();
+
+    const composerBox = container.querySelector('[class*="composerBox"]');
+    const sendButton = screen.getByRole("button", { name: "发送任务" });
+    expect(composerBox).toContainElement(sendButton);
+    expect(container.querySelector('[class*="composerFooter"]')).toBeNull();
+    expect(container.querySelector('[class*="composerTags"]')).toBeNull();
+    expect(screen.queryByText("+ 服务")).not.toBeInTheDocument();
+    expect(screen.queryByText("+ 告警")).not.toBeInTheDocument();
+    expect(screen.queryByText("+ 工单")).not.toBeInTheDocument();
+    expect(screen.queryByText("+ 历史 workflow")).not.toBeInTheDocument();
+  });
+
+  test("restores the latest Agent chat exchange when returning to the workspace", async () => {
+    window.sessionStorage.setItem(
+      "ops-agent:last-agent-exchange",
+      JSON.stringify({
+        userIntent: "今天天气怎么样",
+        result: agentTaskResult,
+      }),
+    );
+
+    const { container } = renderPage();
+
+    await waitFor(() =>
+      expect(container.querySelector('[data-message-tone="operator"]')).toHaveTextContent(
+        "今天天气怎么样",
+      ),
+    );
+    await waitFor(() =>
+      expect(container.querySelector('[data-message-tone="agent"]')).toHaveTextContent("Shanghai"),
+    );
+    expect(await screen.findByText("AGENT_TASK_RESULT")).toBeInTheDocument();
+  });
+
+  test("appends a new chat exchange when sending the same weather question again", async () => {
+    window.sessionStorage.setItem(
+      "ops-agent:last-agent-exchange",
+      JSON.stringify({
+        userIntent: "今天天气怎么样",
+        result: agentTaskResult,
+      }),
+    );
+    vi.spyOn(crypto, "randomUUID").mockReturnValue("00000000-0000-4000-8000-000000000003");
+    const user = userEvent.setup();
+
+    const { container } = renderPage();
+
+    expect(await screen.findByText("AGENT_TASK_RESULT")).toBeInTheDocument();
+    expect(container.querySelectorAll('[data-message-tone="operator"]')).toHaveLength(1);
+    expect(container.querySelectorAll('[data-message-tone="agent"]')).toHaveLength(1);
+
+    await user.type(screen.getByRole("textbox", { name: "任务目标" }), "今天天气怎么样");
+    const sendButton = screen.getByRole("button", { name: "发送任务" });
+    await waitFor(() => expect(sendButton).toBeEnabled());
+    await user.click(sendButton);
+
+    await waitFor(() => expect(diagnosticRequests).toHaveLength(1));
+    [...container.querySelectorAll('[data-message-tone="operator"]')].forEach((message) => {
+      expect(message).toHaveTextContent("今天天气怎么样");
+    });
+    expect(container.querySelectorAll('[data-message-tone="operator"]')).toHaveLength(2);
+    expect(container.querySelectorAll('[data-message-tone="agent"]')).toHaveLength(2);
+    expect(diagnosticRequests).toEqual([
+      {
+        targetEnvironment: "development",
+        idempotencyKey:
+          "agent-workspace-task-00000000-0000-4000-8000-000000000003",
+        userIntent: "今天天气怎么样",
+        inputParameters: {},
+      },
+    ]);
+  });
+
+  test("restores the latest Agent result when returning to the workspace", async () => {
+    window.sessionStorage.setItem(
+      "ops-agent:last-agent-result",
+      JSON.stringify(agentTaskResult),
+    );
+
+    renderPage();
+
+    expect(await screen.findByText("AGENT_TASK_RESULT")).toBeInTheDocument();
+    expect(await screen.findAllByText(agentTaskResult.workflowId)).toHaveLength(2);
+    expect(screen.queryByText("Shanghai")).not.toBeInTheDocument();
+    expect(screen.queryByText("Sunny")).not.toBeInTheDocument();
+    expect(screen.queryByText("31.2°C")).not.toBeInTheDocument();
   });
 
   test("shows AgentScope runtime disabled response without falling back to fixed Skill", async () => {
@@ -126,20 +396,24 @@ describe("AgentWorkspacePage", () => {
     );
     const user = userEvent.setup();
 
-    renderPage();
+    const { container } = renderPage();
 
-    expect(await screen.findByText(/node-health-read/u)).toBeInTheDocument();
+    expect(await screen.findByText("health")).toBeInTheDocument();
     await user.type(screen.getByRole("textbox", { name: "任务目标" }), "检查 node-a 健康状态");
     const sendButton = screen.getByRole("button", { name: "发送任务" });
     await waitFor(() => expect(sendButton).toBeEnabled());
     await user.click(sendButton);
 
-    const currentWorkflowCard = await screen.findByLabelText("当前 Agent 诊断任务");
-    expect(within(currentWorkflowCard).getByText("失败")).toBeInTheDocument();
-    expect(within(currentWorkflowCard).getByText("AGENT_RUNTIME_DISABLED")).toBeInTheDocument();
-    expect(
-      within(currentWorkflowCard).getByText("Agent runtime is disabled for this environment."),
-    ).toBeInTheDocument();
+    await waitFor(() =>
+      expect(container.querySelectorAll('[data-message-tone="agent"]')).toHaveLength(1),
+    );
+    const agentMessages = container.querySelectorAll('[data-message-tone="agent"]');
+    expect(agentMessages).toHaveLength(1);
+    expect(agentMessages[0]).toHaveTextContent(
+      "AGENT_RUNTIME_DISABLED: Agent runtime is disabled for this environment.",
+    );
+    expect(await screen.findAllByText("失败")).toHaveLength(2);
+    expect(screen.queryByLabelText("当前 Agent 诊断任务")).not.toBeInTheDocument();
     expect(fixedSkillRequests).toEqual([]);
   });
 
@@ -156,21 +430,22 @@ describe("AgentWorkspacePage", () => {
 
     renderPage();
 
-    expect(await screen.findByText("unavailable")).toBeInTheDocument();
+    expect(await screen.findAllByText("unavailable")).not.toHaveLength(0);
     await user.type(screen.getByRole("textbox", { name: "任务目标" }), "检查 node-a 健康状态");
     const sendButton = screen.getByRole("button", { name: "发送任务" });
     await waitFor(() => expect(sendButton).toBeEnabled());
     await user.click(sendButton);
 
-    expect(await screen.findByLabelText("当前 Agent 诊断任务")).toBeInTheDocument();
-    expect(diagnosticRequests).toHaveLength(1);
+    await waitFor(() => expect(diagnosticRequests).toHaveLength(1));
+    expect(await screen.findByText("已完成只读诊断，未发现阻塞风险。")).toBeInTheDocument();
+    expect(screen.queryByLabelText("当前 Agent 诊断任务")).not.toBeInTheDocument();
   });
 
-  test("renders refined message role avatars", async () => {
+  test("does not render template message role avatars before a real exchange", async () => {
     const { container } = renderPage();
 
     expect(await screen.findByText("ops.reader")).toBeInTheDocument();
-    expect(container.querySelectorAll('[class*="messageRoleIcon"] svg')).toHaveLength(2);
+    expect(container.querySelectorAll('[class*="messageRoleIcon"] svg')).toHaveLength(0);
   });
 
   test("renders the workday countdown as a compact creative timer", () => {
@@ -296,10 +571,58 @@ describe("AgentWorkspacePage", () => {
     expect(agentCanvasRule).toContain("border-radius: 24px");
   });
 
+  test("keeps the work session height fixed and scrolls overflowing conversation content", async () => {
+    renderPage();
+
+    expect(await screen.findByText("工作会话")).toBeInTheDocument();
+
+    const agentCanvasRule =
+      agentWorkspaceCss.match(/[.]agentCanvas\s*[{][^}]+[}]/u)?.[0] ?? "";
+    const agentLayoutRule =
+      agentWorkspaceCss.match(/(?:^|\n)[.]agentLayout\s*[{][^}]+[}]/u)?.[0] ?? "";
+    const exchangeWindowRule =
+      agentWorkspaceCss.match(/[.]exchangeWindow\s*[{][^}]+[}]/u)?.[0] ?? "";
+    const exchangeBodyRule =
+      agentWorkspaceCss.match(/[.]exchangeBody\s*[{][^}]+[}]/u)?.[0] ?? "";
+
+    expect(agentCanvasRule).toMatch(/(?:^|\n)\s{2}height: calc\(100vh - 48px\);/u);
+    expect(agentLayoutRule).toContain("height: 100%");
+    expect(agentLayoutRule).toContain("min-height: 0");
+    expect(exchangeWindowRule).toContain("height: 100%");
+    expect(exchangeWindowRule).toContain("min-height: 0");
+    expect(exchangeWindowRule).toContain("grid-template-rows: auto minmax(0, 1fr) auto");
+    expect(exchangeWindowRule).toContain("overflow: hidden");
+    expect(exchangeBodyRule).toContain("min-height: 0");
+    expect(exchangeBodyRule).toContain("overflow-y: auto");
+  });
+
+  test("renders detail dialogs as centered viewport overlays without nested JSON scrolling", async () => {
+    renderPage();
+
+    expect(await screen.findByText("工作会话")).toBeInTheDocument();
+
+    const backdropRule =
+      agentWorkspaceCss.match(/[.]detailDialogBackdrop\s*[{][^}]+[}]/u)?.[0] ?? "";
+    const dialogRule =
+      agentWorkspaceCss.match(/[.]detailDialog\s*[{][^}]+[}]/u)?.[0] ?? "";
+    const preRule =
+      agentWorkspaceCss.match(/[.]ioBlock pre\s*[{][^}]+[}]/u)?.[0] ?? "";
+
+    expect(backdropRule).toContain("position: fixed");
+    expect(backdropRule).toContain("inset: 0");
+    expect(backdropRule).toContain("align-items: center");
+    expect(backdropRule).toContain("justify-items: center");
+    expect(backdropRule).toContain("padding: 32px 40px");
+    expect(dialogRule).toContain("width: min(1180px, calc(100vw - 80px))");
+    expect(dialogRule).toContain("max-height: calc(100vh - 64px)");
+    expect(preRule).not.toContain("max-height");
+    expect(preRule).toContain("overflow: hidden");
+  });
+
   test("renders unified badge icons for side panel headings", async () => {
     const { container } = renderPage();
 
-    expect(await screen.findByText("选中任务详情")).toBeInTheDocument();
+    expect(await screen.findByText("对话执行状态")).toBeInTheDocument();
     expect(container.querySelectorAll('[class*="panelIcon"] svg')).toHaveLength(3);
   });
 
@@ -337,8 +660,8 @@ describe("AgentWorkspacePage", () => {
 
     renderPage();
 
-    expect(await screen.findByText("unavailable")).toBeInTheDocument();
-    expect(screen.getByText("等待发送")).toBeInTheDocument();
+    expect(await screen.findAllByText("unavailable")).not.toHaveLength(0);
+    expect(screen.getAllByText("等待发送").length).toBeGreaterThan(0);
     expect(screen.getByRole("button", { name: "发送任务" })).toBeDisabled();
     await userEvent.type(
       screen.getByRole("textbox", { name: "任务目标" }),
@@ -356,8 +679,8 @@ describe("AgentWorkspacePage", () => {
 
     renderPage();
 
-    expect(await screen.findByText("dependency")).toBeInTheDocument();
-    expect(screen.getByText("等待发送")).toBeInTheDocument();
+    expect(await screen.findAllByText("无候选")).not.toHaveLength(0);
+    expect(screen.getAllByText("等待发送").length).toBeGreaterThan(0);
     expect(screen.getByRole("button", { name: "发送任务" })).toBeDisabled();
     await userEvent.type(
       screen.getByRole("textbox", { name: "任务目标" }),
@@ -399,10 +722,12 @@ describe("AgentWorkspacePage", () => {
       agentWorkspaceCss.match(/[.]agentPanel\s*[{][^}]+[}]/u)?.[0] ?? "";
     const composerBoxRule =
       agentWorkspaceCss.match(/[.]composerBox\s*[{][^}]+[}]/u)?.[0] ?? "";
-    const composerFooterRule =
-      agentWorkspaceCss.match(/[.]composerFooter\s*[{][^}]+[}]/u)?.[0] ?? "";
-    const composerTagsRule =
-      agentWorkspaceCss.match(/[.]composerTags\s*[{][^}]+[}]/u)?.[0] ?? "";
+    const composerInputRule =
+      agentWorkspaceCss.match(/[.]composerInput\s*[{][^}]+[}]/u)?.[0] ?? "";
+    const composerInputFocusRule =
+      agentWorkspaceCss.match(/[.]composerInput:focus,\s*[.]composerInput:focus-visible\s*[{][^}]+[}]/u)?.[0] ?? "";
+    const composerBoxFocusWithinRule =
+      agentWorkspaceCss.match(/[.]composerBox:focus-within\s*[{][^}]+[}]/u)?.[0] ?? "";
     const agentIonFieldRule =
       agentWorkspaceCss.match(/[.]agentIonField\s*[{][^}]+[}]/u)?.[0] ?? "";
     const primaryActionRule =
@@ -454,15 +779,21 @@ describe("AgentWorkspacePage", () => {
     expect(exchangeWindowRule).toContain("backdrop-filter: blur(18px)");
     expect(agentPanelRule).toContain("rgba(255, 255, 255, 0.66)");
     expect(agentPanelRule).toContain("backdrop-filter: blur(18px)");
-    expect(composerBoxRule).toContain("background: #fff");
+    expect(composerBoxRule).toContain("background: rgba(255, 255, 255, 0.86)");
     expect(composerBoxRule).toContain("border-radius: 8px");
-    expect(composerBoxRule).toContain("backdrop-filter: blur(14px)");
-    expect(composerBoxRule).toContain("grid-template-rows: minmax(0, 1fr) auto");
-    expect(composerFooterRule).toContain("align-self: end");
-    expect(composerFooterRule).toContain("align-items: end");
-    expect(composerTagsRule).toContain("flex-wrap: nowrap");
-    expect(composerTagsRule).toContain("align-self: end");
-    expect(composerTagsRule).toContain("overflow-x: auto");
+    expect(composerBoxRule).toContain("grid-template-columns: minmax(0, 1fr) auto");
+    expect(composerBoxRule).toContain("min-height: 124px");
+    expect(composerBoxRule).toContain("border: 1px solid rgba(37, 132, 169, 0.14)");
+    expect(composerBoxRule).toContain("box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.76)");
+    expect(composerInputRule).toContain("min-height: 96px");
+    expect(composerInputFocusRule).toContain("outline: none");
+    expect(composerInputFocusRule).toContain("outline-width: 0");
+    expect(composerInputFocusRule).toContain("outline-color: transparent");
+    expect(composerInputFocusRule).toContain("box-shadow: none");
+    expect(composerBoxFocusWithinRule).toContain("border-color: rgba(37, 132, 169, 0.22)");
+    expect(composerBoxFocusWithinRule).toContain("0 0 0 1px rgba(37, 132, 169, 0.1)");
+    expect(agentWorkspaceCss).not.toContain(".composerFooter");
+    expect(agentWorkspaceCss).not.toContain(".composerTags");
     expect(sendButtonRule).toContain("linear-gradient(90deg, var(--agent-red), #e01851 48%, var(--agent-red-dark))");
     expect(sendButtonRule).toContain("border-radius: 999px");
   });
@@ -571,6 +902,25 @@ const agentTaskResult = {
   summary: "已完成只读诊断，未发现阻塞风险。",
   toolCallCount: 1,
   completedAt: "2026-06-23T08:00:00Z",
+  toolResults: [
+    {
+      schemaVersion: "1.0",
+      toolCallId: "tool-call-weather-1",
+      taskId: "task-0001",
+      workflowId: "00000000-0000-4000-8000-000000000301",
+      status: "SUCCEEDED",
+      outputSchemaId: "weather-current-read:1.0.0:output",
+      output: {
+        location: "Shanghai",
+        condition: "Sunny",
+        temperatureCelsius: 31.2,
+        observedAt: "2026-06-24T10:00:00+08:00",
+      },
+      errorCode: null,
+      errorMessage: null,
+      completedAt: "2026-06-23T08:00:00Z",
+    },
+  ],
 };
 
 const workflowId = "00000000-0000-4000-8000-000000000101";

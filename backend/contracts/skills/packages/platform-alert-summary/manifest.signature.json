@@ -1,7 +1,7 @@
 {
   "publishedBy": "platform-observability",
   "publishedAt": "2026-06-06T23:20:00+08:00",
-  "checksumSha256": "bee0bc4bcb5cfa0a332d46b04861b15bc36a03f6b92db8a8988af4a10f1c9e97",
+  "checksumSha256": "95044fa41d92ce4d8a77ac3cbd1c72b70d6316d9449cb66d25bf2f25d746e76e",
   "signatureAlgorithm": "HmacSHA256",
-  "signature": "b8932ca9baea8da05cb9c20c21017382131273ba72f7fd7f395d5bb831b66853"
+  "signature": "805e7f32d67e0d6250c82768ba2fa78048b0d2c5a0b9c490a5429f49a00e29a3"
 }

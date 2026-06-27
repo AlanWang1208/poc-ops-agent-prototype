@@ -14,7 +14,7 @@ import {
   searchSkillCandidates,
   streamReadOnlyDiagnosticEvents,
 } from "./agent-api.js";
-import { ApiError, requestJson } from "./client.js";
+import { ApiError, SESSION_EXPIRED_EVENT, requestJson } from "./client.js";
 import { getSkill, listSkills } from "./skill-api.js";
 import { listSqlConnections, validateSqlQuery } from "./sql-api.js";
 import { server } from "../test/server.js";
@@ -54,6 +54,47 @@ describe("requestJson", () => {
       status: 0,
       kind: "network",
     });
+  });
+
+  test("notifies the shell when a JSON API response is unauthorized", async () => {
+    const onSessionExpired = vi.fn();
+    window.addEventListener(SESSION_EXPIRED_EVENT, onSessionExpired);
+    server.use(http.get("/expired-session", () => new HttpResponse(null, { status: 401 })));
+
+    await expect(
+      requestJson("/expired-session", { schema: z.object({ ok: z.boolean() }) }),
+    ).rejects.toMatchObject({
+      name: "ApiError",
+      status: 401,
+      kind: "unauthorized",
+    });
+
+    expect(onSessionExpired).toHaveBeenCalledTimes(1);
+    window.removeEventListener(SESSION_EXPIRED_EVENT, onSessionExpired);
+  });
+
+  test("treats login HTML returned to a JSON API call as an expired session", async () => {
+    const onSessionExpired = vi.fn();
+    window.addEventListener(SESSION_EXPIRED_EVENT, onSessionExpired);
+    server.use(
+      http.get("/html-login-redirect", () =>
+        HttpResponse.text("<!doctype html><title>Operator console</title>", {
+          headers: { "Content-Type": "text/html" },
+        }),
+      ),
+    );
+
+    await expect(
+      requestJson("/html-login-redirect", { schema: z.object({ ok: z.boolean() }) }),
+    ).rejects.toMatchObject({
+      name: "ApiError",
+      status: 200,
+      kind: "unauthorized",
+      message: "Browser session expired",
+    });
+
+    expect(onSessionExpired).toHaveBeenCalledTimes(1);
+    window.removeEventListener(SESSION_EXPIRED_EVENT, onSessionExpired);
   });
 
   test("classifies invalid successful responses as contract errors", async () => {
@@ -339,6 +380,52 @@ describe("feature API modules", () => {
       message: "Operator is not allowed to run this read-only diagnostic.",
     });
   });
+
+  test("notifies session expiry when an event stream endpoint is unauthorized", async () => {
+    const onSessionExpired = vi.fn();
+    window.addEventListener(SESSION_EXPIRED_EVENT, onSessionExpired);
+    server.use(
+      http.post(
+        "/internal/diagnostics/read-only/events",
+        () => new HttpResponse(null, { status: 401 }),
+      ),
+    );
+
+    await expect(
+      streamReadOnlyDiagnosticEvents(readOnlyDiagnosticRequest),
+    ).rejects.toMatchObject({
+      name: "ApiError",
+      status: 401,
+      kind: "unauthorized",
+    });
+
+    expect(onSessionExpired).toHaveBeenCalledTimes(1);
+    window.removeEventListener(SESSION_EXPIRED_EVENT, onSessionExpired);
+  });
+
+  test("treats login HTML returned to an event stream call as an expired session", async () => {
+    const onSessionExpired = vi.fn();
+    window.addEventListener(SESSION_EXPIRED_EVENT, onSessionExpired);
+    server.use(
+      http.post("/internal/diagnostics/read-only/events", () =>
+        HttpResponse.text("<!doctype html><title>Operator console</title>", {
+          headers: { "Content-Type": "text/html" },
+        }),
+      ),
+    );
+
+    await expect(
+      streamReadOnlyDiagnosticEvents(readOnlyDiagnosticRequest),
+    ).rejects.toMatchObject({
+      name: "ApiError",
+      status: 200,
+      kind: "unauthorized",
+      message: "Browser session expired",
+    });
+
+    expect(onSessionExpired).toHaveBeenCalledTimes(1);
+    window.removeEventListener(SESSION_EXPIRED_EVENT, onSessionExpired);
+  });
 });
 
 const registeredSkill = {
@@ -425,6 +512,7 @@ const agentTaskResult = {
   summary: "已完成只读诊断，未发现阻塞风险。",
   toolCallCount: 1,
   completedAt: "2026-06-23T08:00:00Z",
+  toolResults: [],
 };
 
 const workflowId = "11111111-1111-4111-8111-111111111111";
