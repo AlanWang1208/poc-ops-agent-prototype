@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Eye, Search, SlidersHorizontal } from "lucide-react";
+import { Eye, Search } from "lucide-react";
 
 import { ApiError } from "../../api/client.js";
 import { DataTable } from "../../components/data-display/DataTable.jsx";
@@ -69,16 +69,6 @@ export function SkillRegistryPage() {
 
       <main className={styles.workspaceBody}>
         <section className={styles.filters} aria-label="Skill 条件匹配">
-          <header className={styles.filterHeading}>
-            <span aria-hidden="true">
-              <SlidersHorizontal size={17} strokeWidth={2.3} />
-            </span>
-            <div>
-              <h2>条件匹配</h2>
-              <p>按分类、风险、签名状态和关键字筛选已注册只读 Skill。</p>
-            </div>
-          </header>
-
           <label className={styles.searchBox}>
             <Search aria-hidden="true" size={16} strokeWidth={2.3} />
             <span>搜索 Skill</span>

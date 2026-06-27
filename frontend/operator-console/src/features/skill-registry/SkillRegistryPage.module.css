@@ -36,39 +36,17 @@
 
 .filters {
   display: grid;
-  grid-template-columns: minmax(220px, 0.8fr) minmax(300px, 1fr) minmax(320px, 1.3fr);
+  grid-template-columns: minmax(300px, 420px) minmax(0, 1fr);
   gap: 16px;
   align-items: center;
   padding: 16px 18px;
 }
 
-.filterHeading {
-  display: grid;
-  min-width: 0;
-  grid-template-columns: 36px minmax(0, 1fr);
-  gap: 10px;
-  align-items: center;
-}
-
-.filterHeading > span {
-  display: grid;
-  width: 36px;
-  height: 36px;
-  place-items: center;
-  border: 1px solid rgba(37, 132, 169, 0.22);
-  border-radius: 8px;
-  background: rgba(37, 132, 169, 0.08);
-  color: var(--registry-blue);
-}
-
-.filterHeading h2,
-.filterHeading p,
 .tableHeader h2,
 .tableHeader p {
   margin: 0;
 }
 
-.filterHeading h2,
 .tableHeader h2 {
   color: var(--registry-ink);
   font-family: var(--font-display);
@@ -78,7 +56,6 @@
   line-height: 1.2;
 }
 
-.filterHeading p,
 .tableHeader p {
   margin-top: 3px;
   color: var(--registry-muted);

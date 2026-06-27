@@ -49,6 +49,9 @@ describe("SkillRegistryPage", () => {
     const filterRegion = screen.getByRole("region", { name: "Skill 条件匹配" });
     expect(filterRegion.parentElement?.firstElementChild).toBe(filterRegion);
     expect(
+      within(filterRegion).queryByRole("heading", { name: "条件匹配" }),
+    ).not.toBeInTheDocument();
+    expect(
       screen.queryByText("查看 P1 只读诊断 Skill 的版本、风险、角色、签名和治理拦截器。"),
     ).not.toBeInTheDocument();
     expect(filterRegion).toBeInTheDocument();
