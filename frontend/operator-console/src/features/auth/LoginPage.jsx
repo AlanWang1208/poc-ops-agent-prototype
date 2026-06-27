@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Eye, EyeOff, LockKeyhole, SearchCheck, ServerCog, ShieldCheck } from "lucide-react";
+import { LockKeyhole, SearchCheck, ServerCog, ShieldCheck } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -41,7 +41,6 @@ export function LoginPage() {
   const queryClient = useQueryClient();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const [loginError, setLoginError] = useState("");
   const loginMutation = useMutation({
     mutationFn: loginWithPassword,
@@ -215,26 +214,13 @@ export function LoginPage() {
                 <input
                   aria-label="密码"
                   autoComplete="current-password"
-                  className={`${styles.loginInput} ${styles.passwordInput}`}
+                  className={styles.loginInput}
                   id="operator-password"
                   onChange={(event) => setPassword(event.target.value)}
                   required
-                  type={isPasswordVisible ? "text" : "password"}
+                  type="password"
                   value={password}
                 />
-                <button
-                  aria-label={isPasswordVisible ? "隐藏密码" : "显示密码"}
-                  aria-pressed={isPasswordVisible}
-                  className={styles.passwordToggle}
-                  onClick={() => setIsPasswordVisible((current) => !current)}
-                  type="button"
-                >
-                  {isPasswordVisible ? (
-                    <EyeOff aria-hidden="true" size={17} strokeWidth={2.3} />
-                  ) : (
-                    <Eye aria-hidden="true" size={17} strokeWidth={2.3} />
-                  )}
-                </button>
               </span>
             </div>
             <button

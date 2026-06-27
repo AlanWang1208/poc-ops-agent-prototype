@@ -1,21 +1,19 @@
 import {
   Bot,
-  CircleDot,
   ClipboardCheck,
   GitBranch,
+  MessagesSquare,
   SendHorizontal,
   ShieldCheck,
   UserRound,
-  X,
 } from "lucide-react";
-import { Fragment, useEffect, useState } from "react";
-import { createPortal } from "react-dom";
+import { Fragment, useState } from "react";
 
 import { WorkspaceStatusBar } from "../../components/layout/WorkspaceStatusBar.jsx";
 import { Badge } from "../../components/primitives/Badge.jsx";
 import { Button } from "../../components/primitives/Button.jsx";
+import { Dialog } from "../../components/primitives/Dialog.jsx";
 import { weatherCurrentOutputSchema } from "../../schemas/agent-schemas.js";
-import { useAgentCandidates } from "./use-agent-candidates.js";
 import { useAgentDiagnosticTask } from "./use-agent-diagnostic-task.js";
 import styles from "./AgentWorkspacePage.module.css";
 
@@ -46,8 +44,6 @@ export function AgentWorkspacePage() {
   const [activeDetailPanel, setActiveDetailPanel] = useState(
     /** @type {"task" | "skill" | "chain" | null} */ (null),
   );
-  const candidatesQuery = useAgentCandidates();
-  const candidates = candidatesQuery.data?.candidates ?? [];
   const agentTask = useAgentDiagnosticTask();
   const canSubmitAgentTask = taskGoal.trim().length > 0 && agentTask.status !== "running";
   /**
@@ -104,7 +100,7 @@ export function AgentWorkspacePage() {
           <div className={styles.exchangeHead}>
             <div>
               <h2>工作会话</h2>
-              <span>一会话多任务 · 2 个 workflow · policy-v1</span>
+              <span>单会话跟踪 · 1 个 workflow · policy-v1</span>
               <small className={styles.operatorScope}>ROLE_agent-reader · policy-v1 · READ_ONLY</small>
             </div>
             <Badge className={styles.liveBadge} tone="success">
@@ -155,9 +151,7 @@ export function AgentWorkspacePage() {
             task={agentTask}
           />
           <SkillEventPanel
-            candidates={candidates}
             onShowDetail={() => setActiveDetailPanel("skill")}
-            query={candidatesQuery}
             task={agentTask}
           />
           <SessionContextPanel
@@ -169,9 +163,7 @@ export function AgentWorkspacePage() {
 
       <AgentDetailDialog
         activePanel={activeDetailPanel}
-        candidates={candidates}
         onClose={() => setActiveDetailPanel(null)}
-        query={candidatesQuery}
         task={agentTask}
       />
     </div>
@@ -218,6 +210,17 @@ function latestUserIntent(task) {
 /**
  * @param {import("./use-agent-diagnostic-task.js").AgentDiagnosticTaskState} task
  */
+function currentInputStatusLabel(task) {
+  if (task.status === "idle") {
+    return "等待发送";
+  }
+  return taskStateLabel(task.status);
+}
+
+/**
+ * @param {import("./use-agent-diagnostic-task.js").AgentDiagnosticTaskState} task
+ * @returns {"info" | "ok" | "danger"}
+ */
 function taskTone(task) {
   if (
     task.status === "denied" ||
@@ -246,9 +249,23 @@ function parseOutputSchemaId(outputSchemaId) {
 
 /**
  * @param {import("./use-agent-diagnostic-task.js").AgentDiagnosticTaskState} task
+ * @returns {Array<{ label: string, value: string, tone: "info" | "ok" | "danger" }>}
  */
 function buildChainSteps(task) {
   const toolResults = task.result?.toolResults ?? [];
+  /** @type {Array<{ label: string, value: string, tone: "info" | "ok" | "danger" }>} */
+  const toolResultSteps = toolResults.map((toolResult) => {
+    const descriptor = parseOutputSchemaId(toolResult.outputSchemaId);
+    const tone = /** @type {"ok" | "danger"} */ (
+      toolResult.status === "SUCCEEDED" ? "ok" : "danger"
+    );
+    return {
+      label: `${descriptor.skillId}@${descriptor.skillVersion}`,
+      value: toolResult.status,
+      tone,
+    };
+  });
+  const resultTone = taskTone(task);
   return [
     { label: "操作员意图", value: latestUserIntent(task), tone: "info" },
     { label: "Agent Runtime", value: task.status === "idle" ? "等待发送" : "已接收", tone: "info" },
@@ -259,15 +276,96 @@ function buildChainSteps(task) {
       value: toolResults.length > 0 ? `${toolResults.length} 次只读调用` : "等待 Skill 调用",
       tone: "info",
     },
-    ...toolResults.map((toolResult) => {
-      const descriptor = parseOutputSchemaId(toolResult.outputSchemaId);
-      return {
-        label: `${descriptor.skillId}@${descriptor.skillVersion}`,
-        value: toolResult.status,
-        tone: toolResult.status === "SUCCEEDED" ? "ok" : "danger",
-      };
-    }),
-    { label: "结果", value: task.result?.status ?? taskStateLabel(task.status), tone: taskTone(task) },
+    ...toolResultSteps,
+    { label: "结果", value: task.result?.status ?? taskStateLabel(task.status), tone: resultTone },
+  ];
+}
+
+/**
+ * @param {import("./use-agent-diagnostic-task.js").AgentDiagnosticTaskState} task
+ * @returns {Array<{ label: string, value: string, tone: "info" | "ok" | "danger" }>}
+ */
+function buildAgentFlowSteps(task) {
+  const toolResults = task.result?.toolResults ?? [];
+  return [
+    { label: "意图接入", value: latestUserIntent(task), tone: "info" },
+    { label: "Agent Runtime", value: task.status === "idle" ? "等待发送" : "已接收", tone: "info" },
+    { label: "策略校验", value: agentRequestScope.policy, tone: "ok" },
+    { label: "工作流登记", value: task.workflowId ?? "pending", tone: "info" },
+    {
+      label: "Worker 调度",
+      value: toolResults.length > 0 ? `${toolResults.length} 次只读调用` : "等待 Skill 调用",
+      tone: "info",
+    },
+    { label: "结果归档", value: task.result?.status ?? taskStateLabel(task.status), tone: taskTone(task) },
+  ];
+}
+
+/**
+ * @param {import("./use-agent-diagnostic-task.js").AgentDiagnosticTaskState} task
+ * @returns {Array<{ label: string, value: string, tone: "info" | "ok" | "danger" }>}
+ */
+function buildSkillFlowSteps(task) {
+  const toolResults = task.result?.toolResults ?? [];
+  const firstToolResult = toolResults[0];
+  const firstToolDescriptor = firstToolResult
+    ? parseOutputSchemaId(firstToolResult.outputSchemaId)
+    : null;
+  return [
+    {
+      label: "路由匹配",
+      value: firstToolDescriptor?.skillId ?? "等待 Skill 路由",
+      tone: firstToolDescriptor ? "ok" : "info",
+    },
+    { label: "授权校验", value: "READ_ONLY / policy-v1", tone: "ok" },
+    { label: "M05 Tool Step", value: task.workflowId ?? "pending", tone: "info" },
+    {
+      label: "Worker 只读执行",
+      value: toolResults.length > 0 ? `${toolResults.length} 次调用` : "等待调用",
+      tone: toolResults.length > 0 ? "ok" : "info",
+    },
+    {
+      label: "输出契约校验",
+      value: firstToolResult?.outputSchemaId ?? "等待输出",
+      tone: firstToolResult?.status === "SUCCEEDED" ? "ok" : "info",
+    },
+  ];
+}
+
+/**
+ * @param {import("./use-agent-diagnostic-task.js").AgentDiagnosticTaskState} task
+ * @returns {Array<{ label: string, value: string, tone: "info" | "ok" | "danger" }>}
+ */
+function buildSkillRouteSteps(task) {
+  const toolResults = task.result?.toolResults ?? [];
+  const firstToolResult = toolResults[0];
+  const firstToolDescriptor = firstToolResult
+    ? parseOutputSchemaId(firstToolResult.outputSchemaId)
+    : null;
+
+  return [
+    { label: "路由请求", value: task.status === "idle" ? "等待发送" : "已接收", tone: "info" },
+    {
+      label: "目录筛选",
+      value: firstToolDescriptor?.skillId ?? "等待服务端候选",
+      tone: firstToolDescriptor ? "ok" : "info",
+    },
+    { label: "策略校验", value: agentRequestScope.policy, tone: "ok" },
+    {
+      label: "参数契约",
+      value: firstToolDescriptor ? `${firstToolDescriptor.skillId} input.schema.json` : "等待 input.schema.json",
+      tone: firstToolDescriptor ? "ok" : "info",
+    },
+    {
+      label: "只读执行",
+      value: toolResults.length > 0 ? `${toolResults.length} 次 Tool Call` : "等待 Worker",
+      tone: toolResults.length > 0 ? "ok" : "info",
+    },
+    {
+      label: "输出契约",
+      value: firstToolDescriptor ? `${firstToolDescriptor.skillId} output.schema.json` : "等待 output.schema.json",
+      tone: firstToolResult?.status === "SUCCEEDED" ? "ok" : "info",
+    },
   ];
 }
 
@@ -288,13 +386,19 @@ function ConversationToolbar({ isWorkspaceExpanded, onToggleWorkspace }) {
   return (
     <section aria-label="会话工具栏" className={styles.conversationToolbar}>
       <span className={styles.conversationToolbarButton}>
-        <CircleDot aria-hidden="true" size={14} />
-        会话列表 <b>2</b>
+        <span
+          aria-hidden="true"
+          className={styles.sessionStackIcon}
+          data-session-icon="active-conversation"
+        >
+          <MessagesSquare size={16} strokeWidth={2.15} />
+          <i className={styles.sessionIconNode} />
+        </span>
+        <span className={styles.sessionButtonLabel}>会话 1</span>
       </span>
       <div className={styles.conversationToolbarMain}>
-        <i aria-hidden="true" className={styles.conversationTitleIcon} />
-        <strong>node-a 健康排查</strong>
-        <small>2 个 workflow · 1 分钟前更新</small>
+        <strong>当前会话</strong>
+        <small>1 个 workflow · 1 分钟前更新</small>
       </div>
       <div className={styles.conversationToolbarActions}>
         <button
@@ -422,7 +526,7 @@ function TaskDetailPanel({ onShowDetail, task }) {
         value={result ? `${result.toolResults.length}/${result.toolCallCount}` : "0/0"}
       />
       <MiniRow label="workflow" value={task.workflowId ?? "pending"} />
-      <MiniRow label="当前输入" value={latestUserIntent(task)} />
+      <MiniRow label="当前输入" tone={taskTone(task)} value={currentInputStatusLabel(task)} />
       {hasWorkflowError ? (
         <div className={`${styles.statusNote} ${styles.errorNote}`}>
           <ShieldCheck aria-hidden="true" size={16} />
@@ -446,24 +550,12 @@ function TaskDetailPanel({ onShowDetail, task }) {
 
 /**
  * @param {{
- *   candidates: Array<{
- *     skill: { descriptor: { skillId: string, displayName: string, riskLevel: string } },
- *     score: number,
- *     matchedRules: string[],
- *   }>,
- *   query: { isLoading: boolean, error: Error | null },
  *   task: import("./use-agent-diagnostic-task.js").AgentDiagnosticTaskState,
  *   onShowDetail: () => void,
  * }} props
  */
-function SkillEventPanel({ candidates, onShowDetail, query, task }) {
-  const primaryCandidate = candidates[0];
+function SkillEventPanel({ onShowDetail, task }) {
   const toolResults = task.result?.toolResults ?? [];
-  const candidatePreviewValue = query.isLoading
-    ? "loading"
-    : query.error
-      ? "unavailable"
-      : primaryCandidate?.skill.descriptor.skillId.split("-").slice(1, 2)[0] ?? "无候选";
   const latestEventType = task.result
     ? "AGENT_TASK_RESULT"
     : task.status === "running"
@@ -481,7 +573,7 @@ function SkillEventPanel({ candidates, onShowDetail, query, task }) {
         <span aria-hidden="true" className={`${styles.panelIcon} ${styles.panelIconSkill}`}>
           <GitBranch size={15} strokeWidth={2.6} />
         </span>
-        {toolResults.length > 0 ? "已执行 Skill" : "候选 Skill 预览"}
+        {toolResults.length > 0 ? "已执行 Skill" : "Skill 路由状态"}
       </h3>
       <MiniRow label="最近事件" tone="info" value={latestEventType} />
       <MiniRow label="sequence" tone="info" value={sequenceValue} />
@@ -497,17 +589,9 @@ function SkillEventPanel({ candidates, onShowDetail, query, task }) {
         </>
       ) : (
         <>
-          <MiniRow label="候选分类" tone="info" value={candidatePreviewValue} />
-          <MiniRow
-            label="候选 Skill"
-            tone="info"
-            value={primaryCandidate?.skill.descriptor.skillId ?? candidatePreviewValue}
-          />
-          <MiniRow
-            label="候选风险"
-            tone="ok"
-            value={primaryCandidate?.skill.descriptor.riskLevel ?? agentRequestScope.policy}
-          />
+          <MiniRow label="候选状态" tone="info" value="提交后由服务端路由" />
+          <MiniRow label="候选 Skill" tone="info" value="等待任务提交" />
+          <MiniRow label="候选风险" tone="info" value="未判定" />
         </>
       )}
       <Button
@@ -570,8 +654,6 @@ function ToolResultCard({ toolResult }) {
  * }} props
  */
 function SessionContextPanel({ onShowDetail, task }) {
-  const hasWorkflowError =
-    task.status === "denied" || task.status === "failed" || task.status === "contractError";
   const toolResults = task.result?.toolResults ?? [];
 
   return (
@@ -587,17 +669,6 @@ function SessionContextPanel({ onShowDetail, task }) {
       <MiniRow label="M07 Worker" tone="info" value={toolResults.length > 0 ? "已执行" : "等待调用"} />
       <MiniRow label="Skill 链路" tone="info" value={toolResults.length > 0 ? `${toolResults.length} 个只读调用` : "等待调用"} />
       <MiniRow label="结果" tone={taskTone(task)} value={task.result?.status ?? taskStateLabel(task.status)} />
-      <div className={`${styles.statusNote} ${hasWorkflowError ? styles.errorNote : ""}`}>
-        <ShieldCheck aria-hidden="true" size={16} />
-        {hasWorkflowError ? (
-          <span>
-            {task.errorCode ? `${task.errorCode}: ` : ""}
-            {task.errorMessage ?? "Agent 诊断请求失败"}
-          </span>
-        ) : (
-          <span>执行链来自 AgentTaskResult 和前端只读请求范围；原始 Skill 参数需由后端契约补充后才能逐项展示。</span>
-        )}
-      </div>
       <Button
         aria-label="查看执行链详情"
         className={styles.detailButton}
@@ -613,31 +684,11 @@ function SessionContextPanel({ onShowDetail, task }) {
 /**
  * @param {{
  *   activePanel: "task" | "skill" | "chain" | null,
- *   candidates: Array<{
- *     skill: { descriptor: { skillId: string, displayName: string, riskLevel: string } },
- *     score: number,
- *     matchedRules: string[],
- *   }>,
  *   onClose: () => void,
- *   query: { isLoading: boolean, error: Error | null },
  *   task: import("./use-agent-diagnostic-task.js").AgentDiagnosticTaskState,
  * }} props
  */
-function AgentDetailDialog({ activePanel, candidates, onClose, query, task }) {
-  useEffect(() => {
-    if (!activePanel) {
-      return undefined;
-    }
-    const previousHtmlOverflow = document.documentElement.style.overflow;
-    const previousOverflow = document.body.style.overflow;
-    document.documentElement.style.overflow = "hidden";
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.documentElement.style.overflow = previousHtmlOverflow;
-      document.body.style.overflow = previousOverflow;
-    };
-  }, [activePanel]);
-
+function AgentDetailDialog({ activePanel, onClose, task }) {
   if (!activePanel) {
     return null;
   }
@@ -647,37 +698,31 @@ function AgentDetailDialog({ activePanel, candidates, onClose, query, task }) {
     skill: "Skill 调用详情",
     chain: "执行链详情",
   };
-  const titleId = `agent-detail-${activePanel}`;
+  const iconByPanel = {
+    task: <ClipboardCheck size={18} strokeWidth={2.5} />,
+    skill: <GitBranch size={18} strokeWidth={2.5} />,
+    chain: <ShieldCheck size={18} strokeWidth={2.5} />,
+  };
+  const descriptionByPanel = {
+    task: "查看只读诊断请求的状态、策略、workflow、task 和输入意图。",
+    skill: "查看服务端 Skill 路由、入参出参契约和只读调用结果。",
+    chain: "查看 Agent 主链路、Skill 调用流程和可审计执行明细。",
+  };
 
-  return createPortal(
-    <div className={styles.detailDialogBackdrop}>
-      <section
-        aria-labelledby={titleId}
-        aria-modal="true"
-        className={styles.detailDialog}
-        role="dialog"
-      >
-        <header className={styles.detailDialogHeader}>
-          <h2 id={titleId}>{titleByPanel[activePanel]}</h2>
-          <button
-            aria-label="关闭详情"
-            className={styles.dialogCloseButton}
-            onClick={onClose}
-            type="button"
-          >
-            <X aria-hidden="true" size={18} />
-          </button>
-        </header>
-        <div className={styles.detailDialogBody}>
-          {activePanel === "task" ? <TaskDetailDialogContent task={task} /> : null}
-          {activePanel === "skill" ? (
-            <SkillDetailDialogContent candidates={candidates} query={query} task={task} />
-          ) : null}
-          {activePanel === "chain" ? <ExecutionChainDialogContent task={task} /> : null}
-        </div>
-      </section>
-    </div>,
-    document.body,
+  return (
+    <Dialog
+      closeLabel="关闭详情"
+      description={descriptionByPanel[activePanel]}
+      icon={iconByPanel[activePanel]}
+      onClose={onClose}
+      open
+      size="wide"
+      title={titleByPanel[activePanel]}
+    >
+      {activePanel === "task" ? <TaskDetailDialogContent task={task} /> : null}
+      {activePanel === "skill" ? <SkillDetailDialogContent task={task} /> : null}
+      {activePanel === "chain" ? <ExecutionChainDialogContent task={task} /> : null}
+    </Dialog>
   );
 }
 
@@ -722,47 +767,44 @@ function TaskDetailDialogContent({ task }) {
 
 /**
  * @param {{
- *   candidates: Array<{
- *     skill: { descriptor: { skillId: string, displayName: string, riskLevel: string } },
- *     score: number,
- *     matchedRules: string[],
- *   }>,
- *   query: { isLoading: boolean, error: Error | null },
  *   task: import("./use-agent-diagnostic-task.js").AgentDiagnosticTaskState,
  * }} props
  */
-function SkillDetailDialogContent({ candidates, query, task }) {
+function SkillDetailDialogContent({ task }) {
   const toolResults = task.result?.toolResults ?? [];
-  const primaryCandidate = candidates[0];
 
   if (toolResults.length > 0) {
     return (
-      <div className={styles.skillResultList}>
-        {toolResults.map((toolResult) => (
-          <ToolResultCard key={toolResult.toolCallId} toolResult={toolResult} />
-        ))}
-      </div>
+      <>
+        <SkillRouteAnimation task={task} />
+        <SkillContractRequirements task={task} />
+        <div className={styles.skillResultList}>
+          {toolResults.map((toolResult) => (
+            <ToolResultCard key={toolResult.toolCallId} toolResult={toolResult} />
+          ))}
+        </div>
+      </>
     );
   }
 
   return (
-    <section className={styles.detailDialogSection}>
-      <DetailRow
-        label="候选状态"
-        tone={query.error ? "danger" : "info"}
-        value={query.isLoading ? "loading" : query.error ? "unavailable" : "ready"}
-      />
-      <DetailRow
-        label="候选 Skill"
-        tone="info"
-        value={primaryCandidate?.skill.descriptor.skillId ?? "无候选"}
-      />
-      <DetailRow
-        label="候选风险"
-        tone="ok"
-        value={primaryCandidate?.skill.descriptor.riskLevel ?? agentRequestScope.policy}
-      />
-    </section>
+    <>
+      <SkillRouteAnimation task={task} />
+      <SkillContractRequirements task={task} />
+      <section className={styles.detailDialogSection}>
+        <DetailRow
+          label="候选状态"
+          tone="info"
+          value="提交后由服务端路由"
+        />
+        <DetailRow label="候选 Skill" tone="info" value="等待任务提交" />
+        <DetailRow
+          label="候选风险"
+          tone="info"
+          value="未判定"
+        />
+      </section>
+    </>
   );
 }
 
@@ -773,14 +815,129 @@ function ExecutionChainDialogContent({ task }) {
   const chainSteps = buildChainSteps(task);
 
   return (
-    <div className={styles.executionChain}>
-      {chainSteps.map((step, index) => (
-        <div className={styles.chainStep} key={`${step.label}-${index}`}>
-          <span>{step.label}</span>
-          <strong data-tone={step.tone}>{step.value}</strong>
-        </div>
-      ))}
-    </div>
+    <>
+      <ExecutionFlowAnimation task={task} />
+      <div aria-label="执行链明细" className={styles.executionChain}>
+        {chainSteps.map((step, index) => (
+          <div className={styles.chainStep} key={`${step.label}-${index}`}>
+            <span>{step.label}</span>
+            <strong data-tone={step.tone}>{step.value}</strong>
+          </div>
+        ))}
+      </div>
+    </>
+  );
+}
+
+/**
+ * @param {{ task: import("./use-agent-diagnostic-task.js").AgentDiagnosticTaskState }} props
+ */
+function ExecutionFlowAnimation({ task }) {
+  const agentSteps = buildAgentFlowSteps(task);
+  const skillSteps = buildSkillFlowSteps(task);
+
+  return (
+    <section
+      aria-label="执行流程动画"
+      className={styles.flowAnimation}
+      data-flow-animation="agent-chain"
+    >
+      <div className={styles.flowAnimationHeader}>
+        <span>流程演示</span>
+        <strong>{task.result?.status ?? taskStateLabel(task.status)}</strong>
+      </div>
+      <FlowTrack steps={agentSteps} title="Agent 主链路" />
+      <FlowTrack steps={skillSteps} title="Skill 调用流程" />
+    </section>
+  );
+}
+
+/**
+ * @param {{ task: import("./use-agent-diagnostic-task.js").AgentDiagnosticTaskState }} props
+ */
+function SkillRouteAnimation({ task }) {
+  const skillRouteSteps = buildSkillRouteSteps(task);
+  const routeStatus = task.result?.toolCallCount
+    ? `tools ${task.result.toolCallCount}`
+    : taskStateLabel(task.status);
+  const routeSummary = `${routeStatus} · ${skillRouteSteps.length} 步`;
+
+  return (
+    <section
+      aria-label="Skill 路由动画"
+      className={styles.flowAnimation}
+      data-flow-animation="skill-route"
+    >
+      <FlowTrack steps={skillRouteSteps} summary={routeSummary} title="Skill 路由流程" />
+    </section>
+  );
+}
+
+/**
+ * @param {{ task: import("./use-agent-diagnostic-task.js").AgentDiagnosticTaskState }} props
+ */
+function SkillContractRequirements({ task }) {
+  const firstToolResult = task.result?.toolResults.at(0);
+  const firstToolDescriptor = firstToolResult
+    ? parseOutputSchemaId(firstToolResult.outputSchemaId)
+    : null;
+  const skillLabel = firstToolDescriptor
+    ? `${firstToolDescriptor.skillId}@${firstToolDescriptor.skillVersion}`
+    : "等待 Skill 路由";
+
+  return (
+    <section aria-label="Skill 入参出参要求" className={styles.skillContractGrid}>
+      <div className={styles.skillContractBlock}>
+        <span>入参要求</span>
+        <strong>Agent inputParameters</strong>
+        <small>{skillLabel} · M03 input.schema.json · READ_ONLY</small>
+        <pre>{formatJson(agentRequestScope.inputParameters)}</pre>
+      </div>
+      <div className={styles.skillContractBlock}>
+        <span>出参要求</span>
+        <strong>{firstToolDescriptor ? `${firstToolDescriptor.skillId} output.schema.json` : "等待输出契约"}</strong>
+        <small>Worker 输出必须匹配 outputSchemaId，前端只渲染契约校验后的结果。</small>
+        <pre>
+          {formatJson({
+            outputSchemaId: firstToolResult?.outputSchemaId ?? "pending",
+            required: "output.schema.json",
+          })}
+        </pre>
+      </div>
+    </section>
+  );
+}
+
+/**
+ * @param {{
+ *   steps: Array<{ label: string, value: string, tone: "info" | "ok" | "danger" }>,
+ *   summary?: string,
+ *   title: string,
+ * }} props
+ */
+function FlowTrack({ steps, summary, title }) {
+  return (
+    <section className={styles.flowTrack}>
+      <header className={styles.flowTrackHeader}>
+        <span>{title}</span>
+        <strong>{summary ?? `${steps.length} 步`}</strong>
+      </header>
+      <div className={styles.flowStepList}>
+        {steps.map((step, index) => (
+          <article
+            className={styles.flowStep}
+            data-flow-step=""
+            data-tone={step.tone}
+            key={`${title}-${step.label}-${index}`}
+            style={{ animationDelay: `${index * 110}ms` }}
+          >
+            <i aria-hidden="true" className={styles.flowStepMarker} />
+            <span>{step.label}</span>
+            <strong>{step.value}</strong>
+          </article>
+        ))}
+      </div>
+    </section>
   );
 }
 

@@ -92,20 +92,27 @@ describe("LoginPage", () => {
     expect(screen.getByRole("button", { name: "登录" })).toBeInTheDocument();
   });
 
-  test("toggles the password field between masked and visible text", async () => {
-    const user = userEvent.setup();
+  test("keeps the password field masked without a visibility toggle", async () => {
     useAnonymousSession();
 
     renderAt("/login");
 
     const passwordInput = await screen.findByLabelText("密码");
     expect(passwordInput).toHaveAttribute("type", "password");
+    expect(screen.queryByRole("button", { name: "显示密码" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "隐藏密码" })).not.toBeInTheDocument();
+    expect(loginCss).not.toContain(".passwordToggle");
+  });
 
-    await user.click(screen.getByRole("button", { name: "显示密码" }));
-    expect(passwordInput).toHaveAttribute("type", "text");
+  test("uses a subtle focus treatment for username and password inputs", () => {
+    const loginInputFocusRule =
+      loginCss.match(/[.]loginInput:focus-visible\s*[{][^}]+[}]/u)?.[0] ?? "";
 
-    await user.click(screen.getByRole("button", { name: "隐藏密码" }));
-    expect(passwordInput).toHaveAttribute("type", "password");
+    expect(loginInputFocusRule).toContain("border-color: rgba(34, 126, 166, 0.34)");
+    expect(loginInputFocusRule).toContain("outline: 1px solid rgba(34, 126, 166, 0.16)");
+    expect(loginInputFocusRule).toContain("box-shadow:");
+    expect(loginInputFocusRule).toContain("0 0 0 3px rgba(34, 126, 166, 0.08)");
+    expect(loginInputFocusRule).not.toContain("outline: 3px solid");
   });
 
   test("submits the built-in identity login contract and enters the overview after success", async () => {
@@ -321,6 +328,14 @@ describe("LoginPage", () => {
     );
     expect(loginShellRule).toContain("--frame-height: var(--login-frame-height)");
     expect(loginShellFrameRule).toContain("height: var(--frame-height)");
+  });
+
+  test("uses a restrained cool frame instead of the previous red shell border", () => {
+    const loginShellFrameRule =
+      loginCss.match(/[.]loginShell::before\s*[{][^}]+[}]/u)?.[0] ?? "";
+
+    expect(loginShellFrameRule).toContain("border: 1px solid rgba(76, 112, 136, 0.2)");
+    expect(loginShellFrameRule).not.toContain("rgba(166, 64, 92");
   });
 
   test("keeps the agent animation above the login shell mask", () => {
