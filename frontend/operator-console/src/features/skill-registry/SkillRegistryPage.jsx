@@ -60,31 +60,21 @@ export function SkillRegistryPage() {
           <SearchBox
             ariaLabel="Skill 搜索"
             className={styles.skillSearch}
+            conditionLabel="Skill 条件过滤"
+            conditionOptions={filterOptions}
             inputLabel="搜索 Skill ID、描述、Owner、参数或标签"
             naturalPlaceholder="例如：我想检查节点健康状态"
+            onConditionChange={(value) => {
+              setActiveFilter(value);
+              setPage(1);
+            }}
             onSearch={(request) => {
               setSearchRequest(request);
               setPage(1);
             }}
             placeholder="Skill ID / 描述 / Owner / 参数 / 标签"
+            selectedCondition={activeFilter}
           />
-
-          <div className={styles.filterChips}>
-            {filterOptions.map((option) => (
-              <button
-                aria-pressed={activeFilter === option.value}
-                className={activeFilter === option.value ? styles.activeChip : ""}
-                key={option.value}
-                onClick={() => {
-                  setActiveFilter(option.value);
-                  setPage(1);
-                }}
-                type="button"
-              >
-                {option.label}
-              </button>
-            ))}
-          </div>
         </section>
 
         <section className={styles.registryTable} aria-label="内置 Skill 目录">

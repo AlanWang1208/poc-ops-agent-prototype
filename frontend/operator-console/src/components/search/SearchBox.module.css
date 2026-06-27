@@ -50,14 +50,22 @@
   display: grid;
   grid-column: 1 / -1;
   min-width: 0;
-  grid-template-columns: minmax(220px, 1fr) auto auto;
-  gap: 10px;
+  grid-template-columns: 1fr;
+  gap: 12px;
   align-items: stretch;
   padding: 12px;
   border: 1px solid #dbe2ea;
   border-top: 0;
   border-radius: 0 8px 8px;
   background: #ffffff;
+}
+
+.conditionControls {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: minmax(220px, 1fr) auto auto;
+  gap: 10px;
+  align-items: stretch;
 }
 
 .inputShell {
@@ -189,12 +197,43 @@
   opacity: 0.66;
 }
 
+.conditionFilters {
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.conditionFilters button {
+  appearance: none;
+  min-width: 88px;
+  min-height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 12px;
+  border: 1px solid #dbe2ea;
+  border-radius: 8px;
+  background: #f9fbfc;
+  color: #34404d;
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 820;
+}
+
+.conditionFilters .activeCondition {
+  border-color: #2584a9;
+  background: #2584a9;
+  color: #fbfdff;
+}
+
 @media (max-width: 760px) {
   .searchBox {
     grid-template-columns: 1fr;
   }
 
-  .conditionPanel,
+  .conditionControls,
   .naturalDialog {
     grid-template-columns: 1fr;
   }

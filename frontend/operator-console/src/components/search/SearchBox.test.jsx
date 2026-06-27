@@ -46,6 +46,37 @@ describe("SearchBox", () => {
     expect(onSearch).toHaveBeenCalledWith({ mode: "conditions", query: "node" });
   });
 
+  test("renders condition filters inside the conditions tab panel", async () => {
+    const user = userEvent.setup();
+    const onConditionChange = vi.fn();
+
+    render(
+      <SearchBox
+        ariaLabel="Skill 搜索"
+        conditionLabel="条件过滤"
+        conditionOptions={[
+          { label: "全部", value: "ALL" },
+          { label: "READ_ONLY", value: "READ_ONLY" },
+        ]}
+        onConditionChange={onConditionChange}
+        onSearch={() => {}}
+        placeholder="Skill ID / 描述 / Owner"
+        selectedCondition="ALL"
+      />,
+    );
+
+    const conditionPanel = screen.getByRole("tabpanel", { name: "条件" });
+    expect(within(conditionPanel).getByRole("group", { name: "条件过滤" })).toBeInTheDocument();
+    expect(within(conditionPanel).getByRole("button", { name: "全部" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+
+    await user.click(within(conditionPanel).getByRole("button", { name: "READ_ONLY" }));
+
+    expect(onConditionChange).toHaveBeenCalledWith("READ_ONLY");
+  });
+
   test("submits a natural-language search from the natural language tab", async () => {
     const user = userEvent.setup();
     const onSearch = vi.fn();

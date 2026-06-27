@@ -55,6 +55,8 @@ describe("SkillRegistryPage", () => {
       screen.queryByText("查看 P1 只读诊断 Skill 的版本、风险、角色、签名和治理拦截器。"),
     ).not.toBeInTheDocument();
     expect(filterRegion).toBeInTheDocument();
+    expect(within(filterRegion).getByRole("group", { name: "Skill 条件过滤" })).toBeInTheDocument();
+    expect(within(filterRegion).getByRole("button", { name: "READ_ONLY" })).toBeInTheDocument();
     expect(screen.queryByText("搜索 Skill / Owner")).not.toBeInTheDocument();
     expect(
       screen.getByRole("searchbox", { name: "搜索 Skill ID、描述、Owner、参数或标签" }),

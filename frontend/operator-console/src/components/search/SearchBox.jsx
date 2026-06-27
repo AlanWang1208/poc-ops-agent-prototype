@@ -21,17 +21,27 @@ import styles from "./SearchBox.module.css";
  */
 
 /**
+ * @typedef {object} SearchConditionOption
+ * @property {string} label
+ * @property {string} value
+ */
+
+/**
  * @typedef {object} SearchBoxProps
  * @property {string} ariaLabel
  * @property {string} [className]
  * @property {string} [clearLabel]
+ * @property {string} [conditionLabel]
+ * @property {SearchConditionOption[]} [conditionOptions]
  * @property {SearchMode} [initialMode]
  * @property {string} [initialValue]
  * @property {string} [inputLabel]
  * @property {SearchModeOption[]} [modes]
  * @property {string} [naturalPlaceholder]
+ * @property {(value: string) => void} [onConditionChange]
  * @property {(request: SearchRequest) => void} onSearch
  * @property {string} [placeholder]
+ * @property {string} [selectedCondition]
  * @property {string} [submitLabel]
  */
 
@@ -48,13 +58,17 @@ export function SearchBox({
   ariaLabel,
   className = "",
   clearLabel = "清空搜索",
+  conditionLabel = "条件过滤",
+  conditionOptions = [],
   initialMode = "conditions",
   initialValue = "",
   inputLabel = "搜索关键字",
   modes = DEFAULT_MODES,
   naturalPlaceholder = "用自然语言描述要查找的内容",
+  onConditionChange,
   onSearch,
   placeholder = "输入搜索条件",
+  selectedCondition = "",
   submitLabel = "搜索",
 }) {
   const idPrefix = useId();
@@ -116,33 +130,55 @@ export function SearchBox({
           }}
           role="tabpanel"
         >
-          <label className={styles.inputShell}>
-            <Search aria-hidden="true" size={16} strokeWidth={2.35} />
-            <span>{inputLabel}</span>
-            <input
-              aria-label={inputLabel}
-              onChange={(event) => setConditionQuery(event.target.value)}
-              placeholder={placeholder}
-              type="search"
-              value={conditionQuery}
-            />
-          </label>
+          <div className={styles.conditionControls}>
+            <label className={styles.inputShell}>
+              <Search aria-hidden="true" size={16} strokeWidth={2.35} />
+              <span>{inputLabel}</span>
+              <input
+                aria-label={inputLabel}
+                onChange={(event) => setConditionQuery(event.target.value)}
+                placeholder={placeholder}
+                type="search"
+                value={conditionQuery}
+              />
+            </label>
 
-          {conditionQuery.length > 0 ? (
-            <button
-              aria-label={clearLabel}
-              className={styles.clearButton}
-              onClick={clearSearch}
-              type="button"
-            >
-              <X aria-hidden="true" size={15} strokeWidth={2.4} />
+            {conditionQuery.length > 0 ? (
+              <button
+                aria-label={clearLabel}
+                className={styles.clearButton}
+                onClick={clearSearch}
+                type="button"
+              >
+                <X aria-hidden="true" size={15} strokeWidth={2.4} />
+              </button>
+            ) : null}
+
+            <button className={styles.submitButton} type="submit">
+              <Search aria-hidden="true" size={15} strokeWidth={2.35} />
+              {submitLabel}
             </button>
-          ) : null}
+          </div>
 
-          <button className={styles.submitButton} type="submit">
-            <Search aria-hidden="true" size={15} strokeWidth={2.35} />
-            {submitLabel}
-          </button>
+          {conditionOptions.length > 0 ? (
+            <div
+              aria-label={conditionLabel}
+              className={styles.conditionFilters}
+              role="group"
+            >
+              {conditionOptions.map((option) => (
+                <button
+                  aria-pressed={selectedCondition === option.value}
+                  className={selectedCondition === option.value ? styles.activeCondition : ""}
+                  key={option.value}
+                  onClick={() => onConditionChange?.(option.value)}
+                  type="button"
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+          ) : null}
         </form>
       ) : null}
 
