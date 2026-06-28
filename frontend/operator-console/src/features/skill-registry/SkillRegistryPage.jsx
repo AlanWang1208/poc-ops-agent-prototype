@@ -1,17 +1,24 @@
-import { Search } from "lucide-react";
 import { useMemo, useState } from "react";
+import { Eye } from "lucide-react";
 
 import { searchSkillCandidates } from "../../api/agent-api.js";
 import { ApiError } from "../../api/client.js";
+import { DataTable } from "../../components/data-display/DataTable.jsx";
+import { StatusPill } from "../../components/data-display/StatusPill.jsx";
 import { FeedbackState } from "../../components/feedback/FeedbackState.jsx";
 import { WorkspacePageFrame } from "../../components/layout/WorkspacePageFrame.jsx";
 import { WorkspaceStatusBar } from "../../components/layout/WorkspaceStatusBar.jsx";
+import { Dialog } from "../../components/primitives/Dialog.jsx";
+import { SearchBox } from "../../components/search/SearchBox.jsx";
 import { useSkills } from "./use-skills.js";
 import styles from "./SkillRegistryPage.module.css";
 
 /** @typedef {import("../../schemas/skill-schemas.js").RegisteredSkill} RegisteredSkill */
 /** @typedef {import("../../schemas/agent-schemas.js").SkillRouteCandidate} SkillRouteCandidate */
+/** @typedef {import("../../components/search/SearchBox.jsx").SearchRequest} SearchRequest */
 /** @typedef {{status: "idle" | "loading" | "success" | "error", query: string, candidates: SkillRouteCandidate[], error: unknown}} CandidateSearchState */
+
+const PAGE_SIZE = 5;
 
 const defaultCandidateCriteria = {
   skillId: null,
@@ -30,7 +37,18 @@ const categoryTerms = [
   },
   {
     value: "INFRASTRUCTURE_DIAGNOSTICS",
-    terms: ["基础设施", "节点", "主机", "服务器", "证书", "infra", "infrastructure", "node", "host", "certificate"],
+    terms: [
+      "基础设施",
+      "节点",
+      "主机",
+      "服务器",
+      "证书",
+      "infra",
+      "infrastructure",
+      "node",
+      "host",
+      "certificate",
+    ],
   },
   {
     value: "PLATFORM_OBSERVABILITY",
@@ -61,7 +79,9 @@ const filterOptions = [
 export function SkillRegistryPage() {
   const skills = useSkills();
   const [activeFilter, setActiveFilter] = useState("ALL");
-  const [naturalLanguageQuery, setNaturalLanguageQuery] = useState("");
+  const [searchRequest, setSearchRequest] = useState(
+    /** @type {SearchRequest} */ ({ mode: "conditions", query: "" }),
+  );
   const [candidateSearch, setCandidateSearch] = useState(
     /** @type {CandidateSearchState} */ ({
       status: "idle",
@@ -70,30 +90,44 @@ export function SkillRegistryPage() {
       error: null,
     }),
   );
+  const [page, setPage] = useState(1);
+  const [detailSkill, setDetailSkill] = useState(/** @type {RegisteredSkill | null} */ (null));
 
   const filteredSkills = useMemo(() => {
     const catalog = skills.data?.skills ?? [];
+    const candidateKeys =
+      searchRequest.mode === "natural" && candidateSearch.status === "success"
+        ? new Set(candidateSearch.candidates.map((candidate) => skillCatalogKey(candidate.skill)))
+        : null;
+
     return catalog.filter((skill) => {
       const descriptor = skill.descriptor;
-      return (
+      const filterMatched =
         activeFilter === "ALL" ||
         descriptor.category === activeFilter ||
         descriptor.riskLevel === activeFilter ||
-        skill.publicationStatus === activeFilter
-      );
-    });
-  }, [activeFilter, skills.data?.skills]);
+        skill.publicationStatus === activeFilter;
+      if (!filterMatched) {
+        return false;
+      }
 
-  const selectedSkill = filteredSkills[0] ?? null;
-  const isCandidateSearchLoading = candidateSearch.status === "loading";
+      if (candidateKeys) {
+        return candidateKeys.has(skillCatalogKey(skill));
+      }
+
+      return matchesSkillSearch(skill, searchRequest);
+    });
+  }, [activeFilter, candidateSearch, searchRequest, skills.data?.skills]);
 
   /**
-   * @param {import("react").FormEvent<HTMLFormElement>} event
+   * @param {SearchRequest} request
    */
-  async function handleNaturalLanguageSubmit(event) {
-    event.preventDefault();
-    const query = naturalLanguageQuery.trim();
-    if (query.length === 0) {
+  async function handleSkillSearch(request) {
+    setSearchRequest(request);
+    setPage(1);
+
+    const query = request.query.trim();
+    if (request.mode !== "natural" || query.length === 0) {
       setCandidateSearch({
         status: "idle",
         query: "",
@@ -133,59 +167,50 @@ export function SkillRegistryPage() {
       <WorkspaceStatusBar title="Skill 注册中心" />
 
       <main className={styles.workspaceBody}>
-        <section className={styles.filters} aria-label="Skill 分类筛选">
-          <form
-            aria-label="Skill 自然语言查询"
-            className={styles.queryForm}
-            onSubmit={handleNaturalLanguageSubmit}
-          >
-            <label className={styles.queryLabel} htmlFor="skill-natural-language-query">
-              自然语言查询 Skill
-            </label>
-            <div className={styles.queryControls}>
-              <input
-                autoComplete="off"
-                id="skill-natural-language-query"
-                maxLength={160}
-                onChange={(event) => setNaturalLanguageQuery(event.target.value)}
-                placeholder="应用日志、节点健康、天气"
-                type="search"
-                value={naturalLanguageQuery}
-              />
-              <button
-                disabled={isCandidateSearchLoading || naturalLanguageQuery.trim().length === 0}
-                type="submit"
-              >
-                <Search aria-hidden="true" size={16} strokeWidth={2.4} />
-                {isCandidateSearchLoading ? "查询中" : "查询候选 Skill"}
-              </button>
-            </div>
-          </form>
-
+        <section className={styles.filters} aria-label="Skill 条件匹配">
+          <SearchBox
+            ariaLabel="Skill 搜索"
+            className={styles.skillSearch}
+            conditionLabel="Skill 条件过滤"
+            conditionOptions={filterOptions}
+            inputLabel="搜索 Skill ID、描述、Owner、参数或标签"
+            naturalPlaceholder="例如：我想检查节点健康状态"
+            onConditionChange={(value) => {
+              setActiveFilter(value);
+              setPage(1);
+            }}
+            onSearch={(request) => {
+              void handleSkillSearch(request);
+            }}
+            placeholder="Skill ID / 描述 / Owner / 参数 / 标签"
+            selectedCondition={activeFilter}
+          />
           <SkillCandidateSearchState state={candidateSearch} />
-
-          <div className={styles.filterChips}>
-            {filterOptions.map((option) => (
-              <button
-                aria-pressed={activeFilter === option.value}
-                className={activeFilter === option.value ? styles.activeChip : ""}
-                key={option.value}
-                onClick={() => setActiveFilter(option.value)}
-                type="button"
-              >
-                {option.label}
-              </button>
-            ))}
-          </div>
         </section>
 
         <section className={styles.registryTable} aria-label="内置 Skill 目录">
-          <h2>内置 Skill</h2>
-          <SkillCatalogState query={skills} rows={filteredSkills} />
+          <div className={styles.tableHeader}>
+            <div>
+              <h2>内置 Skill</h2>
+              <p>
+                {filteredSkills.length} 个匹配项，来源于 M03 已签名发布目录。
+              </p>
+            </div>
+          </div>
+          <SkillCatalogState
+            page={page}
+            query={skills}
+            rows={filteredSkills}
+            setPage={setPage}
+            showDetail={setDetailSkill}
+          />
         </section>
-
-        <SkillDetail skill={selectedSkill} />
       </main>
+
+      <SkillDetailDialog
+        onClose={() => setDetailSkill(null)}
+        skill={detailSkill}
+      />
     </WorkspacePageFrame>
   );
 }
@@ -243,10 +268,7 @@ function SkillCandidateSearchState({ state }) {
       <h2>候选 Skill</h2>
       <ul className={styles.candidateList}>
         {state.candidates.map((candidate) => (
-          <li
-            className={styles.candidate}
-            key={`${candidate.skill.descriptor.skillId}:${candidate.skill.descriptor.version}`}
-          >
+          <li className={styles.candidate} key={skillCatalogKey(candidate.skill)}>
             <div className={styles.candidateHeader}>
               <strong className={styles.skillId}>{candidate.skill.descriptor.skillId}</strong>
               <small>{candidate.skill.descriptor.displayName}</small>
@@ -261,9 +283,15 @@ function SkillCandidateSearchState({ state }) {
 }
 
 /**
- * @param {{query: ReturnType<typeof useSkills>, rows: RegisteredSkill[]}} props
+ * @param {{
+ *   page: number,
+ *   query: ReturnType<typeof useSkills>,
+ *   rows: RegisteredSkill[],
+ *   setPage: (page: number) => void,
+ *   showDetail: (skill: RegisteredSkill) => void,
+ * }} props
  */
-function SkillCatalogState({ query, rows }) {
+function SkillCatalogState({ page, query, rows, setPage, showDetail }) {
   if (query.isPending) {
     return (
       <FeedbackState
@@ -296,71 +324,174 @@ function SkillCatalogState({ query, rows }) {
     );
   }
 
-  if (rows.length === 0) {
-    return (
-      <FeedbackState
-        message="控制面当前没有返回符合筛选条件的 Skill。"
-        state="empty"
-        title="没有已注册 Skill"
-      />
-    );
-  }
-
   return (
-    <table className={styles.table}>
-      <thead>
-        <tr>
-          <th>Skill ID</th>
-          <th>显示名</th>
-          <th>分类</th>
-          <th>版本</th>
-          <th>风险</th>
-          <th>必要角色</th>
-          <th>状态</th>
-        </tr>
-      </thead>
-      <tbody>
-        {rows.map((skill) => (
-          <tr key={`${skill.descriptor.skillId}:${skill.descriptor.version}`}>
-            <td>
-              <strong className={styles.skillId}>{skill.descriptor.skillId}</strong>
-            </td>
-            <td>{skill.descriptor.displayName}</td>
-            <td>{formatCategory(skill.descriptor.category)}</td>
-            <td>{skill.descriptor.version}</td>
-            <td className={styles.riskCell}>{skill.descriptor.riskLevel}</td>
-            <td>{formatRequiredRoles(skill.descriptor.requiredRoles)}</td>
-            <td>{formatPublicationStatus(skill.publicationStatus)}</td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
+    <DataTable
+      ariaLabel="内置 Skill 表格"
+      columns={skillColumns(showDetail)}
+      emptyMessage="控制面当前没有返回符合筛选条件的 Skill。"
+      emptyTitle="没有已注册 Skill"
+      getRowKey={(row) => {
+        const skill = /** @type {RegisteredSkill} */ (row);
+        return `${skill.descriptor.skillId}:${skill.descriptor.version}`;
+      }}
+      minWidth="1040px"
+      onRowClick={(row) => showDetail(/** @type {RegisteredSkill} */ (row))}
+      pagination={{
+        page,
+        pageSize: PAGE_SIZE,
+        total: rows.length,
+        onPageChange: setPage,
+      }}
+      rows={rows}
+    />
   );
 }
 
 /**
- * @param {{skill: RegisteredSkill | null}} props
+ * @param {(skill: RegisteredSkill) => void} showDetail
+ * @returns {Array<{header: string, key: string, render: (row: unknown) => import("react").ReactNode, align?: "left" | "center" | "right", width?: string}>}
  */
-function SkillDetail({ skill }) {
+function skillColumns(showDetail) {
+  return [
+    {
+      header: "Skill ID",
+      key: "skill",
+      render: (row) => {
+        const skill = /** @type {RegisteredSkill} */ (row);
+        return (
+          <span className={styles.primaryCell}>
+            <strong className={styles.skillId}>{skill.descriptor.skillId}</strong>
+            <small>{formatCategory(skill.descriptor.category)} · v{skill.descriptor.version}</small>
+          </span>
+        );
+      },
+      width: "24%",
+    },
+    {
+      header: "描述",
+      key: "description",
+      render: (row) => {
+        const skill = /** @type {RegisteredSkill} */ (row);
+        return (
+          <span className={styles.descriptionCell}>
+            <strong>{skill.descriptor.displayName}</strong>
+            <small>{skill.descriptor.description}</small>
+          </span>
+        );
+      },
+      width: "30%",
+    },
+    {
+      header: "条件匹配",
+      key: "match",
+      render: (row) => {
+        const skill = /** @type {RegisteredSkill} */ (row);
+        return (
+          <span className={styles.matchCell}>
+            <span>参数: {formatParameters(skill)}</span>
+            <span>标签: {formatValues(skill.descriptor.tags)}</span>
+            <span>角色: {formatRequiredRoles(skill.descriptor.requiredRoles)}</span>
+          </span>
+        );
+      },
+      width: "26%",
+    },
+    {
+      header: "风险",
+      key: "risk",
+      render: (row) => {
+        const skill = /** @type {RegisteredSkill} */ (row);
+        return (
+          <StatusPill tone={skill.descriptor.readOnly ? "success" : "warning"}>
+            {skill.descriptor.riskLevel}
+          </StatusPill>
+        );
+      },
+      width: "9%",
+    },
+    {
+      header: "状态",
+      key: "status",
+      render: (row) => {
+        const skill = /** @type {RegisteredSkill} */ (row);
+        return formatPublicationStatus(skill.publicationStatus);
+      },
+      width: "7%",
+    },
+    {
+      align: "right",
+      header: "详情",
+      key: "action",
+      render: (row) => {
+        const skill = /** @type {RegisteredSkill} */ (row);
+        return (
+          <button
+            aria-label={`查看 ${skill.descriptor.displayName} 详情`}
+            className={styles.detailButton}
+            onClick={(event) => {
+              event.stopPropagation();
+              showDetail(skill);
+            }}
+            type="button"
+          >
+            <Eye aria-hidden="true" size={15} strokeWidth={2.35} />
+            查看
+          </button>
+        );
+      },
+      width: "4%",
+    },
+  ];
+}
+
+/**
+ * @param {{onClose: () => void, skill: RegisteredSkill | null}} props
+ */
+function SkillDetailDialog({ onClose, skill }) {
   return (
-    <aside className={styles.detail}>
+    <Dialog
+      closeLabel="关闭 Skill 详情"
+      description={skill?.descriptor.description}
+      eyebrow="Skill 详情"
+      icon={<Eye size={18} strokeWidth={2.35} />}
+      onClose={onClose}
+      open={Boolean(skill)}
+      size="wide"
+      title={skill?.descriptor.displayName ?? "Skill 详情"}
+    >
       {skill ? (
-        <>
-          <h2>选中项详情： {skill.descriptor.displayName}</h2>
-          <p className={styles.detailSummary}>
-            Owner: {skill.descriptor.owner} · Executor: {skill.descriptor.executor} ·
-            Interceptors: {formatValues(skill.descriptor.interceptors)} · 参数:{" "}
-            {formatParameters(skill)} · 输出: {skill.descriptor.outputType}
+        <div className={styles.detailDialogBody}>
+          <dl className={styles.detailGrid}>
+            <DetailItem label="Skill ID" value={skill.descriptor.skillId} />
+            <DetailItem label="版本" value={skill.descriptor.version} />
+            <DetailItem label="Owner" value={skill.descriptor.owner} />
+            <DetailItem label="Executor" value={skill.descriptor.executor} />
+            <DetailItem label="输出" value={skill.descriptor.outputType} />
+            <DetailItem label="状态" value={formatPublicationStatus(skill.publicationStatus)} />
+            <DetailItem label="角色" value={formatRequiredRoles(skill.descriptor.requiredRoles)} />
+            <DetailItem label="参数" value={formatParameters(skill)} />
+            <DetailItem label="标签" value={formatValues(skill.descriptor.tags)} />
+            <DetailItem label="拦截器" value={formatValues(skill.descriptor.interceptors)} />
+            <DetailItem label="契约路径" value={skill.manifestPath} />
+          </dl>
+          <p className={styles.detailNotice}>
+            P1 阶段只展示已签名只读 Skill。上传、安装、升级、卸载和写执行发布不在浏览器中开放。
           </p>
-        </>
-      ) : (
-        <>
-          <h2>选中项详情</h2>
-          <p>选择列表中的 Skill 查看详情。</p>
-        </>
-      )}
-      <p className={styles.muted}>服务端未提供受控变更接口</p>
-    </aside>
+        </div>
+      ) : null}
+    </Dialog>
+  );
+}
+
+/**
+ * @param {{label: string, value: string}} props
+ */
+function DetailItem({ label, value }) {
+  return (
+    <div className={styles.detailItem}>
+      <dt>{label}</dt>
+      <dd>{value}</dd>
+    </div>
   );
 }
 
@@ -411,6 +542,98 @@ function formatRequiredRoles(values) {
 function formatParameters(skill) {
   const names = skill.descriptor.parameters.map((parameter) => parameter.name);
   return names.length > 0 ? names.join(" / ") : "无参数";
+}
+
+/**
+ * @param {RegisteredSkill} skill
+ * @param {SearchRequest} request
+ */
+function matchesSkillSearch(skill, request) {
+  const query = request.query.trim();
+  if (!query) {
+    return true;
+  }
+
+  const searchText = normalizeSearchText([
+    skill.descriptor.skillId,
+    skill.descriptor.displayName,
+    skill.descriptor.description,
+    skill.descriptor.owner,
+    skill.descriptor.executor,
+    skill.descriptor.outputType,
+    skill.descriptor.category,
+    skill.descriptor.riskLevel,
+    skill.publicationStatus,
+    skill.manifestPath,
+    ...skill.descriptor.tags,
+    ...skill.descriptor.requiredRoles,
+    ...skill.descriptor.interceptors,
+    ...skill.descriptor.parameters.map((parameter) => parameter.name),
+  ].join(" "));
+
+  const normalizedQuery = normalizeSearchText(query);
+  if (request.mode === "conditions") {
+    return searchText.includes(normalizedQuery);
+  }
+
+  const naturalTokens = tokenizeNaturalQuery(query);
+  if (naturalTokens.length === 0) {
+    return true;
+  }
+  return searchText.includes(normalizedQuery) || naturalTokens.every((token) => searchText.includes(token));
+}
+
+/**
+ * @param {string} value
+ */
+function normalizeSearchText(value) {
+  return value.toLowerCase().replace(/\s+/gu, " ").trim();
+}
+
+const naturalSearchStopWords = new Set([
+  "a",
+  "an",
+  "find",
+  "for",
+  "i",
+  "me",
+  "please",
+  "search",
+  "show",
+  "skill",
+  "the",
+  "to",
+  "want",
+  "个",
+  "帮",
+  "查",
+  "找",
+  "看",
+  "请",
+  "我",
+  "想",
+  "要",
+  "一",
+  "的",
+]);
+
+/**
+ * @param {string} query
+ */
+function tokenizeNaturalQuery(query) {
+  return query
+    .toLowerCase()
+    .replace(/[\p{P}\p{S}]/gu, " ")
+    .split(/\s+/u)
+    .flatMap((token) => (/[\u4e00-\u9fff]/u.test(token) ? Array.from(token) : [token]))
+    .filter((token) => token.length > 0 && !naturalSearchStopWords.has(token));
+}
+
+/**
+ * @param {RegisteredSkill} skill
+ */
+function skillCatalogKey(skill) {
+  return `${skill.descriptor.skillId}:${skill.descriptor.version}`;
 }
 
 /**
