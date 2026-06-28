@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   AlertTriangle,
+  ChevronLeft,
+  ChevronRight,
   Database,
   FileSearch,
   Maximize2,
@@ -21,10 +23,12 @@ import { WorkspaceStatusBar } from "../../components/layout/WorkspaceStatusBar.j
 import { Dialog } from "../../components/primitives/Dialog.jsx";
 import {
   useCreateSqlConnection,
+  useDeleteSqlConnection,
   useRunReadOnlySqlQuery,
   useSqlAssistant,
   useSqlConnections,
   useSqlResultPage,
+  useUpdateSqlConnection,
   useValidateSqlQuery,
 } from "./use-sql-workbench.js";
 import styles from "./SqlWorkbenchPage.module.css";
@@ -48,8 +52,10 @@ const EMPTY_SESSION_SQL = "";
  *   execution: SqlQueryRunResult | null,
  *   id: string,
  *   label: string,
+ *   resultPageIndex: number,
  *   resultPage: SqlResultPage | null,
  *   resultPageToken: string | null,
+ *   resultPageTokens: Array<string | null>,
  *   schema: string,
  *   sql: string,
  *   validation: SqlValidationReport | null,
@@ -61,6 +67,10 @@ const DEFAULT_LIMITS = {
   maxBytes: 5_000_000,
   timeoutSeconds: 30,
 };
+
+const DEFAULT_EDITOR_RESULT_SPLIT = 72;
+const EDITOR_RESULT_SPLIT_MIN = 42;
+const EDITOR_RESULT_SPLIT_MAX = 84;
 
 const PLATFORM_FORM_DEFAULTS = {
   DB2_FOR_I: {
@@ -99,15 +109,23 @@ const DEFAULT_CONNECTION_FORM = {
 export function SqlWorkbenchPage() {
   const connectionsQuery = useSqlConnections();
   const createConnectionMutation = useCreateSqlConnection();
+  const updateConnectionMutation = useUpdateSqlConnection();
+  const deleteConnectionMutation = useDeleteSqlConnection();
   const validateMutation = useValidateSqlQuery();
   const runMutation = useRunReadOnlySqlQuery();
   const assistantMutation = useSqlAssistant();
-  const [createdConnections, setCreatedConnections] = useState(
+  const [connectionOverrides, setConnectionOverrides] = useState(
     /** @type {SqlConnectionSummary[]} */ ([]),
   );
+  const [deletedConnectionIds, setDeletedConnectionIds] = useState(/** @type {string[]} */ ([]));
   const connections = useMemo(
-    () => [...(connectionsQuery.data ?? []), ...createdConnections],
-    [connectionsQuery.data, createdConnections],
+    () =>
+      mergeConnections(
+        connectionsQuery.data ?? [],
+        connectionOverrides,
+        deletedConnectionIds,
+      ),
+    [connectionsQuery.data, connectionOverrides, deletedConnectionIds],
   );
   const [sessions, setSessions] = useState(
     /** @type {SqlWorkbenchSession[]} */ ([createSession(1, DEFAULT_SQL)]),
@@ -116,6 +134,7 @@ export function SqlWorkbenchPage() {
   const [isObjectDrawerOpen, setIsObjectDrawerOpen] = useState(false);
   const [isConnectionDialogOpen, setIsConnectionDialogOpen] = useState(false);
   const [isWorkspaceExpanded, setIsWorkspaceExpanded] = useState(false);
+  const [editorResultSplit, setEditorResultSplit] = useState(DEFAULT_EDITOR_RESULT_SPLIT);
 
   const activeSession =
     sessions.find((session) => session.id === activeSessionId) ?? sessions[0];
@@ -135,6 +154,8 @@ export function SqlWorkbenchPage() {
   );
   const currentResultPage = resultPageQuery.data ?? activeSession.resultPage;
   const isReadyConnection = activeConnection?.status === "READY";
+  const hasSqlText = activeSession.sql.trim().length > 0;
+  const isRunnableSelectSql = isLikelyReadOnlySql(activeSession.sql);
   const canValidate =
     isReadyConnection &&
     activeConnection?.capabilities.includes("VALIDATE") === true;
@@ -144,13 +165,19 @@ export function SqlWorkbenchPage() {
   const canExecuteSelect =
     isReadyConnection &&
     activeConnection?.capabilities.includes("RUN_READ_ONLY") === true &&
-    activeSession.validation?.statementType === "SELECT" &&
-    activeSession.validation.validationLevel === "VALIDATED" &&
+    hasSqlText &&
+    isRunnableSelectSql &&
     !runMutation.isPending;
   const canUseAssistant =
     canValidate &&
-    activeSession.sql.trim().length > 0 &&
+    hasSqlText &&
     !assistantMutation.isPending;
+  const editorPanelStyle =
+    /** @type {import("react").CSSProperties} */ ({
+      gridTemplateRows: `auto minmax(170px, ${editorResultSplit}fr) 8px minmax(96px, ${
+        100 - editorResultSplit
+      }fr)`,
+    });
 
   useEffect(() => {
     if (!resultPageQuery.data) {
@@ -158,7 +185,6 @@ export function SqlWorkbenchPage() {
     }
     updateSession(activeSession.id, {
       resultPage: resultPageQuery.data,
-      resultPageToken: resultPageQuery.data.nextCursor,
     });
   }, [activeSession.id, resultPageQuery.data]);
 
@@ -183,7 +209,9 @@ export function SqlWorkbenchPage() {
       validation: null,
       execution: null,
       resultPage: null,
+      resultPageIndex: 0,
       resultPageToken: null,
+      resultPageTokens: [null],
       errorMessage: null,
       assistant: null,
       assistantErrorMessage: null,
@@ -195,17 +223,57 @@ export function SqlWorkbenchPage() {
    */
   function selectConnection(connectionId) {
     const connection = connections.find((item) => item.connectionId === connectionId);
-    updateSession(activeSession.id, {
-      connectionId,
-      schema: connection?.defaultSchema ?? connection?.allowedSchemas[0] ?? activeSchema,
-      validation: null,
-      execution: null,
-      resultPage: null,
-      resultPageToken: null,
-      errorMessage: null,
-      assistant: null,
-      assistantErrorMessage: null,
-    });
+    updateSession(
+      activeSession.id,
+      buildConnectionSessionPatch(connection ?? null, activeSchema, connectionId),
+    );
+  }
+
+  /**
+   * @param {SqlConnectionSummary} connection
+   */
+  function handleConnectionCreated(connection) {
+    setDeletedConnectionIds((current) => current.filter((item) => item !== connection.connectionId));
+    setConnectionOverrides((current) => upsertConnection(current, connection));
+    updateSession(
+      activeSession.id,
+      buildConnectionSessionPatch(connection, activeSchema, connection.connectionId),
+    );
+  }
+
+  /**
+   * @param {SqlConnectionSummary} connection
+   */
+  function handleConnectionUpdated(connection) {
+    setDeletedConnectionIds((current) => current.filter((item) => item !== connection.connectionId));
+    setConnectionOverrides((current) => upsertConnection(current, connection));
+    if (activeConnection?.connectionId === connection.connectionId) {
+      updateSession(
+        activeSession.id,
+        buildConnectionSessionPatch(connection, activeSchema, connection.connectionId),
+      );
+    }
+  }
+
+  /**
+   * @param {string} connectionId
+   */
+  function handleConnectionDeleted(connectionId) {
+    const nextConnections = connections.filter(
+      (connection) => connection.connectionId !== connectionId,
+    );
+    setDeletedConnectionIds((current) =>
+      current.includes(connectionId) ? current : [...current, connectionId],
+    );
+    setConnectionOverrides((current) =>
+      current.filter((connection) => connection.connectionId !== connectionId),
+    );
+    if (activeConnection?.connectionId === connectionId) {
+      updateSession(
+        activeSession.id,
+        buildConnectionSessionPatch(nextConnections[0] ?? null, "", nextConnections[0]?.connectionId ?? ""),
+      );
+    }
   }
 
   /**
@@ -217,7 +285,9 @@ export function SqlWorkbenchPage() {
       validation: null,
       execution: null,
       resultPage: null,
+      resultPageIndex: 0,
       resultPageToken: null,
+      resultPageTokens: [null],
       errorMessage: null,
       assistant: null,
       assistantErrorMessage: null,
@@ -257,7 +327,9 @@ export function SqlWorkbenchPage() {
             validation: report,
             execution: null,
             resultPage: null,
+            resultPageIndex: 0,
             resultPageToken: null,
+            resultPageTokens: [null],
             errorMessage: null,
             assistant: null,
             assistantErrorMessage: null,
@@ -268,7 +340,9 @@ export function SqlWorkbenchPage() {
             validation: null,
             execution: null,
             resultPage: null,
+            resultPageIndex: 0,
             resultPageToken: null,
+            resultPageTokens: [null],
             errorMessage: error instanceof Error ? error.message : "SQL 校验请求失败",
             assistant: null,
             assistantErrorMessage: null,
@@ -279,7 +353,7 @@ export function SqlWorkbenchPage() {
   }
 
   function runSelect() {
-    if (!activeConnection || !activeSession.validation || !canExecuteSelect) {
+    if (!activeConnection || !canExecuteSelect) {
       return;
     }
 
@@ -294,14 +368,15 @@ export function SqlWorkbenchPage() {
         parameters: [],
         limits: buildLimits(activeConnection),
         idempotencyKey: createSqlIdempotencyKey("RUN_READ_ONLY"),
-        validationHash: activeSession.validation.validationHash ?? activeSession.validation.sqlHash,
       },
       {
         onSuccess: (execution) => {
           updateSession(activeSession.id, {
             execution,
             resultPage: null,
+            resultPageIndex: 0,
             resultPageToken: null,
+            resultPageTokens: [null],
             errorMessage: execution.errorMessage ?? null,
           });
         },
@@ -309,7 +384,9 @@ export function SqlWorkbenchPage() {
           updateSession(activeSession.id, {
             execution: null,
             resultPage: null,
+            resultPageIndex: 0,
             resultPageToken: null,
+            resultPageTokens: [null],
             errorMessage: error instanceof Error ? error.message : "SELECT 执行请求失败",
           });
         },
@@ -353,6 +430,107 @@ export function SqlWorkbenchPage() {
         },
       },
     );
+  }
+
+  function readNextResultPage() {
+    if (!currentResultPage?.nextCursor) {
+      return;
+    }
+    const nextIndex = activeSession.resultPageIndex + 1;
+    const nextTokens = [...activeSession.resultPageTokens];
+    nextTokens[nextIndex] = currentResultPage.nextCursor;
+    updateSession(activeSession.id, {
+      resultPageIndex: nextIndex,
+      resultPageToken: currentResultPage.nextCursor,
+      resultPageTokens: nextTokens,
+    });
+  }
+
+  function readPreviousResultPage() {
+    if (activeSession.resultPageIndex <= 0) {
+      return;
+    }
+    const previousIndex = activeSession.resultPageIndex - 1;
+    updateSession(activeSession.id, {
+      resultPageIndex: previousIndex,
+      resultPageToken: activeSession.resultPageTokens[previousIndex] ?? null,
+    });
+  }
+
+  /**
+   * @param {number} nextSplit
+   */
+  function updateEditorResultSplit(nextSplit) {
+    setEditorResultSplit(clampNumber(
+      nextSplit,
+      EDITOR_RESULT_SPLIT_MIN,
+      EDITOR_RESULT_SPLIT_MAX,
+    ));
+  }
+
+  /**
+   * @param {number} clientY
+   * @param {HTMLElement} panel
+   */
+  function updateEditorResultSplitFromPointer(clientY, panel) {
+    const panelRect = panel.getBoundingClientRect();
+    const tabs = panel.querySelector('[role="tablist"]');
+    const tabsHeight = tabs instanceof HTMLElement ? tabs.getBoundingClientRect().height : 0;
+    const splitTop = panelRect.top + tabsHeight + 10;
+    const availableHeight = Math.max(1, panelRect.height - tabsHeight - 28);
+    updateEditorResultSplit(((clientY - splitTop) / availableHeight) * 100);
+  }
+
+  /**
+   * @param {import("react").PointerEvent<HTMLDivElement>} event
+   */
+  function startEditorResultResize(event) {
+    const panel = event.currentTarget.parentElement;
+    if (!(panel instanceof HTMLElement)) {
+      return;
+    }
+    const editorPanel = panel;
+    event.preventDefault();
+    updateEditorResultSplitFromPointer(event.clientY, editorPanel);
+
+    /**
+     * @param {PointerEvent} moveEvent
+     */
+    function handlePointerMove(moveEvent) {
+      updateEditorResultSplitFromPointer(moveEvent.clientY, editorPanel);
+    }
+
+    function stopResize() {
+      document.removeEventListener("pointermove", handlePointerMove);
+      document.removeEventListener("pointerup", stopResize);
+      document.removeEventListener("pointercancel", stopResize);
+    }
+
+    document.addEventListener("pointermove", handlePointerMove);
+    document.addEventListener("pointerup", stopResize);
+    document.addEventListener("pointercancel", stopResize);
+  }
+
+  /**
+   * @param {import("react").KeyboardEvent<HTMLDivElement>} event
+   */
+  function handleEditorResultResizeKeyDown(event) {
+    if (event.key === "ArrowUp") {
+      event.preventDefault();
+      updateEditorResultSplit(editorResultSplit - 4);
+    }
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      updateEditorResultSplit(editorResultSplit + 4);
+    }
+    if (event.key === "Home") {
+      event.preventDefault();
+      updateEditorResultSplit(EDITOR_RESULT_SPLIT_MIN);
+    }
+    if (event.key === "End") {
+      event.preventDefault();
+      updateEditorResultSplit(EDITOR_RESULT_SPLIT_MAX);
+    }
   }
 
   if (connectionsQuery.error) {
@@ -415,8 +593,8 @@ export function SqlWorkbenchPage() {
             onClick={() => setIsConnectionDialogOpen(true)}
             type="button"
           >
-            <Plus aria-hidden="true" size={15} />
-            新建连接
+            <Database aria-hidden="true" size={15} />
+            管理连接
           </button>
           <button
             aria-pressed={isWorkspaceExpanded}
@@ -456,7 +634,7 @@ export function SqlWorkbenchPage() {
           />
         ) : null}
 
-        <main className={styles.editorPanel}>
+        <main className={styles.editorPanel} style={editorPanelStyle}>
           <SessionTabs
             activeSessionId={activeSession.id}
             onAddSession={addSession}
@@ -512,10 +690,29 @@ export function SqlWorkbenchPage() {
             </label>
           </section>
 
+          <div
+            aria-label="调整 SQL 编辑区和查询结果高度"
+            aria-orientation="horizontal"
+            aria-valuemax={EDITOR_RESULT_SPLIT_MAX}
+            aria-valuemin={EDITOR_RESULT_SPLIT_MIN}
+            aria-valuenow={Math.round(editorResultSplit)}
+            aria-valuetext={`SQL 编辑区 ${Math.round(editorResultSplit)}%`}
+            className={styles.resultResizeHandle}
+            onKeyDown={handleEditorResultResizeKeyDown}
+            onPointerDown={startEditorResultResize}
+            role="separator"
+            tabIndex={0}
+          >
+            <span aria-hidden="true" />
+          </div>
+
           <ResultPanel
             errorMessage={activeSession.errorMessage}
             execution={activeSession.execution}
             isLoading={runMutation.isPending || resultPageQuery.isFetching}
+            onNextPage={() => readNextResultPage()}
+            onPreviousPage={() => readPreviousResultPage()}
+            pageIndex={activeSession.resultPageIndex}
             resultPage={currentResultPage}
           />
         </main>
@@ -536,30 +733,36 @@ export function SqlWorkbenchPage() {
         ) : null}
       </section>
 
-      <ConnectionDialog
-        isPending={createConnectionMutation.isPending}
+      <ConnectionManagerDialog
+        activeConnectionId={activeConnection?.connectionId ?? ""}
+        connections={connections}
+        createPending={createConnectionMutation.isPending}
+        deletePending={deleteConnectionMutation.isPending}
         key={isConnectionDialogOpen ? "connection-dialog-open" : "connection-dialog-closed"}
         onClose={() => setIsConnectionDialogOpen(false)}
-        onSubmit={(request) => {
+        onCreate={(request) => {
           createConnectionMutation.mutate(request, {
             onSuccess: (connection) => {
-              setCreatedConnections((current) => [...current, connection]);
-              updateSession(activeSession.id, {
-                connectionId: connection.connectionId,
-                schema: connection.defaultSchema ?? connection.allowedSchemas[0] ?? activeSchema,
-                validation: null,
-                execution: null,
-                resultPage: null,
-                resultPageToken: null,
-                errorMessage: null,
-                assistant: null,
-                assistantErrorMessage: null,
-              });
+              handleConnectionCreated(connection);
               setIsConnectionDialogOpen(false);
             },
           });
         }}
+        onDelete={(connectionId) => {
+          deleteConnectionMutation.mutate(connectionId, {
+            onSuccess: handleConnectionDeleted,
+          });
+        }}
+        onUpdate={(connectionId, request) => {
+          updateConnectionMutation.mutate(
+            { connectionId, request },
+            {
+              onSuccess: handleConnectionUpdated,
+            },
+          );
+        }}
         open={isConnectionDialogOpen}
+        updatePending={updateConnectionMutation.isPending}
       />
     </SqlWorkbenchFrame>
   );
@@ -882,10 +1085,21 @@ function ExecutionFacts({ execution }) {
  *   errorMessage: string | null,
  *   execution: SqlQueryRunResult | null,
  *   isLoading: boolean,
+ *   onNextPage: () => void,
+ *   onPreviousPage: () => void,
+ *   pageIndex: number,
  *   resultPage: SqlResultPage | null | undefined,
  * }} props
  */
-function ResultPanel({ errorMessage, execution, isLoading, resultPage }) {
+function ResultPanel({
+  errorMessage,
+  execution,
+  isLoading,
+  onNextPage,
+  onPreviousPage,
+  pageIndex,
+  resultPage,
+}) {
   const columns = useMemo(
     () =>
       (resultPage?.columns ?? []).map((column, index) => ({
@@ -899,6 +1113,7 @@ function ResultPanel({ errorMessage, execution, isLoading, resultPage }) {
   return (
     <section className={styles.resultPanel}>
       <PanelHeading
+        compact
         detail={execution?.resultId ?? "等待 SELECT 执行"}
         icon={FileSearch}
         title="查询结果"
@@ -923,14 +1138,34 @@ function ResultPanel({ errorMessage, execution, isLoading, resultPage }) {
         <>
           <DataTable
             ariaLabel="SQL SELECT 查询结果"
+            className={styles.resultTable}
             columns={columns}
+            minWidth="620px"
             rows={resultPage.rows}
           />
           <div className={styles.resultFooter}>
-            <span>{resultPage.resultId}</span>
-            <span>{resultPage.nextCursor ? "存在下一页" : "最后一页"}</span>
+            <span>第 {pageIndex + 1} 页</span>
+            <span>本页 {resultPage.rows.length} 行</span>
             <span>{resultPage.truncated ? "已截断" : "未截断"}</span>
             <span>expiresAt {resultPage.expiresAt}</span>
+            <div className={styles.resultPager}>
+              <button
+                disabled={pageIndex <= 0 || isLoading}
+                onClick={onPreviousPage}
+                type="button"
+              >
+                <ChevronLeft aria-hidden="true" size={14} />
+                上一页
+              </button>
+              <button
+                disabled={!resultPage.nextCursor || isLoading}
+                onClick={onNextPage}
+                type="button"
+              >
+                下一页
+                <ChevronRight aria-hidden="true" size={14} />
+              </button>
+            </div>
           </div>
         </>
       ) : null}
@@ -943,14 +1178,50 @@ function ResultPanel({ errorMessage, execution, isLoading, resultPage }) {
 
 /**
  * @param {{
- *   isPending: boolean,
+ *   activeConnectionId: string,
+ *   connections: SqlConnectionSummary[],
+ *   createPending: boolean,
+ *   deletePending: boolean,
  *   onClose: () => void,
- *   onSubmit: (request: import("../../schemas/sql-schemas.js").SqlConnectionCreateRequest) => void,
+ *   onCreate: (request: import("../../schemas/sql-schemas.js").SqlConnectionCreateRequest) => void,
+ *   onDelete: (connectionId: string) => void,
+ *   onUpdate: (connectionId: string, request: import("../../schemas/sql-schemas.js").SqlConnectionUpdateRequest) => void,
  *   open: boolean,
+ *   updatePending: boolean,
  * }} props
  */
-function ConnectionDialog({ isPending, onClose, onSubmit, open }) {
-  const [form, setForm] = useState(DEFAULT_CONNECTION_FORM);
+function ConnectionManagerDialog({
+  activeConnectionId,
+  connections,
+  createPending,
+  deletePending,
+  onClose,
+  onCreate,
+  onDelete,
+  onUpdate,
+  open,
+  updatePending,
+}) {
+  const initialConnection =
+    connections.find((connection) => connection.connectionId === activeConnectionId) ??
+    connections[0] ??
+    null;
+  const [mode, setMode] = useState(
+    /** @type {"create" | "edit"} */ (initialConnection ? "edit" : "create"),
+  );
+  const [selectedConnectionId, setSelectedConnectionId] = useState(
+    initialConnection?.connectionId ?? "",
+  );
+  const [form, setForm] = useState(
+    initialConnection ? connectionToForm(initialConnection) : DEFAULT_CONNECTION_FORM,
+  );
+  const [deleteCandidateId, setDeleteCandidateId] = useState("");
+
+  const selectedConnection =
+    connections.find((connection) => connection.connectionId === selectedConnectionId) ??
+    null;
+  const isCreateMode = mode === "create" || !selectedConnection;
+  const isPending = isCreateMode ? createPending : updatePending;
 
   /**
    * @param {keyof typeof DEFAULT_CONNECTION_FORM} key
@@ -1003,176 +1274,292 @@ function ConnectionDialog({ isPending, onClose, onSubmit, open }) {
     });
   }
 
+  function startCreate() {
+    setMode("create");
+    setSelectedConnectionId("");
+    setForm(DEFAULT_CONNECTION_FORM);
+    setDeleteCandidateId("");
+  }
+
+  /**
+   * @param {SqlConnectionSummary} connection
+   */
+  function selectManagedConnection(connection) {
+    setMode("edit");
+    setSelectedConnectionId(connection.connectionId);
+    setForm(connectionToForm(connection));
+    setDeleteCandidateId("");
+  }
+
   /**
    * @param {import("react").FormEvent<HTMLFormElement>} event
    */
   function submitForm(event) {
     event.preventDefault();
-    onSubmit({
-      contractVersion: "1.0",
-      displayName: form.displayName.trim(),
-      targetEnvironment: /** @type {"development" | "test"} */ (form.targetEnvironment),
-      platformType: /** @type {"DB2_FOR_I" | "H2" | "MYSQL"} */ (form.platformType),
-      host: form.host.trim(),
-      port: Number(form.port),
-      defaultSchema: form.defaultSchema.trim(),
-      allowedSchemas: splitCsv(form.allowedSchemas),
-      capabilities: ["VALIDATE", "RUN_READ_ONLY", "PREFLIGHT_DML"],
-      credentialAlias: form.credentialAlias.trim(),
-      maxRowsDefault: Number(form.maxRowsDefault),
-      timeoutSecondsDefault: Number(form.timeoutSecondsDefault),
-    });
+    const request = buildConnectionRequest(form);
+    if (isCreateMode) {
+      onCreate(request);
+      return;
+    }
+    if (selectedConnection) {
+      onUpdate(selectedConnection.connectionId, request);
+    }
+  }
+
+  function confirmDelete() {
+    if (!selectedConnection) {
+      return;
+    }
+    const deletedConnectionId = selectedConnection.connectionId;
+    const nextConnection =
+      connections.find((connection) => connection.connectionId !== deletedConnectionId) ??
+      null;
+    onDelete(deletedConnectionId);
+    if (nextConnection) {
+      selectManagedConnection(nextConnection);
+    } else {
+      startCreate();
+    }
+    setDeleteCandidateId("");
   }
 
   return (
     <Dialog
       className={styles.connectionDialog}
-      closeLabel="关闭新建连接"
-      description="只提交连接目录元数据和 Worker 侧 credentialAlias。"
+      closeLabel="关闭连接管理"
+      description="维护开发和测试环境的连接目录元数据，只提交 Worker 侧 credentialAlias。"
       icon={<Database size={18} strokeWidth={2.4} />}
       onClose={onClose}
       open={open}
       size="wide"
-      title="新建连接"
+      title="管理连接"
     >
-      <form className={styles.connectionForm} onSubmit={submitForm}>
-        <section className={styles.connectionFormSection}>
-          <h3>连接身份</h3>
-          <div className={styles.connectionFormGrid}>
-            <label>
-              <span>连接名称</span>
-              <input
-                onChange={(event) => updateField("displayName", event.target.value)}
-                required
-                value={form.displayName}
-              />
-            </label>
-            <label>
-              <span>目标环境</span>
-              <select
-                onChange={(event) => updateField("targetEnvironment", event.target.value)}
-                value={form.targetEnvironment}
+      <div className={styles.connectionManagerLayout}>
+        <aside aria-label="SQL 连接目录" className={styles.connectionManagerSidebar}>
+          <button
+            className={styles.connectionManagerCreateButton}
+            onClick={startCreate}
+            type="button"
+          >
+            <Plus aria-hidden="true" size={15} />
+            新建连接
+          </button>
+          <div className={styles.connectionManagerList}>
+            {connections.length === 0 ? (
+              <p className={styles.connectionManagerEmpty}>暂无连接</p>
+            ) : null}
+            {connections.map((connection) => (
+              <button
+                aria-label={connection.connectionId}
+                className={`${styles.connectionManagerButton} ${
+                  !isCreateMode && selectedConnectionId === connection.connectionId
+                    ? styles.activeManagerConnection
+                    : ""
+                }`}
+                key={connection.connectionId}
+                onClick={() => selectManagedConnection(connection)}
+                type="button"
               >
-                <option value="development">development</option>
-                <option value="test">test</option>
-              </select>
-            </label>
-            <label>
-              <span>平台类型</span>
-              <select
-                onChange={(event) => updatePlatformType(event.target.value)}
-                value={form.platformType}
-              >
-                <option value="DB2_FOR_I">DB2 for i</option>
-                <option value="H2">H2</option>
-                <option value="MYSQL">MySQL</option>
-              </select>
-            </label>
+                <strong>{connection.connectionId}</strong>
+                <span>{connection.displayName}</span>
+                <small>
+                  {connection.targetEnvironment} · {connection.status}
+                </small>
+              </button>
+            ))}
           </div>
-        </section>
+        </aside>
 
-        <section className={styles.connectionFormSection}>
-          <h3>目标端点</h3>
-          <div className={styles.connectionFormGrid}>
-            <label className={styles.wideField}>
-              <span>主机</span>
-              <input
-                onChange={(event) => updateField("host", event.target.value)}
-                required
-                value={form.host}
-              />
-            </label>
-            <label>
-              <span>端口</span>
-              <input
-                inputMode="numeric"
-                onChange={(event) => updateField("port", event.target.value)}
-                required
-                value={form.port}
-              />
-            </label>
-            <label>
-              <span>凭据别名 credentialAlias</span>
-              <input
-                onChange={(event) => updateField("credentialAlias", event.target.value)}
-                required
-                value={form.credentialAlias}
-              />
-            </label>
-          </div>
-        </section>
-
-        <section className={styles.connectionFormSection}>
-          <h3>Schema 与限制</h3>
-          <div className={styles.connectionFormGrid}>
-            <label>
-              <span>默认 Schema</span>
-              <input
-                onChange={(event) => updateField("defaultSchema", event.target.value)}
-                required
-                value={form.defaultSchema}
-              />
-            </label>
-            <label>
-              <span>允许 Schema</span>
-              <input
-                onChange={(event) => updateField("allowedSchemas", event.target.value)}
-                required
-                value={form.allowedSchemas}
-              />
-            </label>
-            <label>
-              <span>maxRows</span>
-              <input
-                inputMode="numeric"
-                onChange={(event) => updateField("maxRowsDefault", event.target.value)}
-                required
-                value={form.maxRowsDefault}
-              />
-            </label>
-            <label>
-              <span>timeoutSeconds</span>
-              <input
-                inputMode="numeric"
-                onChange={(event) => updateField("timeoutSecondsDefault", event.target.value)}
-                required
-                value={form.timeoutSecondsDefault}
-              />
-            </label>
-            <div className={styles.formCapabilities}>
-              <span>capabilities</span>
-              <strong>VALIDATE</strong>
-              <strong>RUN_READ_ONLY</strong>
-              <strong>PREFLIGHT_DML</strong>
+        <form className={styles.connectionForm} onSubmit={submitForm}>
+          <div className={styles.connectionFormHeader}>
+            <div>
+              <h3>{isCreateMode ? "新建连接" : "连接详情"}</h3>
+              <p>{isCreateMode ? "创建新的只读目录元数据" : selectedConnection?.connectionId}</p>
             </div>
+            {!isCreateMode && selectedConnection ? (
+              <StatusPill tone={selectedConnection.status === "READY" ? "success" : "warning"}>
+                {selectedConnection.status}
+              </StatusPill>
+            ) : null}
           </div>
-        </section>
 
-        <div className={styles.formActions}>
-          <button className={styles.secondaryButton} onClick={onClose} type="button">
-            取消
-          </button>
-          <button className={styles.primaryButton} disabled={isPending} type="submit">
-            保存连接
-          </button>
-        </div>
-      </form>
+          <section className={styles.connectionFormSection}>
+            <h3>连接身份</h3>
+            <div className={styles.connectionFormGrid}>
+              <label>
+                <span>连接名称</span>
+                <input
+                  onChange={(event) => updateField("displayName", event.target.value)}
+                  required
+                  value={form.displayName}
+                />
+              </label>
+              <label>
+                <span>目标环境</span>
+                <select
+                  onChange={(event) => updateField("targetEnvironment", event.target.value)}
+                  value={form.targetEnvironment}
+                >
+                  <option value="development">development</option>
+                  <option value="test">test</option>
+                </select>
+              </label>
+              <label>
+                <span>平台类型</span>
+                <select
+                  onChange={(event) => updatePlatformType(event.target.value)}
+                  value={form.platformType}
+                >
+                  <option value="DB2_FOR_I">DB2 for i</option>
+                  <option value="H2">H2</option>
+                  <option value="MYSQL">MySQL</option>
+                </select>
+              </label>
+            </div>
+          </section>
+
+          <section className={styles.connectionFormSection}>
+            <h3>目标端点</h3>
+            <div className={styles.connectionFormGrid}>
+              <label className={styles.wideField}>
+                <span>主机</span>
+                <input
+                  onChange={(event) => updateField("host", event.target.value)}
+                  required
+                  value={form.host}
+                />
+              </label>
+              <label>
+                <span>端口</span>
+                <input
+                  inputMode="numeric"
+                  onChange={(event) => updateField("port", event.target.value)}
+                  required
+                  value={form.port}
+                />
+              </label>
+              <label>
+                <span>凭据别名 credentialAlias</span>
+                <input
+                  onChange={(event) => updateField("credentialAlias", event.target.value)}
+                  required
+                  value={form.credentialAlias}
+                />
+              </label>
+            </div>
+          </section>
+
+          <section className={styles.connectionFormSection}>
+            <h3>Schema 与限制</h3>
+            <div className={styles.connectionFormGrid}>
+              <label>
+                <span>默认 Schema</span>
+                <input
+                  onChange={(event) => updateField("defaultSchema", event.target.value)}
+                  required
+                  value={form.defaultSchema}
+                />
+              </label>
+              <label>
+                <span>允许 Schema</span>
+                <input
+                  onChange={(event) => updateField("allowedSchemas", event.target.value)}
+                  required
+                  value={form.allowedSchemas}
+                />
+              </label>
+              <label>
+                <span>maxRows</span>
+                <input
+                  inputMode="numeric"
+                  onChange={(event) => updateField("maxRowsDefault", event.target.value)}
+                  required
+                  value={form.maxRowsDefault}
+                />
+              </label>
+              <label>
+                <span>timeoutSeconds</span>
+                <input
+                  inputMode="numeric"
+                  onChange={(event) => updateField("timeoutSecondsDefault", event.target.value)}
+                  required
+                  value={form.timeoutSecondsDefault}
+                />
+              </label>
+              <div className={styles.formCapabilities}>
+                <span>capabilities</span>
+                <strong>VALIDATE</strong>
+                <strong>RUN_READ_ONLY</strong>
+                <strong>PREFLIGHT_DML</strong>
+              </div>
+            </div>
+          </section>
+
+          {!isCreateMode && selectedConnection ? (
+            <section className={styles.deleteSection}>
+              <div>
+                <strong>删除连接</strong>
+                <p>只删除目录元数据，不触碰凭据库或目标系统。</p>
+              </div>
+              {deleteCandidateId === selectedConnection.connectionId ? (
+                <div className={styles.deleteActions}>
+                  <button
+                    className={styles.secondaryButton}
+                    disabled={deletePending}
+                    onClick={confirmDelete}
+                    type="button"
+                  >
+                    确认删除
+                  </button>
+                  <button
+                    className={styles.secondaryButton}
+                    disabled={deletePending}
+                    onClick={() => setDeleteCandidateId("")}
+                    type="button"
+                  >
+                    取消删除
+                  </button>
+                </div>
+              ) : (
+                <button
+                  className={styles.dangerButton}
+                  disabled={deletePending}
+                  onClick={() => setDeleteCandidateId(selectedConnection.connectionId)}
+                  type="button"
+                >
+                  删除连接
+                </button>
+              )}
+            </section>
+          ) : null}
+
+          <div className={styles.formActions}>
+            <button className={styles.secondaryButton} onClick={onClose} type="button">
+              关闭
+            </button>
+            <button className={styles.primaryButton} disabled={isPending} type="submit">
+              {isCreateMode ? "创建连接" : "保存修改"}
+            </button>
+          </div>
+        </form>
+      </div>
     </Dialog>
   );
 }
 
 /**
  * @param {{
+ *   compact?: boolean,
  *   detail: string,
  *   icon: import("lucide-react").LucideIcon,
  *   title: string,
  * }} props
  */
-function PanelHeading({ detail, icon: Icon, title }) {
+function PanelHeading({ compact = false, detail, icon: Icon, title }) {
   return (
-    <header className={styles.panelHeading}>
+    <header className={`${styles.panelHeading} ${compact ? styles.compactPanelHeading : ""}`}>
       <span aria-hidden="true">
-        <Icon size={16} strokeWidth={2.4} />
+        <Icon size={compact ? 13 : 16} strokeWidth={2.4} />
       </span>
       <div>
         <h2>{title}</h2>
@@ -1208,6 +1595,124 @@ function Notice({ detail, title }) {
 }
 
 /**
+ * @param {SqlConnectionSummary} connection
+ * @returns {typeof DEFAULT_CONNECTION_FORM}
+ */
+function connectionToForm(connection) {
+  const platformDefaults =
+    PLATFORM_FORM_DEFAULTS[
+      /** @type {keyof typeof PLATFORM_FORM_DEFAULTS} */ (connection.platformType)
+    ];
+  return {
+    displayName: connection.displayName,
+    targetEnvironment: connection.targetEnvironment,
+    platformType: connection.platformType,
+    host: connection.host ?? platformDefaults?.host ?? "",
+    port: String(connection.port ?? platformDefaults?.port ?? ""),
+    defaultSchema: connection.defaultSchema ?? connection.allowedSchemas[0] ?? "",
+    allowedSchemas: connection.allowedSchemas.join(", "),
+    credentialAlias: connection.credentialAlias ?? "",
+    maxRowsDefault: String(connection.maxRowsDefault ?? DEFAULT_LIMITS.maxRows),
+    timeoutSecondsDefault: String(
+      connection.timeoutSecondsDefault ?? DEFAULT_LIMITS.timeoutSeconds,
+    ),
+  };
+}
+
+/**
+ * @param {typeof DEFAULT_CONNECTION_FORM} form
+ * @returns {import("../../schemas/sql-schemas.js").SqlConnectionCreateRequest}
+ */
+function buildConnectionRequest(form) {
+  return {
+    contractVersion: "1.0",
+    displayName: form.displayName.trim(),
+    targetEnvironment: /** @type {"development" | "test"} */ (form.targetEnvironment),
+    platformType: /** @type {"DB2_FOR_I" | "H2" | "MYSQL"} */ (form.platformType),
+    host: form.host.trim(),
+    port: Number(form.port),
+    defaultSchema: form.defaultSchema.trim(),
+    allowedSchemas: splitCsv(form.allowedSchemas),
+    capabilities: ["VALIDATE", "RUN_READ_ONLY", "PREFLIGHT_DML"],
+    credentialAlias: form.credentialAlias.trim(),
+    maxRowsDefault: Number(form.maxRowsDefault),
+    timeoutSecondsDefault: Number(form.timeoutSecondsDefault),
+  };
+}
+
+/**
+ * Lightweight UX hint only. The server still performs the authoritative
+ * read-only validation inside the RUN_READ_ONLY execution path.
+ *
+ * @param {string} sql
+ */
+function isLikelyReadOnlySql(sql) {
+  return /^(?:\s|--[^\n]*(?:\n|$)|\/\*[\s\S]*?\*\/)*(?:select|with)\b/iu.test(sql);
+}
+
+/**
+ * @param {SqlConnectionSummary[]} connections
+ * @param {SqlConnectionSummary} connection
+ */
+function upsertConnection(connections, connection) {
+  const hasConnection = connections.some(
+    (item) => item.connectionId === connection.connectionId,
+  );
+  if (!hasConnection) {
+    return [...connections, connection];
+  }
+  return connections.map((item) =>
+    item.connectionId === connection.connectionId ? connection : item,
+  );
+}
+
+/**
+ * @param {SqlConnectionSummary[]} baseConnections
+ * @param {SqlConnectionSummary[]} overrides
+ * @param {string[]} deletedConnectionIds
+ */
+function mergeConnections(baseConnections, overrides, deletedConnectionIds) {
+  const deleted = new Set(deletedConnectionIds);
+  const byId = new Map();
+  baseConnections.forEach((connection) => {
+    if (!deleted.has(connection.connectionId)) {
+      byId.set(connection.connectionId, connection);
+    }
+  });
+  overrides.forEach((connection) => {
+    if (!deleted.has(connection.connectionId)) {
+      byId.set(connection.connectionId, connection);
+    }
+  });
+  return Array.from(byId.values());
+}
+
+/**
+ * @param {SqlConnectionSummary | null} connection
+ * @param {string} fallbackSchema
+ * @param {string} fallbackConnectionId
+ * @returns {Partial<SqlWorkbenchSession>}
+ */
+function buildConnectionSessionPatch(connection, fallbackSchema, fallbackConnectionId) {
+  return {
+    connectionId: connection?.connectionId ?? fallbackConnectionId,
+    schema:
+      connection?.defaultSchema ??
+      connection?.allowedSchemas[0] ??
+      fallbackSchema,
+    validation: null,
+    execution: null,
+    resultPage: null,
+    resultPageIndex: 0,
+    resultPageToken: null,
+    resultPageTokens: [null],
+    errorMessage: null,
+    assistant: null,
+    assistantErrorMessage: null,
+  };
+}
+
+/**
  * @param {number} index
  * @param {string} sql
  * @returns {SqlWorkbenchSession}
@@ -1222,7 +1727,9 @@ function createSession(index, sql) {
     id: `sql-session-${index}`,
     label: `SQL ${index}`,
     resultPage: null,
+    resultPageIndex: 0,
     resultPageToken: null,
+    resultPageTokens: [null],
     schema: "",
     sql,
     validation: null,
@@ -1251,6 +1758,15 @@ function buildLimits(connection) {
     maxBytes: DEFAULT_LIMITS.maxBytes,
     timeoutSeconds: connection.timeoutSecondsDefault ?? DEFAULT_LIMITS.timeoutSeconds,
   };
+}
+
+/**
+ * @param {number} value
+ * @param {number} min
+ * @param {number} max
+ */
+function clampNumber(value, min, max) {
+  return Math.min(Math.max(value, min), max);
 }
 
 /**

@@ -1,0 +1,77 @@
+schemaVersion: ops-agent.skill/v1
+skillId: sql-assistant-advice-read
+version: 1.0.0
+displayName: "AI SQL 助手建议"
+description: "对开发和测试环境 SQL 进行只读解释、错误分析和优化建议，不执行 SQL。"
+category: APPLICATION_DIAGNOSTICS
+riskLevel: READ_ONLY
+readOnly: true
+executor: WORKFLOW
+outputType: JSON
+owner: sql-workbench
+timeoutSeconds: 30
+publishedAt: "2026-06-28T16:00:00+08:00"
+requiredRoles:
+  - ROLE_ops-reader
+  - ROLE_ops-admin
+interceptors:
+  - AUTHORIZATION
+  - AUDIT
+  - SENSITIVE_DATA_MASKING
+  - RATE_LIMIT
+tags:
+  - sql
+  - assistant
+  - explain
+  - optimize
+  - advisory
+parameters:
+  - name: connectionId
+    displayName: "连接标识"
+    description: "SQL 工作台连接目录中的连接标识。"
+    type: STRING
+    required: true
+    allowedValues: []
+    defaultValue: null
+  - name: targetEnvironment
+    displayName: "目标环境"
+    description: "SQL 助手允许分析的非生产目标环境。"
+    type: ENUM
+    required: true
+    allowedValues: [development, test]
+    defaultValue: null
+  - name: schema
+    displayName: "Schema"
+    description: "SQL 工作台当前 Schema。"
+    type: STRING
+    required: true
+    allowedValues: []
+    defaultValue: null
+  - name: assistantAction
+    displayName: "助手动作"
+    description: "解释 SQL、优化 SQL 或分析错误。"
+    type: ENUM
+    required: true
+    allowedValues: [EXPLAIN_SQL, OPTIMIZE_SQL, ANALYZE_ERROR]
+    defaultValue: null
+  - name: sql
+    displayName: "SQL"
+    description: "需要由助手分析的 SQL 文本。"
+    type: STRING
+    required: true
+    allowedValues: []
+    defaultValue: null
+  - name: diagnosticContext
+    displayName: "诊断上下文"
+    description: "可选的错误信息、执行计划摘要或用户补充说明。"
+    type: STRING
+    required: false
+    allowedValues: []
+    defaultValue: null
+  - name: idempotencyKey
+    displayName: "幂等键"
+    description: "本次助手请求的幂等键。"
+    type: STRING
+    required: true
+    allowedValues: []
+    defaultValue: null

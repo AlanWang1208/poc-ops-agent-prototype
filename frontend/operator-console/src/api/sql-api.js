@@ -1,7 +1,9 @@
 import {
   sqlConnectionCreateRequestSchema,
+  sqlConnectionDeleteResponseSchema,
   sqlConnectionListSchema,
   sqlConnectionProbeResultSchema,
+  sqlConnectionUpdateRequestSchema,
   sqlAssistantRequestSchema,
   sqlAssistantResponseSchema,
   sqlQueryRunRequestSchema,
@@ -29,6 +31,37 @@ export function createSqlConnection(input) {
     body: JSON.stringify(request),
     schema: sqlConnectionListSchema.element,
   });
+}
+
+/**
+ * @param {string} connectionId
+ * @param {unknown} input
+ */
+export function updateSqlConnection(connectionId, input) {
+  const request = sqlConnectionUpdateRequestSchema.parse(input);
+  return requestJson(
+    `/internal/sql-workbench/connections/${encodeURIComponent(connectionId)}`,
+    {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(request),
+      schema: sqlConnectionListSchema.element,
+    },
+  );
+}
+
+/**
+ * @param {string} connectionId
+ */
+export async function deleteSqlConnection(connectionId) {
+  await requestJson(
+    `/internal/sql-workbench/connections/${encodeURIComponent(connectionId)}`,
+    {
+      method: "DELETE",
+      schema: sqlConnectionDeleteResponseSchema,
+    },
+  );
+  return connectionId;
 }
 
 /**

@@ -3,10 +3,12 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import {
   createSqlConnection,
   askSqlAssistant,
+  deleteSqlConnection,
   listSqlConnections,
   probeSqlConnection,
   readSqlResultPage,
   runReadOnlySqlQuery,
+  updateSqlConnection,
   validateSqlQuery,
 } from "../../api/sql-api.js";
 
@@ -20,6 +22,24 @@ export function useSqlConnections() {
 export function useCreateSqlConnection() {
   return useMutation({
     mutationFn: createSqlConnection,
+  });
+}
+
+export function useUpdateSqlConnection() {
+  return useMutation({
+    /**
+     * @param {{
+     *   connectionId: string,
+     *   request: import("../../schemas/sql-schemas.js").SqlConnectionUpdateRequest,
+     * }} input
+     */
+    mutationFn: (input) => updateSqlConnection(input.connectionId, input.request),
+  });
+}
+
+export function useDeleteSqlConnection() {
+  return useMutation({
+    mutationFn: deleteSqlConnection,
   });
 }
 

@@ -1,0 +1,31 @@
+{
+  "caseId": "sql-assistant-advice-read-invalid-parameters",
+  "skillId": "sql-assistant-advice-read",
+  "version": "1.0.0",
+  "description": "缺少 SQL 文本时必须被输入 Schema 拒绝。",
+  "operator": {
+    "subject": "ops-reader-1",
+    "roles": [
+      "ROLE_ops-reader"
+    ]
+  },
+  "targetEnvironment": "development",
+  "input": {
+    "contractVersion": "1.0",
+    "connectionId": "h2-local-test",
+    "targetEnvironment": "development",
+    "schema": "ORDERS",
+    "assistantAction": "EXPLAIN_SQL",
+    "limits": {
+      "maxRows": 500,
+      "maxBytes": 5000000,
+      "timeoutSeconds": 30
+    },
+    "idempotencyKey": "sql-assistant-invalid-1"
+  },
+  "expected": {
+    "decision": "REJECT",
+    "reason": "SCHEMA_VALIDATION_FAILED",
+    "field": "sql"
+  }
+}

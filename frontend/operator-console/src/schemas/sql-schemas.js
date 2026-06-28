@@ -4,6 +4,7 @@ import { z } from "zod";
  * @typedef {z.infer<typeof sqlConnectionSchema>} SqlConnectionSummary
  * @typedef {z.infer<typeof sqlValidationReportSchema>} SqlValidationReport
  * @typedef {z.infer<typeof sqlConnectionCreateRequestSchema>} SqlConnectionCreateRequest
+ * @typedef {z.infer<typeof sqlConnectionUpdateRequestSchema>} SqlConnectionUpdateRequest
  * @typedef {z.infer<typeof sqlConnectionProbeResultSchema>} SqlConnectionProbeResult
  * @typedef {z.infer<typeof sqlQueryRunRequestSchema>} SqlQueryRunRequest
  * @typedef {z.infer<typeof sqlQueryRunResultSchema>} SqlQueryRunResult
@@ -79,6 +80,10 @@ export const sqlConnectionCreateRequestSchema = z
   })
   .strict();
 
+export const sqlConnectionUpdateRequestSchema = sqlConnectionCreateRequestSchema;
+
+export const sqlConnectionDeleteResponseSchema = z.undefined();
+
 export const sqlConnectionProbeResultSchema = z
   .object({
     contractVersion: z.literal("1.0"),
@@ -123,7 +128,6 @@ export const sqlQueryRequestSchema = z
 export const sqlQueryRunRequestSchema = sqlQueryRequestSchema
   .extend({
     action: z.literal("RUN_READ_ONLY"),
-    validationHash: nonBlankString,
   })
   .strict();
 
