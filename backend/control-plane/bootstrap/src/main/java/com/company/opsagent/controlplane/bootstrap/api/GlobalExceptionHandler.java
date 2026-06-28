@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.server.ServerWebExchange;
 import org.springframework.web.server.ServerWebInputException;
+import org.springframework.web.server.ResponseStatusException;
 
 /**
  * 控制面全局异常处理器。
@@ -57,6 +58,26 @@ public class GlobalExceptionHandler {
       Exception exception,
       ServerWebExchange exchange) {
     return build(HttpStatus.BAD_REQUEST, "VALIDATION_ERROR", "request validation failed", exchange);
+  }
+
+  /**
+   * 保留下游边界已经分类过的 HTTP 状态，避免把 Worker 的 404/401 等状态折叠成 500。
+   */
+  @ExceptionHandler(ResponseStatusException.class)
+  public ResponseEntity<ApiError> handleResponseStatus(
+      ResponseStatusException exception,
+      ServerWebExchange exchange) {
+    HttpStatus status = HttpStatus.resolve(exception.getStatusCode().value());
+    HttpStatus resolvedStatus = status == null ? HttpStatus.INTERNAL_SERVER_ERROR : status;
+    String code = switch (resolvedStatus) {
+      case NOT_FOUND -> "NOT_FOUND";
+      case UNAUTHORIZED -> "UNAUTHENTICATED";
+      case FORBIDDEN -> "FORBIDDEN";
+      case BAD_REQUEST -> "INVALID_ARGUMENT";
+      default -> resolvedStatus.is5xxServerError() ? "INTERNAL_ERROR" : "REQUEST_FAILED";
+    };
+    String message = exception.getReason() == null ? resolvedStatus.getReasonPhrase() : exception.getReason();
+    return build(resolvedStatus, code, message, exchange);
   }
 
   /**

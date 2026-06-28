@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://company.example/ops-agent/contracts/sqlworkbench/sql-connection-probe-result-v1.schema.json",
+  "title": "SQL connection probe result v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["contractVersion", "connectionId", "status", "message", "probedAt"],
+  "properties": {
+    "contractVersion": { "const": "1.0" },
+    "connectionId": { "type": "string", "minLength": 1 },
+    "status": {
+      "enum": [
+        "READY",
+        "CREDENTIAL_ALIAS_NOT_FOUND",
+        "CREDENTIAL_LOCKED",
+        "EGRESS_NOT_ALLOWED",
+        "READ_ONLY_ACCOUNT_CHECK_FAILED",
+        "PROBE_FAILED"
+      ]
+    },
+    "message": { "type": ["string", "null"], "maxLength": 500 },
+    "probedAt": { "type": "string", "format": "date-time" }
+  }
+}

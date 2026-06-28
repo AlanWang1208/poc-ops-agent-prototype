@@ -3,16 +3,32 @@ package com.company.opsagent.controlplane.modules.sqlworkbench;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import com.company.opsagent.contracts.sqlworkbench.SqlConnectionCreateRequest;
+import com.company.opsagent.contracts.sqlworkbench.SqlConnectionProbeResult;
 import com.company.opsagent.contracts.sqlworkbench.SqlConnectionSummary;
 import com.company.opsagent.contracts.sqlworkbench.SqlQueryAction;
+import com.company.opsagent.contracts.sqlworkbench.SqlQueryExecutionRequest;
+import com.company.opsagent.contracts.sqlworkbench.SqlQueryExecutionResult;
 import com.company.opsagent.contracts.sqlworkbench.SqlQueryLimits;
 import com.company.opsagent.contracts.sqlworkbench.SqlQueryRequest;
+import com.company.opsagent.contracts.sqlworkbench.SqlResultColumn;
+import com.company.opsagent.contracts.sqlworkbench.SqlResultPage;
 import com.company.opsagent.contracts.sqlworkbench.SqlValidationLevel;
+import com.company.opsagent.contracts.workflow.OperatorContext;
+import com.company.opsagent.contracts.workflow.PolicyDecisionReference;
+import com.company.opsagent.contracts.workflow.TraceContext;
+import com.fasterxml.jackson.databind.node.TextNode;
+import java.time.Clock;
+import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
 class DefaultSqlWorkbenchServiceTest {
 
+  private static final Clock CLOCK = Clock.fixed(Instant.parse("2026-06-27T00:00:00Z"), ZoneOffset.UTC);
+  private final RecordingSqlWorkbenchWorkerClient workerClient = new RecordingSqlWorkbenchWorkerClient();
   private final DefaultSqlWorkbenchService service = new DefaultSqlWorkbenchService(
       new InMemorySqlConnectionCatalog(List.of(new SqlConnectionSummary(
           "1.0",
@@ -22,7 +38,9 @@ class DefaultSqlWorkbenchServiceTest {
           "DB2_FOR_I",
           List.of("ORDERS"),
           List.of(SqlQueryAction.VALIDATE, SqlQueryAction.RUN_READ_ONLY, SqlQueryAction.PREFLIGHT_DML)))),
-      new CalciteSqlValidationService());
+      new CalciteSqlValidationService(),
+      workerClient,
+      CLOCK);
 
   @Test
   void rejectsSchemaOutsideConnectionAllowList() {
@@ -51,16 +69,169 @@ class DefaultSqlWorkbenchServiceTest {
     assertThrows(IllegalArgumentException.class, () -> service.validate(crossSchemaRequest));
   }
 
+  @Test
+  void createsDevelopmentConnectionWithPendingWorkerBindingStatus() {
+    SqlConnectionSummary created = service.createConnection(new SqlConnectionCreateRequest(
+        "1.0",
+        "AS/400 Dev Sandbox",
+        "development",
+        "DB2_FOR_I",
+        "as400-dev.internal",
+        446,
+        "ORDERS",
+        List.of("ORDERS"),
+        List.of(SqlQueryAction.VALIDATE, SqlQueryAction.RUN_READ_ONLY, SqlQueryAction.PREFLIGHT_DML),
+        "as400-dev-readonly",
+        500,
+        30));
+
+    assertEquals("PENDING_WORKER_BINDING", created.status());
+    assertEquals("as400-dev-readonly", created.credentialAlias());
+    assertEquals("ORDERS", created.defaultSchema());
+    assertEquals(446, created.port());
+  }
+
+  @Test
+  void rejectsConnectionCreateRequestWithJdbcCredentialMaterialInHost() {
+    assertThrows(IllegalArgumentException.class, () -> service.createConnection(new SqlConnectionCreateRequest(
+        "1.0",
+        "AS/400 Dev Unsafe",
+        "development",
+        "DB2_FOR_I",
+        "jdbc:as400://user:password@as400-dev.internal",
+        446,
+        "ORDERS",
+        List.of("ORDERS"),
+        List.of(SqlQueryAction.VALIDATE, SqlQueryAction.RUN_READ_ONLY),
+        "as400-dev-readonly",
+        500,
+        30)));
+  }
+
+  @Test
+  void runReadOnlyRejectsAnyOtherActionBeforeWorkerSubmission() {
+    SqlQueryRequest request = request("ORDERS", SqlQueryAction.PREFLIGHT_DML, "delete from ORDERS.ORDERS where id = 1");
+
+    assertThrows(IllegalArgumentException.class, () -> service.runReadOnlyQuery(
+        request,
+        operator(),
+        policy(),
+        trace()));
+    assertEquals(0, workerClient.executeCount);
+  }
+
+  @Test
+  void runReadOnlySubmitsAuthorizedExecutionEnvelope() {
+    SqlQueryRequest request = request("ORDERS");
+    String expectedHash = service.validate(request).sqlHash();
+
+    SqlQueryExecutionResult result = service.runReadOnlyQuery(request, operator(), policy(), trace());
+
+    assertEquals("SUCCEEDED", result.status());
+    assertEquals(1, workerClient.executeCount);
+    SqlQueryExecutionRequest submitted = workerClient.lastExecutionRequest;
+    assertEquals(SqlQueryAction.RUN_READ_ONLY, submitted.query().action());
+    assertEquals(expectedHash, submitted.validationHash());
+    assertEquals("operator-1", submitted.operator().operatorId());
+    assertEquals("decision-1", submitted.policyDecision().decisionId());
+    assertEquals("trace-1", submitted.trace().traceId());
+    assertEquals("idempotency-key", submitted.query().idempotencyKey());
+  }
+
+  @Test
+  void readsResultPageThroughWorkerClient() {
+    SqlResultPage page = service.readResultPage("result-1");
+
+    assertEquals("result-1", page.resultId());
+    assertEquals(1, workerClient.readCount);
+  }
+
+  @Test
+  void probesConnectionThroughWorkerClient() {
+    SqlConnectionProbeResult result = service.probeConnection("as400-development");
+
+    assertEquals("as400-development", result.connectionId());
+    assertEquals("READY", result.status());
+    assertEquals(OffsetDateTime.now(CLOCK), result.probedAt());
+    assertEquals(1, workerClient.probeCount);
+    assertEquals("as400-development", workerClient.lastProbeConnection.connectionId());
+    assertEquals("as400-development", workerClient.lastProbeConnection.credentialAlias());
+  }
+
   private SqlQueryRequest request(String schema) {
+    return request(schema, SqlQueryAction.RUN_READ_ONLY, "select * from ORDERS.ORDERS");
+  }
+
+  private SqlQueryRequest request(String schema, SqlQueryAction action, String sql) {
     return new SqlQueryRequest(
         "1.0",
         "as400-development",
         "development",
         schema,
-        SqlQueryAction.RUN_READ_ONLY,
-        "select * from ORDERS.ORDERS",
+        action,
+        sql,
         List.of(),
         new SqlQueryLimits(500, 5_000_000, 30),
-        "key");
+        "idempotency-key");
+  }
+
+  private OperatorContext operator() {
+    return new OperatorContext("operator-1", List.of("ROLE_ops-reader"));
+  }
+
+  private PolicyDecisionReference policy() {
+    return new PolicyDecisionReference("decision-1", "policy-v1", "ALLOW");
+  }
+
+  private TraceContext trace() {
+    return new TraceContext("trace-1", "request-1");
+  }
+
+  private static final class RecordingSqlWorkbenchWorkerClient implements SqlWorkbenchWorkerClient {
+
+    private int executeCount;
+    private int readCount;
+    private int probeCount;
+    private SqlConnectionSummary lastProbeConnection;
+    private SqlQueryExecutionRequest lastExecutionRequest;
+
+    @Override
+    public SqlConnectionProbeResult probe(SqlConnectionSummary connection) {
+      probeCount++;
+      lastProbeConnection = connection;
+      return new SqlConnectionProbeResult(
+          "1.0",
+          connection.connectionId(),
+          "READY",
+          "SQL connection probe succeeded",
+          OffsetDateTime.now(CLOCK));
+    }
+
+    @Override
+    public SqlQueryExecutionResult execute(SqlQueryExecutionRequest request) {
+      executeCount++;
+      lastExecutionRequest = request;
+      return new SqlQueryExecutionResult(
+          "1.0",
+          request.executionRequestId(),
+          request.workflowId(),
+          "SUCCEEDED",
+          "result-1",
+          null,
+          null);
+    }
+
+    @Override
+    public SqlResultPage readResultPage(String resultId) {
+      readCount++;
+      return new SqlResultPage(
+          "1.0",
+          resultId,
+          List.of(new SqlResultColumn("STATUS", "VARCHAR", false)),
+          List.of(List.of(TextNode.valueOf("READY"))),
+          null,
+          false,
+          OffsetDateTime.now(CLOCK).plusMinutes(15));
+    }
   }
 }

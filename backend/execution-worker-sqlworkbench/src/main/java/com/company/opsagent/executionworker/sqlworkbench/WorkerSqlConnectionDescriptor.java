@@ -9,7 +9,18 @@ public record WorkerSqlConnectionDescriptor(
     String host,
     int port,
     String credentialAlias,
+    String username,
     boolean enabled) {
+
+  public WorkerSqlConnectionDescriptor(
+      String connectionId,
+      String targetEnvironment,
+      String host,
+      int port,
+      String credentialAlias,
+      boolean enabled) {
+    this(connectionId, targetEnvironment, host, port, credentialAlias, credentialAlias, enabled);
+  }
 
   public WorkerSqlConnectionDescriptor {
     connectionId = requiredText(connectionId, "connectionId");
@@ -22,6 +33,7 @@ public record WorkerSqlConnectionDescriptor(
       throw new IllegalArgumentException("port must be between 1 and 65535");
     }
     credentialAlias = requiredText(credentialAlias, "credentialAlias");
+    username = requiredText(username, "username");
   }
 
   public WorkerSqlEgressTarget target() {

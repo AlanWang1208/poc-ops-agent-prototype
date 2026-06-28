@@ -1,5 +1,6 @@
 package com.company.opsagent.executionworker.sqlworkbench;
 
+import com.company.opsagent.contracts.sqlworkbench.SqlConnectionSummary;
 import com.company.opsagent.contracts.sqlworkbench.SqlQueryExecutionRequest;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -33,6 +34,29 @@ public final class WorkerSqlEgressPolicy {
     }
     if (!descriptor.targetEnvironment().equalsIgnoreCase(request.query().targetEnvironment())) {
       throw rejected("SQL_ENVIRONMENT_MISMATCH", "SQL connection does not match the requested environment");
+    }
+    if (!allowedTargets.contains(descriptor.target())) {
+      throw rejected("SQL_EGRESS_NOT_ALLOWED", "SQL egress target is not allowed for this worker");
+    }
+    return descriptor;
+  }
+
+  public WorkerSqlConnectionDescriptor validate(SqlConnectionSummary connection) {
+    WorkerSqlConnectionDescriptor descriptor = descriptorsByConnectionId.get(connection.connectionId());
+    if (descriptor == null) {
+      throw rejected("SQL_CONNECTION_NOT_FOUND", "SQL connection is not configured for this worker");
+    }
+    if (!descriptor.enabled()) {
+      throw rejected("SQL_CONNECTION_DISABLED", "SQL connection is disabled for this worker");
+    }
+    if (!descriptor.targetEnvironment().equalsIgnoreCase(connection.targetEnvironment())) {
+      throw rejected("SQL_ENVIRONMENT_MISMATCH", "SQL connection does not match the requested environment");
+    }
+    if (!descriptor.host().equalsIgnoreCase(connection.host()) || descriptor.port() != connection.port()) {
+      throw rejected("SQL_CONNECTION_METADATA_MISMATCH", "SQL connection metadata does not match worker binding");
+    }
+    if (!descriptor.credentialAlias().equals(connection.credentialAlias())) {
+      throw rejected("SQL_CREDENTIAL_ALIAS_MISMATCH", "SQL credential alias does not match worker binding");
     }
     if (!allowedTargets.contains(descriptor.target())) {
       throw rejected("SQL_EGRESS_NOT_ALLOWED", "SQL egress target is not allowed for this worker");

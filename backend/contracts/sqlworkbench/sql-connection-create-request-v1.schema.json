@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://company.example/ops-agent/contracts/sqlworkbench/sql-connection-create-request-v1.schema.json",
+  "title": "SQL connection create request v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contractVersion",
+    "displayName",
+    "targetEnvironment",
+    "platformType",
+    "host",
+    "port",
+    "defaultSchema",
+    "allowedSchemas",
+    "capabilities",
+    "credentialAlias",
+    "maxRowsDefault",
+    "timeoutSecondsDefault"
+  ],
+  "properties": {
+    "contractVersion": { "const": "1.0" },
+    "displayName": { "type": "string", "minLength": 1, "maxLength": 200 },
+    "targetEnvironment": { "enum": ["development", "test"] },
+    "platformType": { "const": "DB2_FOR_I" },
+    "host": { "type": "string", "minLength": 1, "maxLength": 255 },
+    "port": { "type": "integer", "minimum": 1, "maximum": 65535 },
+    "defaultSchema": { "type": "string", "minLength": 1, "maxLength": 128 },
+    "allowedSchemas": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 1, "maxLength": 128 },
+      "uniqueItems": true
+    },
+    "capabilities": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "enum": ["VALIDATE", "RUN_READ_ONLY", "PREFLIGHT_DML"] },
+      "uniqueItems": true
+    },
+    "credentialAlias": { "type": "string", "minLength": 1, "maxLength": 200 },
+    "maxRowsDefault": { "type": "integer", "minimum": 1, "maximum": 10000 },
+    "timeoutSecondsDefault": { "type": "integer", "minimum": 1, "maximum": 300 }
+  }
+}

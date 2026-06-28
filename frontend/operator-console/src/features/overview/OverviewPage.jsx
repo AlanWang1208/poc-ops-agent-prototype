@@ -157,18 +157,11 @@ export function OverviewPage() {
 
       <div className={styles.overviewGrid}>
         <div className={styles.primaryColumn}>
-          <section aria-labelledby="overview-state-title" className={styles.statePanel}>
+          <section aria-label="总览功能状态" className={styles.statePanel}>
             <div className={styles.stateHeader}>
               <span className={styles.eyebrow}>M09 / P1 MVP</span>
-              <div>
-                <h2 id="overview-state-title">当前能用的功能</h2>
-                <p>
-                  这里是总览页：先选择 Agent 或 SQL 工作区做只读排查；生产写入、脚本执行和绕过审批不会在这里开放。
-                </p>
-              </div>
             </div>
-            <section aria-labelledby="overview-guide-title" className={styles.guidePanel}>
-              <h3 id="overview-guide-title">怎么使用这个总览</h3>
+            <section aria-label="总览使用步骤" className={styles.guidePanel}>
               <div className={styles.guideList}>
                 {overviewGuideItems.map((item, index) => (
                   <article className={styles.guideItem} key={item.title}>

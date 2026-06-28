@@ -37,6 +37,23 @@ ops-agent:
       internal.routing.skills.read:
         - ROLE_ops-reader
         - ROLE_ops-admin
+      internal.sql-workbench.connections.read:
+        - ROLE_ops-reader
+        - ROLE_ops-admin
+      internal.sql-workbench.connections.create:
+        - ROLE_ops-admin
+      internal.sql-workbench.connections.probe:
+        - ROLE_ops-reader
+        - ROLE_ops-admin
+      internal.sql-workbench.queries.validate:
+        - ROLE_ops-reader
+        - ROLE_ops-admin
+      internal.sql-workbench.queries.run:
+        - ROLE_ops-reader
+        - ROLE_ops-admin
+      internal.sql-workbench.results.read:
+        - ROLE_ops-reader
+        - ROLE_ops-admin
   skill-registry:
     root-path: backend/contracts/skills/packages
     signature-required: true

@@ -10,7 +10,11 @@ import org.springframework.context.annotation.Configuration;
  * SQL 工作台 Worker 侧适配模块装配。
  */
 @Configuration
-@EnableConfigurationProperties(WorkerSqlEgressProperties.class)
+@EnableConfigurationProperties({
+    WorkerSqlEgressProperties.class,
+    SqlWorkerTransportAuthProperties.class,
+    WorkerSqlCredentialProperties.class
+})
 public class SqlWorkbenchWorkerConfiguration {
 
   /**
@@ -30,15 +34,57 @@ public class SqlWorkbenchWorkerConfiguration {
   }
 
   /**
+   * SQL Worker HTTP 边界传输认证器。
+   */
+  @Bean
+  SqlWorkerTransportAuthenticator sqlWorkerTransportAuthenticator(
+      SqlWorkerTransportAuthProperties properties,
+      Clock workerClock) {
+    return new SqlWorkerTransportAuthenticator(properties, workerClock);
+  }
+
+  /**
+   * SQL 凭据解析器。真实 KeyStore 接入前默认失败关闭，不读取环境中的明文密码。
+   */
+  @Bean
+  SqlPasswordProvider sqlPasswordProvider(WorkerSqlCredentialProperties properties) {
+    if (properties.isComplete()) {
+      return new JavaKeyStorePasswordProvider(
+          properties.getKeyStorePath(),
+          properties.getStorePassword().toCharArray());
+    }
+    if (properties.isConfigured()) {
+      throw new IllegalStateException("SQL credential KeyStore path and store password must be configured together");
+    }
+    return credentialAlias -> {
+      throw new IllegalStateException("SQL credential KeyStore is not configured");
+    };
+  }
+
+  /**
+   * 构建连接探测 Worker。
+   */
+  @Bean
+  SqlConnectionProbeWorker sqlConnectionProbeWorker(
+      WorkerSqlEgressPolicy workerSqlEgressPolicy,
+      SqlPasswordProvider sqlPasswordProvider,
+      Clock workerClock) {
+    return new SqlConnectionProbeWorker(workerSqlEgressPolicy, sqlPasswordProvider, workerClock);
+  }
+
+  /**
    * SQL 数据源解析边界，真实连接配置接入前仍先强制执行出口 allowlist。
    */
   @Bean
-  SqlDataSourceRegistry sqlDataSourceRegistry(WorkerSqlEgressPolicy workerSqlEgressPolicy) {
+  SqlDataSourceRegistry sqlDataSourceRegistry(
+      WorkerSqlEgressPolicy workerSqlEgressPolicy,
+      SqlPasswordProvider sqlPasswordProvider) {
     return new PolicyEnforcedSqlDataSourceRegistry(
         workerSqlEgressPolicy,
-        request -> {
-          throw new IllegalStateException("AS/400 connection and KeyStore are not configured");
-        });
+        new Jt400SqlDataSourceRegistry(
+            workerSqlEgressPolicy,
+            sqlPasswordProvider,
+            new Jt400DataSourceFactory()));
   }
 
   /**

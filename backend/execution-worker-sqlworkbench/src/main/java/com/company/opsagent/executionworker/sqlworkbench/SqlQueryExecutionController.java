@@ -2,10 +2,19 @@ package com.company.opsagent.executionworker.sqlworkbench;
 
 import com.company.opsagent.contracts.sqlworkbench.SqlQueryExecutionRequest;
 import com.company.opsagent.contracts.sqlworkbench.SqlQueryExecutionResult;
+import com.company.opsagent.contracts.sqlworkbench.SqlResultPage;
+import com.company.opsagent.contracts.sqlworkbench.SqlConnectionProbeResult;
+import com.company.opsagent.contracts.sqlworkbench.SqlConnectionSummary;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
@@ -17,13 +26,53 @@ import reactor.core.scheduler.Schedulers;
 public class SqlQueryExecutionController {
 
   private final RestrictedSqlQueryExecutionWorker worker;
+  private final SqlResultStore resultStore;
+  private final SqlWorkerTransportAuthenticator authenticator;
+  private final SqlConnectionProbeWorker probeWorker;
 
-  public SqlQueryExecutionController(RestrictedSqlQueryExecutionWorker worker) {
+  public SqlQueryExecutionController(
+      RestrictedSqlQueryExecutionWorker worker,
+      SqlResultStore resultStore,
+      SqlWorkerTransportAuthenticator authenticator,
+      SqlConnectionProbeWorker probeWorker) {
     this.worker = worker;
+    this.resultStore = resultStore;
+    this.authenticator = authenticator;
+    this.probeWorker = probeWorker;
   }
 
   @PostMapping
-  public Mono<SqlQueryExecutionResult> execute(@RequestBody SqlQueryExecutionRequest request) {
-    return Mono.fromCallable(() -> worker.execute(request)).subscribeOn(Schedulers.boundedElastic());
+  public Mono<SqlQueryExecutionResult> execute(
+      @RequestHeader HttpHeaders headers,
+      @RequestBody SqlQueryExecutionRequest request) {
+    return Mono.fromCallable(() -> {
+      authenticator.authenticateSqlExecution(headers, request);
+      return worker.execute(request);
+    }).subscribeOn(Schedulers.boundedElastic());
+  }
+
+  @GetMapping("/results/{resultId}")
+  public Mono<SqlResultPage> readResult(
+      @RequestHeader HttpHeaders headers,
+      @PathVariable("resultId") String resultId) {
+    return Mono.fromCallable(() -> {
+      authenticator.authenticateSqlResultRead(headers, resultId);
+      return resultStore.find(resultId)
+          .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "SQL result page is not available"));
+    }).subscribeOn(Schedulers.boundedElastic());
+  }
+
+  @PostMapping("/connections/{connectionId}/probe")
+  public Mono<SqlConnectionProbeResult> probeConnection(
+      @RequestHeader HttpHeaders headers,
+      @PathVariable("connectionId") String connectionId,
+      @RequestBody SqlConnectionSummary connection) {
+    return Mono.fromCallable(() -> {
+      if (!connectionId.equals(connection.connectionId())) {
+        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "SQL connection id does not match path");
+      }
+      authenticator.authenticateSqlConnectionProbe(headers, connection);
+      return probeWorker.probe(connection);
+    }).subscribeOn(Schedulers.boundedElastic());
   }
 }
