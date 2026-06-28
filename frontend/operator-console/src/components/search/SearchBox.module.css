@@ -27,6 +27,10 @@
 
 .tabList button {
   min-height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
   padding: 0 13px;
   border: 1px solid transparent;
   border-bottom: 0;
@@ -36,6 +40,10 @@
   font-size: 12px;
   font-weight: 820;
   white-space: nowrap;
+}
+
+.tabIcon {
+  flex: 0 0 auto;
 }
 
 .tabList .activeTab {

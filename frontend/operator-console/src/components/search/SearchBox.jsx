@@ -1,4 +1,4 @@
-import { Search, SendHorizontal, X } from "lucide-react";
+import { MessageSquareText, Search, SendHorizontal, SlidersHorizontal, X } from "lucide-react";
 import { useId, useMemo, useState } from "react";
 
 import { NaturalLanguageDialog } from "../conversation/NaturalLanguageDialog.jsx";
@@ -50,6 +50,15 @@ const DEFAULT_MODES = [
   { label: "条件", value: "conditions" },
   { label: "自然语言", value: "natural" },
 ];
+
+/**
+ * @param {SearchMode} searchMode
+ */
+function renderModeIcon(searchMode) {
+  const Icon = searchMode === "natural" ? MessageSquareText : SlidersHorizontal;
+
+  return <Icon aria-hidden="true" className={styles.tabIcon} size={14} strokeWidth={2.4} />;
+}
 
 /**
  * @param {SearchBoxProps} props
@@ -114,7 +123,8 @@ export function SearchBox({
             role="tab"
             type="button"
           >
-            {option.label}
+            {renderModeIcon(option.value)}
+            <span>{option.label}</span>
           </button>
         ))}
       </div>

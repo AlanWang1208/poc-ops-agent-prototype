@@ -28,6 +28,27 @@ describe("SearchBox", () => {
     expect(naturalPanelRule).toContain("grid-column: 1 / -1");
   });
 
+  test("renders a leading icon for each search mode tab", () => {
+    render(
+      <SearchBox
+        ariaLabel="Skill search"
+        modes={[
+          { label: "Conditions", value: "conditions" },
+          { label: "Natural language", value: "natural" },
+        ]}
+        onSearch={() => {}}
+        placeholder="Skill ID / description / owner"
+      />,
+    );
+
+    expect(
+      screen.getByRole("tab", { name: "Conditions" }).querySelector("svg[aria-hidden='true']"),
+    ).not.toBeNull();
+    expect(
+      screen.getByRole("tab", { name: "Natural language" }).querySelector("svg[aria-hidden='true']"),
+    ).not.toBeNull();
+  });
+
   test("submits a traditional condition search", async () => {
     const user = userEvent.setup();
     const onSearch = vi.fn();
