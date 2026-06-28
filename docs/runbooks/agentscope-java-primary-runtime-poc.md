@@ -31,6 +31,36 @@ ops-agent:
 
 `OPS_AGENT_FAKE_API_KEY_REPLACE_ME` 是本地占位值，不是密钥。控制面会识别该占位值并返回 `AGENT_RUNTIME_FAKE_API_KEY`，用于证明 `agent-runtime` profile、模型参数和失败关闭路径已经接通，但不会向模型供应方发起真实请求。提供真实 API Key 后，占位值会被 `OPS_AGENT_AGENT_RUNTIME_API_KEY` 或 `OPENAI_API_KEY` 覆盖，随后进入 OpenAI-compatible AgentScope 客户端。
 
+2026-06-28 起，推荐通过操作台“模型设置”维护运行时模型供应方，而不是长期依赖静态 `model-name`、`base-url` 和 `api-key` 配置。入口为：
+
+```text
+GET /model-settings
+```
+
+受保护管理 API：
+
+```text
+GET  /internal/model-providers
+POST /internal/model-providers
+PATCH /internal/model-providers/{providerId}
+POST /internal/model-providers/{providerId}/api-key
+POST /internal/model-providers/{providerId}/test
+POST /internal/model-providers/{providerId}/default
+POST /internal/model-providers/{providerId}/disable
+```
+
+这些入口只允许管理员角色访问。API Key 只在新增或轮换请求中直接输入一次；控制面返回的模型供应方摘要只包含 `apiKeyFingerprint`、`configVersion` 和时间戳，不返回明文或密文。切换默认供应方后，Agent Runtime 下一次调用会读取当前默认供应方并使用其配置构造 OpenAI-compatible AgentScope 客户端；未配置默认供应方时，才回退到上述环境变量配置。
+
+`POST /internal/model-providers/{providerId}/test` 会将供应方 `baseUrl` 拼接 `/chat/completions`，发送最小 OpenAI-compatible 非流式请求做受控连通性探测。控制面只返回 `SUCCEEDED`、`FAILED`、`SKIPPED_FAKE_API_KEY` 等稳定状态和脱敏说明；本地占位 Key 不会出网，401/403、网络异常和供应方错误响应体不会回显给操作台、日志或审计原因。
+
+动态模型配置需要提供模型密钥加密主密钥：
+
+```bash
+export OPS_AGENT_MODEL_SECRET_MASTER_KEY="<由密钥系统注入的高熵值>"
+```
+
+该值必须来自部署密钥系统、Kubernetes Secret、CI/CD Secret 或外部 Spring 配置源，不得写入源码、运行手册示例之外的配置样例、日志、Prompt、制品或测试数据。未提供时，本地开发会使用占位值保证链路可启动；生产环境必须覆盖。
+
 真实 API Key 必须通过运行环境、部署密钥系统或受保护的外部 Spring 配置源注入，不得写入源码、配置样例、日志、Prompt、制品或测试数据。使用 OpenAI 时，运行环境中提供名为 `OPENAI_API_KEY` 的密钥；如需避免与本机其他 OpenAI 工具共用变量，也可以提供 `OPS_AGENT_AGENT_RUNTIME_API_KEY`。使用百炼千问时，在目标环境专用配置中覆盖 `model-name`、`base-url` 和密钥变量，仍不得提交真实密钥。
 
 真实 Tool Call 还需要 M02 策略动作 `internal.agent.tool.execute`。基础 `application.yaml` 已为 `ROLE_ops-reader` 和 `ROLE_ops-admin` 配置该动作，避免模型发起工具调用后被平台策略默认拒绝。
@@ -99,6 +129,10 @@ Linux、macOS 或容器环境：
 | 返回 `AGENT_RUNTIME_DISABLED` | 检查 `ops-agent.agent-runtime.enabled` 是否为 `true` |
 | 返回 `AGENT_RUNTIME_NOT_CONFIGURED` | 检查 `agent-runtime` profile、`model-name`、`base-url` 和 `api-key-env` 指向的运行环境变量 |
 | 返回 `AGENT_RUNTIME_FAKE_API_KEY` | 当前仍使用本地占位 Key；通过 `OPS_AGENT_AGENT_RUNTIME_API_KEY` 或 `OPENAI_API_KEY` 注入真实密钥后重启 |
+| 模型设置页保存失败 | 检查调用身份是否具备 `internal.model-providers.write`，并确认 `baseUrl` 使用 HTTPS，或仅在本地开发使用 `http://localhost` / `http://127.0.0.1` |
+| 模型设置页测试配置失败 | 检查调用身份是否具备 `internal.model-providers.test`、供应方 `baseUrl` 是否可达、模型名是否存在、API Key 是否有效；控制面不会返回供应方响应体或 Key，需要到供应方侧按指纹和时间窗口排查 |
+| 设为默认失败 | 检查供应方是否已启用；禁用供应方不能成为默认模型 |
+| API Key 指纹未变化 | 确认轮换请求体包含新的 `apiKey`，前端编辑已有供应方时留空表示不轮换 |
 | 返回 `POLICY_DENIED` | 检查调用身份是否具备 `internal.agent.diagnostics.read` 和 `internal.agent.tool.execute` 对应角色 |
 | Agent 输出为空 | 检查模型供应方响应；平台只返回最终文本摘要，不暴露模型内部推理 |
 | 出现非只读工具调用 | 保持 P1 拒绝，不得临时放宽策略；先补安全评审和 ADR |

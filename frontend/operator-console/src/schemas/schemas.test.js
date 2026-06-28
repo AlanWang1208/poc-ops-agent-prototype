@@ -11,7 +11,13 @@ import {
 } from "./agent-schemas.js";
 import { skillCatalogSchema, skillLookupSchema } from "./skill-schemas.js";
 import {
+  modelProviderCreateRequestSchema,
+  modelProviderListSchema,
+} from "./model-provider-schemas.js";
+import {
   sqlConnectionListSchema,
+  sqlAssistantRequestSchema,
+  sqlAssistantResponseSchema,
   sqlQueryRequestSchema,
   sqlValidationReportSchema,
 } from "./sql-schemas.js";
@@ -159,6 +165,54 @@ describe("SQL schemas", () => {
         targetEnvironment: "production",
       }),
     ).toThrow();
+  });
+
+  test("accepts advisory SQL assistant responses and rejects secret fields", () => {
+    expect(sqlAssistantResponseSchema.parse(sqlAssistantResponse).validationRequired).toBe(true);
+    expect(() =>
+      sqlAssistantResponseSchema.parse({
+        ...sqlAssistantResponse,
+        apiKey: "secret",
+      }),
+    ).toThrow();
+    expect(() =>
+      sqlAssistantRequestSchema.parse({
+        ...sqlAssistantRequest,
+        password: "secret",
+      }),
+    ).toThrow();
+  });
+});
+
+describe("model provider schemas", () => {
+  test("accepts safe model provider summaries", () => {
+    expect(modelProviderListSchema.parse([modelProviderSummary])).toHaveLength(1);
+  });
+
+  test("rejects model provider summaries that include secret material", () => {
+    expect(() =>
+      modelProviderListSchema.parse([
+        {
+          ...modelProviderSummary,
+          apiKeyCiphertext: "encrypted-secret",
+        },
+      ]),
+    ).toThrow();
+  });
+
+  test("requires direct API Key input only for create requests", () => {
+    expect(
+      modelProviderCreateRequestSchema.parse({
+        displayName: "OpenAI",
+        baseUrl: "https://api.openai.com/v1",
+        modelName: "gpt-4.1-mini",
+        apiKey: "test-key",
+        timeoutSeconds: 30,
+        maxIterations: 5,
+        maxToolCalls: 5,
+        maxToolCallDurationSeconds: 30,
+      }).apiKey,
+    ).toBe("test-key");
   });
 });
 
@@ -369,6 +423,52 @@ const sqlRequest = {
   parameters: [],
   limits: { maxRows: 500, maxBytes: 5000000, timeoutSeconds: 30 },
   idempotencyKey: "sql-validate-1",
+};
+
+const sqlAssistantRequest = {
+  contractVersion: "1.0",
+  connectionId: "as400-development",
+  targetEnvironment: "development",
+  schema: "ORDERS",
+  assistantAction: "OPTIMIZE_SQL",
+  sql: "select * from ORDERS.ORDERS",
+  limits: { maxRows: 500, maxBytes: 5000000, timeoutSeconds: 30 },
+  idempotencyKey: "sql-assistant-1",
+};
+
+const sqlAssistantResponse = {
+  contractVersion: "1.0",
+  status: "SUCCEEDED",
+  assistantAction: "OPTIMIZE_SQL",
+  summary: "Use explicit columns.",
+  suggestions: [
+    {
+      title: "Limit columns",
+      rationale: "Reduce returned data.",
+      suggestedSql: "select order_id from ORDERS.ORDERS",
+    },
+  ],
+  safetyNotes: ["Validate before execution."],
+  validationRequired: true,
+};
+
+const modelProviderSummary = {
+  providerId: "provider-1",
+  displayName: "OpenAI",
+  providerType: "OPENAI_COMPATIBLE",
+  baseUrl: "https://api.openai.com/v1",
+  modelName: "gpt-4.1-mini",
+  enabled: true,
+  defaultProvider: true,
+  timeout: "PT30S",
+  maxIterations: 5,
+  maxToolCalls: 5,
+  maxToolCallDuration: "PT30S",
+  apiKeyConfigured: true,
+  apiKeyFingerprint: "fp_test",
+  apiKeyLastRotatedAt: "2026-06-28T00:00:00Z",
+  configVersion: 1,
+  updatedAt: "2026-06-28T00:00:00Z",
 };
 
 const validationReport = {

@@ -84,6 +84,9 @@ describe("operator console routes", () => {
     expect(
       screen.getByRole("link", { name: "SQL 工作区" }),
     ).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "模型设置" }),
+    ).toHaveAttribute("href", "/model-settings");
     expect(screen.getByRole("link", { name: "RAG 问答" })).toHaveAttribute(
       "href",
       "/rag",
@@ -130,6 +133,7 @@ describe("operator console routes", () => {
     ["/as400-ddl", "AS400改建表"],
     ["/quick-links", "快捷连接"],
     ["/sql", "SQL 工作台"],
+    ["/model-settings", "模型设置"],
   ])("renders shared navigation and status bar for %s", async (path, title) => {
     renderAt(path);
 
@@ -629,6 +633,9 @@ const defaultHandlers = [
   http.get("/internal/sql-workbench/connections", () =>
     HttpResponse.json(sqlConnections),
   ),
+  http.get("/internal/model-providers", () =>
+    HttpResponse.json([modelProviderSummary]),
+  ),
   http.get("/internal/skills", () =>
     HttpResponse.json({
       skills: [registeredSkill],
@@ -674,3 +681,22 @@ const sqlConnections = [
     capabilities: ["VALIDATE", "RUN_READ_ONLY", "PREFLIGHT_DML"],
   },
 ];
+
+const modelProviderSummary = {
+  providerId: "provider-openai",
+  displayName: "OpenAI",
+  providerType: "OPENAI_COMPATIBLE",
+  baseUrl: "https://api.openai.com/v1",
+  modelName: "gpt-4.1-mini",
+  enabled: true,
+  defaultProvider: true,
+  timeout: "PT30S",
+  maxIterations: 5,
+  maxToolCalls: 5,
+  maxToolCallDuration: "PT30S",
+  apiKeyConfigured: true,
+  apiKeyFingerprint: "fp_openai",
+  apiKeyLastRotatedAt: "2026-06-28T00:00:00Z",
+  configVersion: 1,
+  updatedAt: "2026-06-28T00:00:00Z",
+};

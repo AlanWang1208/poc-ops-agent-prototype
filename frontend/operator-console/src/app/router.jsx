@@ -11,6 +11,7 @@ import { MeetingNoteDetailPage } from "../features/meeting-notes/MeetingNoteDeta
 import { MeetingNotesPage } from "../features/meeting-notes/MeetingNotesPage.jsx";
 import { RecordingSettingsPage } from "../features/meeting-notes/RecordingSettingsPage.jsx";
 import { RecordingWizardPage } from "../features/meeting-notes/RecordingWizardPage.jsx";
+import { ModelSettingsPage } from "../features/model-settings/ModelSettingsPage.jsx";
 import { ProtectedRoute } from "../features/auth/ProtectedRoute.jsx";
 import { OverviewPage } from "../features/overview/OverviewPage.jsx";
 import { QuickLinksPage } from "../features/quick-links/QuickLinksPage.jsx";
@@ -192,6 +193,14 @@ export function AppRouter() {
           </ProtectedRoute>
         }
         path="/sql"
+      />
+      <Route
+        element={
+          <ProtectedRoute>
+            <ModelSettingsPage />
+          </ProtectedRoute>
+        }
+        path="/model-settings"
       />
       <Route element={<Navigate replace to="/login" />} path="*" />
     </Routes>

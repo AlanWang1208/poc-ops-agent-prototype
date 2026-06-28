@@ -4,10 +4,12 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 
 import com.company.opsagent.controlplane.modules.agentruntime.AgentRuntimeRequest;
+import com.company.opsagent.controlplane.modules.agentruntime.AesGcmModelProviderSecretCodec;
 import com.company.opsagent.controlplane.modules.agentruntime.AgentscopeAgentClient;
 import com.company.opsagent.controlplane.modules.agentruntime.AgentscopeAgentInvocation;
 import com.company.opsagent.controlplane.modules.agentruntime.AgentscopeAgentResponse;
-import com.company.opsagent.controlplane.modules.agentruntime.AgentscopeReActAgentClient;
+import com.company.opsagent.controlplane.modules.agentruntime.DynamicModelProviderAgentscopeAgentClient;
+import com.company.opsagent.controlplane.modules.agentruntime.InMemoryModelProviderStore;
 import com.company.opsagent.controlplane.modules.agentruntime.LocalWeatherSmokeAgentClient;
 import java.util.List;
 import java.util.Map;
@@ -21,7 +23,10 @@ class AgentRuntimeConfigurationTest {
     AgentRuntimeProperties properties = new AgentRuntimeProperties();
     properties.setProvider("local-weather-smoke");
 
-    AgentscopeAgentClient client = new AgentRuntimeConfiguration().agentscopeAgentClient(properties);
+    AgentscopeAgentClient client = new AgentRuntimeConfiguration().agentscopeAgentClient(
+        properties,
+        new InMemoryModelProviderStore(),
+        new AesGcmModelProviderSecretCodec("0123456789abcdef0123456789abcdef"));
 
     assertInstanceOf(LocalWeatherSmokeAgentClient.class, client);
   }
@@ -33,22 +38,28 @@ class AgentRuntimeConfigurationTest {
     properties.setBaseUrl("https://api.openai.com/v1");
     properties.setApiKey("OPS_AGENT_FAKE_API_KEY_REPLACE_ME");
 
-    AgentscopeAgentClient client = new AgentRuntimeConfiguration().agentscopeAgentClient(properties);
+    AgentscopeAgentClient client = new AgentRuntimeConfiguration().agentscopeAgentClient(
+        properties,
+        new InMemoryModelProviderStore(),
+        new AesGcmModelProviderSecretCodec("0123456789abcdef0123456789abcdef"));
 
     AgentscopeAgentResponse response = client.run(invocation()).block();
     assertEquals("AGENT_RUNTIME_FAKE_API_KEY", response.status());
   }
 
   @Test
-  void createsOpenAiCompatibleClientWhenRealApiKeyIsConfigured() {
+  void createsDynamicClientWithLegacyFallbackWhenRealApiKeyIsConfigured() {
     AgentRuntimeProperties properties = new AgentRuntimeProperties();
     properties.setModelName("gpt-4.1-mini");
     properties.setBaseUrl("https://api.openai.com/v1");
     properties.setApiKey("real-runtime-key-from-secret-store");
 
-    AgentscopeAgentClient client = new AgentRuntimeConfiguration().agentscopeAgentClient(properties);
+    AgentscopeAgentClient client = new AgentRuntimeConfiguration().agentscopeAgentClient(
+        properties,
+        new InMemoryModelProviderStore(),
+        new AesGcmModelProviderSecretCodec("0123456789abcdef0123456789abcdef"));
 
-    assertInstanceOf(AgentscopeReActAgentClient.class, client);
+    assertInstanceOf(DynamicModelProviderAgentscopeAgentClient.class, client);
   }
 
   private AgentscopeAgentInvocation invocation() {

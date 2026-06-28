@@ -8,6 +8,8 @@ import {
   UserRound,
 } from "lucide-react";
 import { Fragment, useState } from "react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 import { NaturalLanguageDialog } from "../../components/conversation/NaturalLanguageDialog.jsx";
 import { WorkspaceStatusBar } from "../../components/layout/WorkspaceStatusBar.jsx";
@@ -38,6 +40,18 @@ const agentIonSpecs = [
   ["agentIonTiny", "agentIonRed", "agentIonLaneEleven"],
   ["agentIonMedium", "agentIonBlue", "agentIonLaneTwelve"],
 ];
+const agentMarkdownRemarkPlugins = [remarkGfm];
+/** @type {import("react-markdown").Components} */
+const agentMarkdownComponents = {
+  table({ node, ...props }) {
+    void node;
+    return <table aria-label="Agent 摘要表格" {...props} />;
+  },
+  a({ node, children }) {
+    void node;
+    return <span className={styles.markdownLinkText}>{children}</span>;
+  },
+};
 
 export function AgentWorkspacePage() {
   const [isWorkspaceExpanded, setIsWorkspaceExpanded] = useState(false);
@@ -441,7 +455,7 @@ function AgentTaskChatReply({ exchange }) {
     const weatherOutput = toWeatherOutput(exchange.result);
     return (
       <>
-        <p>{exchange.result.summary}</p>
+        <AgentMarkdownSummary summary={exchange.result.summary} />
         {weatherOutput ? <WeatherCurrentResult output={weatherOutput} /> : null}
       </>
     );
@@ -452,6 +466,23 @@ function AgentTaskChatReply({ exchange }) {
       {exchange.errorCode ? `${exchange.errorCode}: ` : ""}
       {exchange.errorMessage ?? "Agent 诊断请求失败"}
     </p>
+  );
+}
+
+/**
+ * @param {{ summary: string }} props
+ */
+function AgentMarkdownSummary({ summary }) {
+  return (
+    <div className={styles.agentMarkdownSummary}>
+      <ReactMarkdown
+        components={agentMarkdownComponents}
+        remarkPlugins={agentMarkdownRemarkPlugins}
+        skipHtml
+      >
+        {summary}
+      </ReactMarkdown>
+    </div>
   );
 }
 
@@ -511,7 +542,7 @@ function TaskDetailPanel({ onShowDetail, task }) {
       <MiniRow label="workflow" value={task.workflowId ?? "pending"} />
       <MiniRow label="当前输入" tone={taskTone(task)} value={currentInputStatusLabel(task)} />
       {hasWorkflowError ? (
-        <div className={`${styles.statusNote} ${styles.errorNote}`}>
+        <div className={`${styles.statusNote} ${styles.panelStatusNote} ${styles.errorNote}`}>
           <ShieldCheck aria-hidden="true" size={16} />
           <span>
             {task.errorCode ? `${task.errorCode}: ` : ""}

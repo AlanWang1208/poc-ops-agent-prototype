@@ -2,6 +2,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 
 import {
   createSqlConnection,
+  askSqlAssistant,
   listSqlConnections,
   probeSqlConnection,
   readSqlResultPage,
@@ -37,6 +38,12 @@ export function useValidateSqlQuery() {
 export function useRunReadOnlySqlQuery() {
   return useMutation({
     mutationFn: runReadOnlySqlQuery,
+  });
+}
+
+export function useSqlAssistant() {
+  return useMutation({
+    mutationFn: askSqlAssistant,
   });
 }
 

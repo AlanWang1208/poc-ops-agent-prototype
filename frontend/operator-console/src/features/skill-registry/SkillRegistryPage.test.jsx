@@ -14,6 +14,10 @@ const skillRegistryStyles = readFileSync(
   "src/features/skill-registry/SkillRegistryPage.module.css",
   "utf8",
 );
+const skillRegistrySource = readFileSync(
+  "src/features/skill-registry/SkillRegistryPage.jsx",
+  "utf8",
+);
 
 function renderSkillRegistry() {
   return render(
@@ -44,6 +48,20 @@ describe("SkillRegistryPage", () => {
 
     expect(workspaceBodyRule).toContain("padding: 20px 0 24px");
     expect(workspaceBodyRule).not.toContain("padding: 20px 24px 24px");
+  });
+
+  test("uses red only for search and renders view as an icon hyperlink action", () => {
+    expect(skillRegistryStyles).toContain(".skillSearch button[type=\"submit\"]");
+    expect(skillRegistryStyles).toContain("color: var(--registry-red)");
+    expect(skillRegistryStyles).toContain(".detailLinkButton");
+    expect(skillRegistryStyles).toContain("color: var(--registry-blue)");
+    expect(skillRegistryStyles).toContain("background: transparent");
+    expect(skillRegistryStyles).toContain("text-decoration: underline");
+    expect(skillRegistryStyles).not.toContain(".registryTable button:not(.detailLinkButton)");
+    expect(skillRegistryStyles).not.toContain(".skillSearch button[aria-pressed=\"true\"]");
+    expect(skillRegistrySource).toContain("styles.detailLinkButton");
+    expect(skillRegistrySource).toContain("<Eye aria-hidden=\"true\"");
+    expect(skillRegistrySource).not.toContain("styles.detailButton");
   });
 
   test("renders condition and natural-language search as shared search tabs", async () => {

@@ -268,6 +268,34 @@ public class PolicyEnforcementWebFilter implements WebFilter {
       if (method == HttpMethod.POST && "/api/v1/agent/diagnostics".equals(path)) {
         return new ActionDescriptor("internal.agent.diagnostics.read", path);
       }
+      if (method == HttpMethod.GET && "/internal/model-providers".equals(path)) {
+        return new ActionDescriptor("internal.model-providers.read", path);
+      }
+      if (method == HttpMethod.GET && path.startsWith("/internal/model-providers/")) {
+        return new ActionDescriptor("internal.model-providers.read", path);
+      }
+      if (method == HttpMethod.POST && "/internal/model-providers".equals(path)) {
+        return new ActionDescriptor("internal.model-providers.write", path);
+      }
+      if (method == HttpMethod.PATCH && path.startsWith("/internal/model-providers/")) {
+        return new ActionDescriptor("internal.model-providers.write", path);
+      }
+      if (method == HttpMethod.POST && path.startsWith("/internal/model-providers/")
+          && path.endsWith("/api-key")) {
+        return new ActionDescriptor("internal.model-providers.api-key.rotate", path);
+      }
+      if (method == HttpMethod.POST && path.startsWith("/internal/model-providers/")
+          && path.endsWith("/test")) {
+        return new ActionDescriptor("internal.model-providers.test", path);
+      }
+      if (method == HttpMethod.POST && path.startsWith("/internal/model-providers/")
+          && path.endsWith("/default")) {
+        return new ActionDescriptor("internal.model-providers.switch", path);
+      }
+      if (method == HttpMethod.POST && path.startsWith("/internal/model-providers/")
+          && path.endsWith("/disable")) {
+        return new ActionDescriptor("internal.model-providers.write", path);
+      }
       if (method == HttpMethod.POST && "/internal/identity/password-reset".equals(path)) {
         return new ActionDescriptor("internal.identity.password-reset", path);
       }
@@ -290,6 +318,9 @@ public class PolicyEnforcementWebFilter implements WebFilter {
       }
       if (method == HttpMethod.POST && "/internal/sql-workbench/queries/run".equals(path)) {
         return new ActionDescriptor("internal.sql-workbench.queries.run", path);
+      }
+      if (method == HttpMethod.POST && "/internal/sql-workbench/assistant".equals(path)) {
+        return new ActionDescriptor("internal.sql-workbench.assistant.use", path);
       }
       if (method == HttpMethod.GET && path.startsWith("/internal/sql-workbench/results/")) {
         return new ActionDescriptor("internal.sql-workbench.results.read", path);

@@ -1,0 +1,522 @@
+.settingsCanvas {
+  --agent-bg-base: #f6f7f9;
+  --agent-ink: #16202a;
+  --agent-red: #d31145;
+  --agent-blue: #227ea6;
+  --agent-green: #16875a;
+  --agent-border: #d7e4ec;
+  --agent-muted: #6f7c8b;
+  color: var(--agent-ink);
+}
+
+.settingsCanvas :global([class*="capsuleHeading"]) {
+  font-size: 0.94rem;
+}
+
+.workspaceBody {
+  display: grid;
+  min-height: 0;
+  grid-template-columns: minmax(270px, 340px) minmax(0, 1fr);
+  gap: var(--workspace-layout-gap, 24px);
+  align-items: stretch;
+}
+
+.providerRail,
+.editorPanel {
+  position: relative;
+  display: grid;
+  min-height: 0;
+  overflow: hidden;
+  border: 1px solid var(--agent-border);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.68), rgba(248, 252, 253, 0.42)),
+    radial-gradient(circle at 100% 0%, rgba(37, 132, 169, 0.08), transparent 12rem);
+  box-shadow:
+    0 12px 30px rgba(31, 41, 51, 0.055),
+    inset 0 1px 0 rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+
+.providerRail > *,
+.editorPanel > * {
+  position: relative;
+  z-index: 1;
+}
+
+.providerRail {
+  align-content: start;
+  gap: 12px;
+  padding: 12px;
+  border-radius: 14px;
+}
+
+.editorPanel {
+  align-content: start;
+  gap: 14px;
+  padding: 14px;
+  border-radius: 18px;
+}
+
+.railHeader,
+.editorHeader,
+.actionRow,
+.currentDefault,
+.message {
+  display: flex;
+  align-items: center;
+}
+
+.railHeader,
+.editorHeader {
+  min-width: 0;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.railHeader {
+  min-height: 42px;
+}
+
+.editorHeader {
+  min-height: 48px;
+  padding: 0 3px 8px;
+  border-bottom: 1px solid rgba(37, 132, 169, 0.12);
+}
+
+.railHeader h2,
+.editorHeader h2 {
+  margin: 3px 0 0;
+  color: #1f6f8a;
+  font-family: var(--agent-font-display);
+  font-size: 16px;
+  font-weight: 760;
+  line-height: 1.2;
+}
+
+.kicker {
+  color: var(--agent-muted);
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.iconButton {
+  display: inline-grid;
+  width: 34px;
+  height: 34px;
+  flex: 0 0 auto;
+  place-items: center;
+  padding: 0;
+  border-color: rgba(37, 132, 169, 0.18);
+  border-radius: 13px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.52)),
+    rgba(37, 132, 169, 0.08);
+  color: var(--agent-blue);
+  box-shadow:
+    0 9px 18px rgba(37, 132, 169, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+.providerList {
+  display: grid;
+  gap: 8px;
+}
+
+.providerRow {
+  display: grid;
+  width: 100%;
+  min-height: 58px;
+  grid-template-columns: 34px minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+  padding: 10px;
+  border: 1px solid rgba(37, 132, 169, 0.12);
+  border-radius: 14px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.72), rgba(255, 255, 255, 0.42)),
+    rgba(255, 255, 255, 0.38);
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+  box-shadow:
+    0 10px 22px rgba(31, 41, 51, 0.04),
+    inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  transition:
+    border-color 150ms ease,
+    box-shadow 150ms ease,
+    transform 150ms ease,
+    background-color 150ms ease;
+}
+
+.providerRow:hover {
+  border-color: rgba(37, 132, 169, 0.28);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.82), rgba(246, 252, 253, 0.54)),
+    rgba(37, 132, 169, 0.05);
+  box-shadow:
+    0 14px 26px rgba(31, 41, 51, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.78);
+  transform: translateY(-1px);
+}
+
+.providerRowActive {
+  border-color: rgba(37, 132, 169, 0.38);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.86), rgba(242, 251, 253, 0.62)),
+    rgba(37, 132, 169, 0.08);
+  box-shadow:
+    0 16px 30px rgba(37, 132, 169, 0.1),
+    inset 0 0 0 1px rgba(37, 132, 169, 0.12);
+}
+
+.providerIcon {
+  position: relative;
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid rgba(37, 132, 169, 0.2);
+  border-radius: 12px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(255, 255, 255, 0.48)),
+    rgba(37, 132, 169, 0.1);
+  color: var(--agent-blue);
+  box-shadow:
+    0 9px 18px rgba(37, 132, 169, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.92);
+}
+
+.providerIcon::before {
+  position: absolute;
+  inset: 5px;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: 9px 13px 9px 13px;
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.42), transparent 56%),
+    var(--agent-blue);
+  content: "";
+  pointer-events: none;
+}
+
+.providerIcon svg {
+  position: relative;
+  z-index: 1;
+  color: #fff;
+  filter: drop-shadow(0 1px 1px rgba(31, 45, 61, 0.18));
+}
+
+.providerMain {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+}
+
+.providerTitleLine,
+.providerMain strong,
+.providerModelName {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.providerTitleLine {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.providerMain strong {
+  flex: 1 1 auto;
+  color: var(--agent-ink);
+  font-size: 13px;
+  font-weight: 850;
+}
+
+.providerModelName {
+  color: var(--agent-muted);
+  font-size: 11px;
+  font-weight: 760;
+  line-height: 1.2;
+}
+
+.providerBadges {
+  display: inline-flex;
+  flex: 0 0 auto;
+  gap: 5px;
+  align-items: center;
+  flex-wrap: nowrap;
+}
+
+.providerBadges :global(.badge) {
+  min-height: 18px;
+  padding: 0 7px;
+  font-size: 10px;
+  line-height: 1;
+}
+
+.currentDefault {
+  max-width: 360px;
+  min-height: 30px;
+  gap: 7px;
+  padding: 0 10px;
+  border: 1px solid rgba(27, 139, 96, 0.18);
+  border-radius: 999px;
+  background: rgba(27, 139, 96, 0.1);
+  color: var(--agent-green);
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.currentDefault svg {
+  flex: 0 0 auto;
+}
+
+.currentDefault span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.formGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px 14px;
+}
+
+.field,
+.runtimeFieldset label,
+.toggleField {
+  display: grid;
+  gap: 6px;
+}
+
+.field span,
+.runtimeFieldset span,
+.toggleField span,
+.runtimeFieldset legend {
+  color: var(--agent-muted);
+  font-size: 11px;
+  font-weight: 850;
+}
+
+.field input,
+.runtimeFieldset input {
+  width: 100%;
+  min-height: 36px;
+  box-sizing: border-box;
+  border: 1px solid rgba(37, 132, 169, 0.14);
+  border-radius: 10px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.76), rgba(255, 255, 255, 0.5)),
+    rgba(255, 255, 255, 0.4);
+  color: var(--agent-ink);
+  font: inherit;
+  font-size: 13px;
+  padding: 7px 10px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
+  transition:
+    border-color 150ms ease,
+    box-shadow 150ms ease,
+    background-color 150ms ease;
+}
+
+.field input:focus,
+.runtimeFieldset input:focus {
+  outline: none;
+  border-color: rgba(37, 132, 169, 0.34);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.62)),
+    rgba(255, 255, 255, 0.54);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.78),
+    0 0 0 3px rgba(37, 132, 169, 0.1);
+}
+
+.runtimeFieldset {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0;
+  padding: 12px;
+  border: 1px solid rgba(37, 132, 169, 0.12);
+  border-radius: 14px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.58), rgba(248, 252, 253, 0.32)),
+    rgba(37, 132, 169, 0.035);
+}
+
+.runtimeFieldset legend {
+  padding: 0 6px;
+  color: #1f6f8a;
+}
+
+.toggleField {
+  grid-template-columns: 18px minmax(0, 1fr);
+  align-items: center;
+  justify-self: start;
+  min-height: 32px;
+  padding: 0 2px;
+}
+
+.toggleField input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--agent-blue);
+}
+
+.toggleField input:disabled {
+  cursor: not-allowed;
+  opacity: 0.54;
+}
+
+.actionRow {
+  --settings-action-width: 108px;
+  grid-column: 1 / -1;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding-top: 3px;
+}
+
+.actionRow button {
+  display: inline-flex;
+  width: var(--settings-action-width);
+  height: 34px;
+  min-height: 34px;
+  align-items: center;
+  gap: 7px;
+  justify-content: center;
+  padding: 7px 12px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 850;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.actionRow button svg {
+  width: 15px;
+  height: 15px;
+}
+
+.actionRow button:first-child {
+  border-color: rgba(211, 17, 69, 0.62);
+  background:
+    radial-gradient(circle at 18% 50%, rgba(255, 255, 255, 0.22), transparent 4.8rem),
+    linear-gradient(135deg, #df174f, #b8113f);
+  box-shadow:
+    0 12px 22px rgba(211, 17, 69, 0.17),
+    inset 0 1px 0 rgba(255, 255, 255, 0.22);
+}
+
+.message {
+  gap: 8px;
+  padding: 8px 9px;
+  border: 1px solid rgba(37, 132, 169, 0.14);
+  border-radius: 12px;
+  background: rgba(37, 132, 169, 0.06);
+  color: var(--agent-muted);
+  font-size: 11px;
+  font-weight: 850;
+  line-height: 1.45;
+}
+
+.message svg {
+  flex: 0 0 auto;
+  color: var(--agent-blue);
+}
+
+.messageSuccess {
+  border-color: rgba(27, 139, 96, 0.18);
+  background: rgba(27, 139, 96, 0.1);
+  color: var(--agent-green);
+}
+
+.messageSuccess svg {
+  color: var(--agent-green);
+}
+
+.messageError {
+  border-color: rgba(211, 17, 69, 0.18);
+  background: rgba(211, 17, 69, 0.08);
+  color: var(--agent-red);
+}
+
+.messageError svg {
+  color: var(--agent-red);
+}
+
+.securityFacts {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(120px, 0.5fr) minmax(180px, 0.7fr);
+  gap: 8px;
+  margin: 0;
+}
+
+.securityFacts div {
+  display: grid;
+  min-width: 0;
+  gap: 5px;
+  padding: 9px 10px;
+  border: 1px solid rgba(37, 132, 169, 0.12);
+  border-radius: 12px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.62), rgba(255, 255, 255, 0.36)),
+    rgba(255, 255, 255, 0.35);
+}
+
+.securityFacts dt {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  color: var(--agent-muted);
+  font-size: 11px;
+  font-weight: 850;
+}
+
+.securityFacts dt svg {
+  color: var(--agent-blue);
+}
+
+.securityFacts dd {
+  overflow-wrap: anywhere;
+  margin: 0;
+  color: var(--agent-ink);
+  font-size: 12px;
+  font-weight: 850;
+}
+
+@media (max-width: 1120px) {
+  .workspaceBody {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 760px) {
+  .workspaceBody {
+    gap: 16px;
+  }
+
+  .editorHeader,
+  .railHeader {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .formGrid,
+  .runtimeFieldset,
+  .securityFacts {
+    grid-template-columns: 1fr;
+  }
+
+  .currentDefault {
+    max-width: none;
+    width: 100%;
+    box-sizing: border-box;
+  }
+}

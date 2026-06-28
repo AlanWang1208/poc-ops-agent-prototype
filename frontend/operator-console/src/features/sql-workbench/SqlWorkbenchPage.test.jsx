@@ -34,6 +34,26 @@ beforeEach(() => {
 });
 
 describe("SqlWorkbenchPage", () => {
+  test("shows an empty connection state without runtime mock data", async () => {
+    server.use(
+      http.get("/internal/sql-workbench/connections", () => HttpResponse.json([])),
+    );
+
+    renderAt("/sql");
+
+    expect(await screen.findByText("尚未配置 SQL 连接")).toBeInTheDocument();
+    expect(screen.getByText("无可用连接")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "新建连接" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "对象浏览器" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "校验" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "执行 SELECT" })).toBeDisabled();
+    expect(screen.queryByText("as400-development")).not.toBeInTheDocument();
+    expect(screen.queryByText("ORDERS.ORDERS")).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("校验通过的单条 SELECT 执行后，分页结果会显示在这里。"),
+    ).not.toBeInTheDocument();
+  });
+
   test("renders the P1 workbench with top connection context and collapsible objects", async () => {
     const user = userEvent.setup();
     server.use(
@@ -67,7 +87,7 @@ describe("SqlWorkbenchPage", () => {
 
     await user.click(screen.getByRole("button", { name: "对象浏览器" }));
     expect(screen.getByLabelText("数据库对象浏览器")).toBeInTheDocument();
-    expect(screen.getByText("ORDERS.ORDERS")).toBeInTheDocument();
+    expect(screen.getByText("对象目录尚未接入真实元数据")).toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: "展开工作区" }));
     expect(screen.queryByLabelText("数据库对象浏览器")).not.toBeInTheDocument();
@@ -107,8 +127,8 @@ describe("SqlWorkbenchPage", () => {
     await user.selectOptions(within(dialog).getByLabelText("目标环境"), "test");
     await user.selectOptions(within(dialog).getByLabelText("平台类型"), "H2");
     expect(within(dialog).getByLabelText("端口")).toHaveValue("9092");
-    expect(within(dialog).getByLabelText("默认 Schema")).toHaveValue("PUBLIC");
-    expect(within(dialog).getByLabelText("允许 Schema")).toHaveValue("PUBLIC");
+    expect(within(dialog).getByLabelText("默认 Schema")).toHaveValue("");
+    expect(within(dialog).getByLabelText("允许 Schema")).toHaveValue("");
     await user.clear(within(dialog).getByLabelText("主机"));
     await user.type(within(dialog).getByLabelText("主机"), "localhost");
     await user.clear(within(dialog).getByLabelText("端口"));
@@ -275,18 +295,51 @@ describe("SqlWorkbenchPage", () => {
     expect(screen.queryByText("AS/400 Production")).not.toBeInTheDocument();
   });
 
-  test("keeps the AI assistant disabled or folded outside the P1 execution path", async () => {
+  test("uses the AI SQL assistant as advisory input that must be revalidated", async () => {
+    const user = userEvent.setup();
+    /** @type {unknown[]} */
+    const assistantRequests = [];
     server.use(
       http.get("/internal/sql-workbench/connections", () =>
         HttpResponse.json(sqlConnections),
       ),
+      http.post("/internal/sql-workbench/queries/validate", () =>
+        HttpResponse.json(validatedSelectReport),
+      ),
+      http.post("/internal/sql-workbench/assistant", async ({ request }) => {
+        assistantRequests.push(await request.json());
+        return HttpResponse.json(sqlAssistantResponse);
+      }),
     );
 
     renderAt("/sql");
 
-    await screen.findByText("AI SQL 助手");
-    expect(screen.getByRole("button", { name: "展开 AI SQL 助手" })).toBeDisabled();
-    expect(screen.queryByRole("button", { name: "请求 AI 改写建议" })).not.toBeInTheDocument();
+    const editor = await screen.findByLabelText("SQL 文本");
+    await user.clear(editor);
+    await user.type(editor, "SELECT * FROM ORDERS.ORDERS");
+    await user.click(screen.getByRole("button", { name: "校验" }));
+    expect(await screen.findByText("VALIDATED")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "优化建议" }));
+    expect(await screen.findByText("Use explicit columns.")).toBeInTheDocument();
+    expect(screen.getByText("Limit columns")).toBeInTheDocument();
+
+    await waitFor(() => expect(assistantRequests).toHaveLength(1));
+    expect(assistantRequests[0]).toMatchObject({
+      contractVersion: "1.0",
+      connectionId: "as400-development",
+      targetEnvironment: "development",
+      schema: "ORDERS",
+      assistantAction: "OPTIMIZE_SQL",
+      sql: "SELECT * FROM ORDERS.ORDERS",
+    });
+
+    await user.click(screen.getByRole("button", { name: "应用建议到编辑器" }));
+    expect(screen.getByLabelText("SQL 文本")).toHaveValue(
+      "select order_id, status from ORDERS.ORDERS",
+    );
+    expect(screen.queryByText("VALIDATED")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "执行 SELECT" })).toBeDisabled();
   });
 });
 
@@ -376,4 +429,21 @@ const resultPage = {
   nextCursor: null,
   truncated: false,
   expiresAt: "2026-06-27T09:10:00Z",
+};
+
+const sqlAssistantResponse = {
+  contractVersion: "1.0",
+  status: "SUCCEEDED",
+  assistantAction: "OPTIMIZE_SQL",
+  summary: "Use explicit columns.",
+  suggestions: [
+    {
+      title: "Limit columns",
+      rationale: "The current projection fetches every column.",
+      suggestedSql: "select order_id, status from ORDERS.ORDERS",
+    },
+  ],
+  safetyNotes: ["Validate before execution."],
+  validationRequired: true,
+  modelProviderFingerprint: "provider:fingerprint",
 };

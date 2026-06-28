@@ -22,27 +22,27 @@ import { Dialog } from "../../components/primitives/Dialog.jsx";
 import {
   useCreateSqlConnection,
   useRunReadOnlySqlQuery,
+  useSqlAssistant,
   useSqlConnections,
   useSqlResultPage,
   useValidateSqlQuery,
 } from "./use-sql-workbench.js";
 import styles from "./SqlWorkbenchPage.module.css";
 
-const DEFAULT_SQL = `SELECT o.order_id, o.status, o.amount, o.customer_id, o.created_at
-FROM ORDERS.ORDERS o
-WHERE o.status = 'PENDING'
-  AND o.created_at > CURRENT_DATE - 7 DAYS
-ORDER BY o.created_at DESC
-FETCH FIRST 100 ROWS ONLY;`;
+const DEFAULT_SQL = "";
 
-const EMPTY_SESSION_SQL = "SELECT * FROM ORDERS.ORDERS\nFETCH FIRST 100 ROWS ONLY";
+const EMPTY_SESSION_SQL = "";
 
 /**
  * @typedef {import("../../schemas/sql-schemas.js").SqlConnectionSummary} SqlConnectionSummary
  * @typedef {import("../../schemas/sql-schemas.js").SqlValidationReport} SqlValidationReport
  * @typedef {import("../../schemas/sql-schemas.js").SqlQueryRunResult} SqlQueryRunResult
  * @typedef {import("../../schemas/sql-schemas.js").SqlResultPage} SqlResultPage
+ * @typedef {import("../../schemas/sql-schemas.js").SqlAssistantResponse} SqlAssistantResponse
+ * @typedef {"EXPLAIN_SQL" | "OPTIMIZE_SQL" | "ANALYZE_ERROR"} SqlAssistantAction
  * @typedef {{
+ *   assistant: SqlAssistantResponse | null,
+ *   assistantErrorMessage: string | null,
  *   connectionId: string,
  *   errorMessage: string | null,
  *   execution: SqlQueryRunResult | null,
@@ -56,21 +56,6 @@ const EMPTY_SESSION_SQL = "SELECT * FROM ORDERS.ORDERS\nFETCH FIRST 100 ROWS ONL
  * }} SqlWorkbenchSession
  */
 
-/** @type {SqlConnectionSummary} */
-const DEFAULT_CONNECTION = {
-  contractVersion: "1.0",
-  connectionId: "as400-development",
-  displayName: "AS/400 Development",
-  targetEnvironment: "development",
-  platformType: "DB2_FOR_I",
-  status: "READY",
-  defaultSchema: "ORDERS",
-  allowedSchemas: ["ORDERS", "INVENTORY"],
-  capabilities: ["VALIDATE", "RUN_READ_ONLY", "PREFLIGHT_DML"],
-  maxRowsDefault: 500,
-  timeoutSecondsDefault: 30,
-};
-
 const DEFAULT_LIMITS = {
   maxRows: 500,
   maxBytes: 5_000_000,
@@ -81,20 +66,20 @@ const PLATFORM_FORM_DEFAULTS = {
   DB2_FOR_I: {
     host: "",
     port: "446",
-    defaultSchema: "ORDERS",
-    allowedSchemas: "ORDERS",
+    defaultSchema: "",
+    allowedSchemas: "",
   },
   H2: {
     host: "localhost",
     port: "9092",
-    defaultSchema: "PUBLIC",
-    allowedSchemas: "PUBLIC",
+    defaultSchema: "",
+    allowedSchemas: "",
   },
   MYSQL: {
     host: "",
     port: "3306",
-    defaultSchema: "ops",
-    allowedSchemas: "ops",
+    defaultSchema: "",
+    allowedSchemas: "",
   },
 };
 
@@ -104,8 +89,8 @@ const DEFAULT_CONNECTION_FORM = {
   platformType: "DB2_FOR_I",
   host: "",
   port: "446",
-  defaultSchema: "ORDERS",
-  allowedSchemas: "ORDERS",
+  defaultSchema: "",
+  allowedSchemas: "",
   credentialAlias: "",
   maxRowsDefault: "500",
   timeoutSecondsDefault: "30",
@@ -116,6 +101,7 @@ export function SqlWorkbenchPage() {
   const createConnectionMutation = useCreateSqlConnection();
   const validateMutation = useValidateSqlQuery();
   const runMutation = useRunReadOnlySqlQuery();
+  const assistantMutation = useSqlAssistant();
   const [createdConnections, setCreatedConnections] = useState(
     /** @type {SqlConnectionSummary[]} */ ([]),
   );
@@ -134,27 +120,37 @@ export function SqlWorkbenchPage() {
   const activeSession =
     sessions.find((session) => session.id === activeSessionId) ?? sessions[0];
   const activeConnection = resolveActiveConnection(connections, activeSession);
+  const hasConnections = connections.length > 0;
   const activeSchema =
-    activeSession.schema ||
-    activeConnection.defaultSchema ||
-    activeConnection.allowedSchemas[0] ||
-    "ORDERS";
+    activeConnection
+      ? activeSession.schema ||
+        activeConnection.defaultSchema ||
+        activeConnection.allowedSchemas[0] ||
+        ""
+      : "";
+  const activeLimits = activeConnection ? buildLimits(activeConnection) : DEFAULT_LIMITS;
   const resultPageQuery = useSqlResultPage(
     activeSession.execution?.resultId,
     activeSession.resultPageToken,
   );
   const currentResultPage = resultPageQuery.data ?? activeSession.resultPage;
-  const isReadyConnection = activeConnection.status === "READY";
+  const isReadyConnection = activeConnection?.status === "READY";
   const canValidate =
-    isReadyConnection && activeConnection.capabilities.includes("VALIDATE");
+    isReadyConnection &&
+    activeConnection?.capabilities.includes("VALIDATE") === true;
   const canPreflightDml =
-    isReadyConnection && activeConnection.capabilities.includes("PREFLIGHT_DML");
+    isReadyConnection &&
+    activeConnection?.capabilities.includes("PREFLIGHT_DML") === true;
   const canExecuteSelect =
     isReadyConnection &&
-    activeConnection.capabilities.includes("RUN_READ_ONLY") &&
+    activeConnection?.capabilities.includes("RUN_READ_ONLY") === true &&
     activeSession.validation?.statementType === "SELECT" &&
     activeSession.validation.validationLevel === "VALIDATED" &&
     !runMutation.isPending;
+  const canUseAssistant =
+    canValidate &&
+    activeSession.sql.trim().length > 0 &&
+    !assistantMutation.isPending;
 
   useEffect(() => {
     if (!resultPageQuery.data) {
@@ -189,6 +185,8 @@ export function SqlWorkbenchPage() {
       resultPage: null,
       resultPageToken: null,
       errorMessage: null,
+      assistant: null,
+      assistantErrorMessage: null,
     });
   }
 
@@ -205,6 +203,8 @@ export function SqlWorkbenchPage() {
       resultPage: null,
       resultPageToken: null,
       errorMessage: null,
+      assistant: null,
+      assistantErrorMessage: null,
     });
   }
 
@@ -219,6 +219,8 @@ export function SqlWorkbenchPage() {
       resultPage: null,
       resultPageToken: null,
       errorMessage: null,
+      assistant: null,
+      assistantErrorMessage: null,
     });
   }
 
@@ -257,6 +259,8 @@ export function SqlWorkbenchPage() {
             resultPage: null,
             resultPageToken: null,
             errorMessage: null,
+            assistant: null,
+            assistantErrorMessage: null,
           });
         },
         onError: (error) => {
@@ -266,6 +270,8 @@ export function SqlWorkbenchPage() {
             resultPage: null,
             resultPageToken: null,
             errorMessage: error instanceof Error ? error.message : "SQL 校验请求失败",
+            assistant: null,
+            assistantErrorMessage: null,
           });
         },
       },
@@ -273,7 +279,7 @@ export function SqlWorkbenchPage() {
   }
 
   function runSelect() {
-    if (!activeSession.validation || !canExecuteSelect) {
+    if (!activeConnection || !activeSession.validation || !canExecuteSelect) {
       return;
     }
 
@@ -311,6 +317,44 @@ export function SqlWorkbenchPage() {
     );
   }
 
+  /**
+   * @param {SqlAssistantAction} assistantAction
+   */
+  function requestAssistant(assistantAction) {
+    if (!activeConnection || !canUseAssistant) {
+      return;
+    }
+
+    assistantMutation.mutate(
+      {
+        contractVersion: "1.0",
+        connectionId: activeConnection.connectionId,
+        targetEnvironment: activeConnection.targetEnvironment,
+        schema: activeSchema,
+        assistantAction,
+        sql: activeSession.sql,
+        limits: buildLimits(activeConnection),
+        diagnosticContext: buildAssistantDiagnosticContext(activeSession),
+        idempotencyKey: createSqlIdempotencyKey(`ASSISTANT_${assistantAction}`),
+      },
+      {
+        onSuccess: (assistant) => {
+          updateSession(activeSession.id, {
+            assistant,
+            assistantErrorMessage: null,
+          });
+        },
+        onError: (error) => {
+          updateSession(activeSession.id, {
+            assistant: null,
+            assistantErrorMessage:
+              error instanceof Error ? error.message : "AI SQL 助手请求失败",
+          });
+        },
+      },
+    );
+  }
+
   if (connectionsQuery.error) {
     const title =
       connectionsQuery.error instanceof ApiError &&
@@ -334,16 +378,19 @@ export function SqlWorkbenchPage() {
         <div className={styles.connectionMeta}>
           <StatusPill tone={isReadyConnection ? "success" : "warning"}>
             {connectionsQuery.isLoading
-              ? `正在连接 · ${activeConnection.targetEnvironment}`
-              : `${isReadyConnection ? "已连接" : activeConnection.status} · ${activeConnection.targetEnvironment}`}
+              ? "正在加载连接目录"
+              : activeConnection
+                ? `${isReadyConnection ? "已连接" : activeConnection.status} · ${activeConnection.targetEnvironment}`
+                : "未配置连接"}
           </StatusPill>
-          <strong>{activeConnection.connectionId}</strong>
-          <span>{activeSchema}</span>
-          <span>maxRows {buildLimits(activeConnection).maxRows}</span>
+          <strong>{activeConnection?.connectionId ?? "无可用连接"}</strong>
+          <span>{activeSchema || "未选择 Schema"}</span>
+          <span>maxRows {activeLimits.maxRows}</span>
         </div>
         <div className={styles.connectionActions}>
           <button
             className={styles.secondaryButton}
+            disabled={!hasConnections}
             onClick={() => setIsObjectDrawerOpen((current) => !current)}
             type="button"
           >
@@ -385,11 +432,11 @@ export function SqlWorkbenchPage() {
           isObjectDrawerOpen ? styles.withObjectDrawer : ""
         }`}
       >
-        {isObjectDrawerOpen && !isWorkspaceExpanded ? (
+        {isObjectDrawerOpen && !isWorkspaceExpanded && activeConnection ? (
           <ObjectBrowser
             activeConnection={activeConnection}
             activeSchema={activeSchema}
-            connections={connections.length > 0 ? connections : [DEFAULT_CONNECTION]}
+            connections={connections}
             onClose={() => setIsObjectDrawerOpen(false)}
             onSelectConnection={selectConnection}
             onSelectSchema={selectSchema}
@@ -403,6 +450,13 @@ export function SqlWorkbenchPage() {
             onSelectSession={setActiveSessionId}
             sessions={sessions}
           />
+
+          {!connectionsQuery.isLoading && !hasConnections ? (
+            <Notice
+              detail="连接目录为空。请先新建开发或测试环境连接，并完成 Worker 侧凭据绑定后再校验或执行 SQL。"
+              title="尚未配置 SQL 连接"
+            />
+          ) : null}
 
           <section className={styles.editorCard}>
             <div className={styles.editorToolbar}>
@@ -455,9 +509,15 @@ export function SqlWorkbenchPage() {
 
         {!isWorkspaceExpanded ? (
           <InfoPanel
+            assistant={activeSession.assistant}
+            assistantErrorMessage={activeSession.assistantErrorMessage}
+            assistantPending={assistantMutation.isPending}
+            canUseAssistant={canUseAssistant}
             error={validateMutation.error ?? runMutation.error}
             execution={activeSession.execution}
             isPending={validateMutation.isPending}
+            onApplyAssistantSuggestion={updateSql}
+            onRequestAssistant={requestAssistant}
             report={activeSession.validation}
           />
         ) : null}
@@ -479,6 +539,8 @@ export function SqlWorkbenchPage() {
                 resultPage: null,
                 resultPageToken: null,
                 errorMessage: null,
+                assistant: null,
+                assistantErrorMessage: null,
               });
               setIsConnectionDialogOpen(false);
             },
@@ -563,11 +625,9 @@ function ObjectBrowser({
           </button>
         ))}
         <span>Tables</span>
-        <strong>ORDERS.ORDERS</strong>
-        <strong>ORDERS.ORDER_ITEMS</strong>
-        <strong>INVENTORY.STOCK</strong>
+        <strong>对象目录尚未接入真实元数据</strong>
         <span>Columns</span>
-        <strong>order_id · status · amount · created_at</strong>
+        <strong>完成对象目录接口后展示真实字段</strong>
       </div>
     </aside>
   );
@@ -605,25 +665,131 @@ function SessionTabs({ activeSessionId, onAddSession, onSelectSession, sessions 
 
 /**
  * @param {{
+ *   assistant: SqlAssistantResponse | null,
+ *   assistantErrorMessage: string | null,
+ *   assistantPending: boolean,
+ *   canUseAssistant: boolean,
  *   error: Error | null,
  *   execution: SqlQueryRunResult | null,
  *   isPending: boolean,
+ *   onApplyAssistantSuggestion: (sql: string) => void,
+ *   onRequestAssistant: (action: SqlAssistantAction) => void,
  *   report: SqlValidationReport | null,
  * }} props
  */
-function InfoPanel({ error, execution, isPending, report }) {
+function InfoPanel({
+  assistant,
+  assistantErrorMessage,
+  assistantPending,
+  canUseAssistant,
+  error,
+  execution,
+  isPending,
+  onApplyAssistantSuggestion,
+  onRequestAssistant,
+  report,
+}) {
   return (
     <aside aria-label="SQL 信息面板" className={styles.infoPanel}>
       <ValidationReport error={error} isPending={isPending} report={report} />
       <ExecutionFacts execution={execution} />
-      <section className={styles.aiPanel}>
-        <PanelHeading detail="模型评测与脱敏门禁未完成" icon={Sparkles} title="AI SQL 助手" />
-        <p>当前仅保留入口状态，不参与 P1 校验或执行决策。</p>
-        <button disabled type="button">
-          展开 AI SQL 助手
-        </button>
-      </section>
+      <AiSqlAssistantPanel
+        assistant={assistant}
+        errorMessage={assistantErrorMessage}
+        isPending={assistantPending}
+        canUseAssistant={canUseAssistant}
+        onApplySuggestion={onApplyAssistantSuggestion}
+        onRequest={onRequestAssistant}
+      />
     </aside>
+  );
+}
+
+/**
+ * @param {{
+ *   assistant: SqlAssistantResponse | null,
+ *   canUseAssistant: boolean,
+ *   errorMessage: string | null,
+ *   isPending: boolean,
+ *   onApplySuggestion: (sql: string) => void,
+ *   onRequest: (action: SqlAssistantAction) => void,
+ * }} props
+ */
+function AiSqlAssistantPanel({
+  assistant,
+  canUseAssistant,
+  errorMessage,
+  isPending,
+  onApplySuggestion,
+  onRequest,
+}) {
+  return (
+    <section className={styles.aiPanel}>
+      <PanelHeading detail="服务端模型建议，不参与自动执行" icon={Sparkles} title="AI SQL 助手" />
+      <div className={styles.aiActions}>
+        <button
+          disabled={!canUseAssistant || isPending}
+          onClick={() => onRequest("EXPLAIN_SQL")}
+          type="button"
+        >
+          解释 SQL
+        </button>
+        <button
+          disabled={!canUseAssistant || isPending}
+          onClick={() => onRequest("OPTIMIZE_SQL")}
+          type="button"
+        >
+          优化建议
+        </button>
+        <button
+          disabled={!canUseAssistant || isPending}
+          onClick={() => onRequest("ANALYZE_ERROR")}
+          type="button"
+        >
+          分析错误
+        </button>
+      </div>
+      {isPending ? <p role="status">正在请求 AI SQL 助手。</p> : null}
+      {errorMessage ? (
+        <div className={styles.errorSummary} role="alert">
+          <AlertTriangle aria-hidden="true" size={16} />
+          <span>{errorMessage}</span>
+        </div>
+      ) : null}
+      {!assistant && !errorMessage && !isPending ? (
+        <p>助手只生成解释、优化和错误分析建议；建议应用后必须重新校验。</p>
+      ) : null}
+      {assistant ? (
+        <div className={styles.aiResponse}>
+          <strong>{assistant.status}</strong>
+          <p>{assistant.summary}</p>
+          {assistant.suggestions.map((suggestion, index) => (
+            <article className={styles.aiSuggestion} key={`${suggestion.title}-${index}`}>
+              <h3>{suggestion.title}</h3>
+              <p>{suggestion.rationale}</p>
+              {suggestion.suggestedSql ? (
+                <>
+                  <pre>{suggestion.suggestedSql}</pre>
+                  <button
+                    onClick={() => onApplySuggestion(String(suggestion.suggestedSql))}
+                    type="button"
+                  >
+                    应用建议到编辑器
+                  </button>
+                </>
+              ) : null}
+            </article>
+          ))}
+          {assistant.safetyNotes.length > 0 ? (
+            <ul className={styles.aiSafetyNotes}>
+              {assistant.safetyNotes.map((note) => (
+                <li key={note}>{note}</li>
+              ))}
+            </ul>
+          ) : null}
+        </div>
+      ) : null}
+    </section>
   );
 }
 
@@ -757,9 +923,6 @@ function ResultPanel({ errorMessage, execution, isLoading, resultPage }) {
       ) : null}
       {execution?.status === "SUCCEEDED" && !resultPage && !isLoading ? (
         <p>执行完成，等待结果页返回。</p>
-      ) : null}
-      {!execution && !errorMessage ? (
-        <p>校验通过的单条 SELECT 执行后，分页结果会显示在这里。</p>
       ) : null}
     </section>
   );
@@ -1038,6 +1201,8 @@ function Notice({ detail, title }) {
  */
 function createSession(index, sql) {
   return {
+    assistant: null,
+    assistantErrorMessage: null,
     connectionId: "",
     errorMessage: null,
     execution: null,
@@ -1054,12 +1219,13 @@ function createSession(index, sql) {
 /**
  * @param {SqlConnectionSummary[]} connections
  * @param {SqlWorkbenchSession} session
+ * @returns {SqlConnectionSummary | null}
  */
 function resolveActiveConnection(connections, session) {
   return (
     connections.find((connection) => connection.connectionId === session.connectionId) ??
     connections[0] ??
-    DEFAULT_CONNECTION
+    null
   );
 }
 
@@ -1082,7 +1248,30 @@ function formatValues(values) {
 }
 
 /**
- * @param {"VALIDATE" | "RUN_READ_ONLY" | "PREFLIGHT_DML"} action
+ * @param {SqlWorkbenchSession} session
+ * @returns {string | undefined}
+ */
+function buildAssistantDiagnosticContext(session) {
+  const parts = [];
+  if (session.errorMessage) {
+    parts.push(`errorMessage=${session.errorMessage}`);
+  }
+  if (session.execution?.errorCode || session.execution?.errorMessage) {
+    parts.push(`executionErrorCode=${session.execution.errorCode ?? "none"}`);
+    parts.push(`executionErrorMessage=${session.execution.errorMessage ?? "none"}`);
+  }
+  if (session.validation?.rejectionReasons.length) {
+    parts.push(`rejectionReasons=${session.validation.rejectionReasons.join(" / ")}`);
+  }
+  if (session.validation?.risks.length) {
+    parts.push(`risks=${session.validation.risks.join(" / ")}`);
+  }
+  const value = parts.join("\n").trim();
+  return value.length > 0 ? value : undefined;
+}
+
+/**
+ * @param {string} action
  */
 function createSqlIdempotencyKey(action) {
   const randomPart =

@@ -2,6 +2,8 @@ import {
   sqlConnectionCreateRequestSchema,
   sqlConnectionListSchema,
   sqlConnectionProbeResultSchema,
+  sqlAssistantRequestSchema,
+  sqlAssistantResponseSchema,
   sqlQueryRunRequestSchema,
   sqlQueryRunResultSchema,
   sqlQueryRequestSchema,
@@ -66,6 +68,19 @@ export function runReadOnlySqlQuery(input) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(request),
     schema: sqlQueryRunResultSchema,
+  });
+}
+
+/**
+ * @param {unknown} input
+ */
+export function askSqlAssistant(input) {
+  const request = sqlAssistantRequestSchema.parse(input);
+  return requestJson("/internal/sql-workbench/assistant", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(request),
+    schema: sqlAssistantResponseSchema,
   });
 }
 

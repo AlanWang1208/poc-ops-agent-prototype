@@ -3,6 +3,8 @@ package com.company.opsagent.controlplane.bootstrap.api;
 import com.company.opsagent.contracts.sqlworkbench.SqlConnectionCreateRequest;
 import com.company.opsagent.contracts.sqlworkbench.SqlConnectionProbeResult;
 import com.company.opsagent.contracts.sqlworkbench.SqlConnectionSummary;
+import com.company.opsagent.contracts.sqlworkbench.SqlAssistantRequest;
+import com.company.opsagent.contracts.sqlworkbench.SqlAssistantResponse;
 import com.company.opsagent.contracts.sqlworkbench.SqlQueryExecutionResult;
 import com.company.opsagent.contracts.sqlworkbench.SqlQueryRequest;
 import com.company.opsagent.contracts.sqlworkbench.SqlResultPage;
@@ -51,6 +53,17 @@ public class SqlWorkbenchController {
       "maxRowsDefault",
       "timeoutSecondsDefault");
 
+  private static final Set<String> ASSISTANT_FIELDS = Set.of(
+      "contractVersion",
+      "connectionId",
+      "targetEnvironment",
+      "schema",
+      "assistantAction",
+      "sql",
+      "limits",
+      "diagnosticContext",
+      "idempotencyKey");
+
   private final SqlWorkbenchService sqlWorkbenchService;
   private final ObjectMapper objectMapper;
 
@@ -77,6 +90,11 @@ public class SqlWorkbenchController {
   @PostMapping("/queries/validate")
   public Mono<SqlValidationReport> validate(@RequestBody SqlQueryRequest request) {
     return blocking(() -> sqlWorkbenchService.validate(request));
+  }
+
+  @PostMapping("/assistant")
+  public Mono<SqlAssistantResponse> assist(@RequestBody JsonNode request) {
+    return blocking(() -> sqlWorkbenchService.assist(parseAssistantRequest(request)));
   }
 
   @PostMapping("/queries/run")
@@ -116,6 +134,24 @@ public class SqlWorkbenchController {
       return objectMapper.treeToValue(request, SqlConnectionCreateRequest.class);
     } catch (JsonProcessingException exception) {
       throw new IllegalArgumentException("SQL connection create request is invalid", exception);
+    }
+  }
+
+  private SqlAssistantRequest parseAssistantRequest(JsonNode request) {
+    if (request == null || !request.isObject()) {
+      throw new IllegalArgumentException("SQL assistant request must be a JSON object");
+    }
+    Iterator<String> fieldNames = request.fieldNames();
+    while (fieldNames.hasNext()) {
+      String fieldName = fieldNames.next();
+      if (!ASSISTANT_FIELDS.contains(fieldName)) {
+        throw new IllegalArgumentException("unsupported SQL assistant field: " + fieldName);
+      }
+    }
+    try {
+      return objectMapper.treeToValue(request, SqlAssistantRequest.class);
+    } catch (JsonProcessingException exception) {
+      throw new IllegalArgumentException("SQL assistant request is invalid", exception);
     }
   }
 }

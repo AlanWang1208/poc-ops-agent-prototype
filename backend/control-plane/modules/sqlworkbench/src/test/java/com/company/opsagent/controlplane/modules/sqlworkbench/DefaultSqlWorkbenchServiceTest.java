@@ -6,6 +6,11 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import com.company.opsagent.contracts.sqlworkbench.SqlConnectionCreateRequest;
 import com.company.opsagent.contracts.sqlworkbench.SqlConnectionProbeResult;
 import com.company.opsagent.contracts.sqlworkbench.SqlConnectionSummary;
+import com.company.opsagent.contracts.sqlworkbench.SqlAssistantAction;
+import com.company.opsagent.contracts.sqlworkbench.SqlAssistantRequest;
+import com.company.opsagent.contracts.sqlworkbench.SqlAssistantResponse;
+import com.company.opsagent.contracts.sqlworkbench.SqlAssistantStatus;
+import com.company.opsagent.contracts.sqlworkbench.SqlAssistantSuggestion;
 import com.company.opsagent.contracts.sqlworkbench.SqlQueryAction;
 import com.company.opsagent.contracts.sqlworkbench.SqlQueryExecutionRequest;
 import com.company.opsagent.contracts.sqlworkbench.SqlQueryExecutionResult;
@@ -29,6 +34,7 @@ class DefaultSqlWorkbenchServiceTest {
 
   private static final Clock CLOCK = Clock.fixed(Instant.parse("2026-06-27T00:00:00Z"), ZoneOffset.UTC);
   private final RecordingSqlWorkbenchWorkerClient workerClient = new RecordingSqlWorkbenchWorkerClient();
+  private final RecordingSqlAssistantClient assistantClient = new RecordingSqlAssistantClient();
   private final DefaultSqlWorkbenchService service = new DefaultSqlWorkbenchService(
       new InMemorySqlConnectionCatalog(List.of(new SqlConnectionSummary(
           "1.0",
@@ -40,6 +46,7 @@ class DefaultSqlWorkbenchServiceTest {
           List.of(SqlQueryAction.VALIDATE, SqlQueryAction.RUN_READ_ONLY, SqlQueryAction.PREFLIGHT_DML)))),
       new CalciteSqlValidationService(),
       workerClient,
+      assistantClient,
       CLOCK);
 
   @Test
@@ -182,6 +189,32 @@ class DefaultSqlWorkbenchServiceTest {
     assertEquals("as400-development", workerClient.lastProbeConnection.credentialAlias());
   }
 
+  @Test
+  void assistantValidatesSqlBeforeReturningAdvisorySuggestions() {
+    SqlAssistantResponse response = service.assist(assistantRequest(
+        SqlAssistantAction.OPTIMIZE_SQL,
+        "select * from ORDERS.ORDERS",
+        null));
+
+    assertEquals(SqlAssistantStatus.SUCCEEDED, response.status());
+    assertEquals(true, response.validationRequired());
+    assertEquals(1, assistantClient.askCount);
+    assertEquals(SqlValidationLevel.VALIDATED, assistantClient.lastPrompt.validationReport().validationLevel());
+    assertEquals("DB2_FOR_I", assistantClient.lastPrompt.platformType());
+    assertEquals("as400-development", assistantClient.lastPrompt.connectionId());
+  }
+
+  @Test
+  void assistantRejectsUnsafeRequestBeforeModelCall() {
+    SqlAssistantRequest request = assistantRequest(
+        SqlAssistantAction.EXPLAIN_SQL,
+        "select * from FINANCE.PAYROLL",
+        null);
+
+    assertThrows(IllegalArgumentException.class, () -> service.assist(request));
+    assertEquals(0, assistantClient.askCount);
+  }
+
   private SqlQueryRequest request(String schema) {
     return request(schema, SqlQueryAction.RUN_READ_ONLY, "select * from ORDERS.ORDERS");
   }
@@ -209,6 +242,46 @@ class DefaultSqlWorkbenchServiceTest {
 
   private TraceContext trace() {
     return new TraceContext("trace-1", "request-1");
+  }
+
+  private SqlAssistantRequest assistantRequest(
+      SqlAssistantAction action,
+      String sql,
+      String diagnosticContext) {
+    return new SqlAssistantRequest(
+        "1.0",
+        "as400-development",
+        "development",
+        "ORDERS",
+        action,
+        sql,
+        new SqlQueryLimits(500, 5_000_000, 30),
+        diagnosticContext,
+        "sql-assistant-key");
+  }
+
+  private static final class RecordingSqlAssistantClient implements SqlAssistantClient {
+
+    private int askCount;
+    private SqlAssistantPrompt lastPrompt;
+
+    @Override
+    public SqlAssistantResponse ask(SqlAssistantPrompt prompt) {
+      askCount++;
+      lastPrompt = prompt;
+      return new SqlAssistantResponse(
+          "1.0",
+          SqlAssistantStatus.SUCCEEDED,
+          prompt.assistantAction(),
+          "Prefer explicit columns and keep the statement read-only.",
+          List.of(new SqlAssistantSuggestion(
+              "Limit returned columns",
+              "A narrower projection reduces transfer and review scope.",
+              "select order_id, status from ORDERS.ORDERS")),
+          List.of("AI suggestions must be validated by the server before execution."),
+          true,
+          "provider:fingerprint");
+    }
   }
 
   private static final class RecordingSqlWorkbenchWorkerClient implements SqlWorkbenchWorkerClient {

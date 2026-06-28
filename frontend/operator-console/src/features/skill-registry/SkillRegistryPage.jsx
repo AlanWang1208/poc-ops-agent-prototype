@@ -427,7 +427,7 @@ function skillColumns(showDetail) {
         return (
           <button
             aria-label={`查看 ${skill.descriptor.displayName} 详情`}
-            className={styles.detailButton}
+            className={styles.detailLinkButton}
             onClick={(event) => {
               event.stopPropagation();
               showDetail(skill);

@@ -2,7 +2,7 @@
 
 - 状态：Accepted
 - 日期：2026-06-13
-- 更新日期：2026-06-23
+- 更新日期：2026-06-28
 - 负责人：架构负责人
 - 相关模块：M01、M02、M03、M04、M05、M07、M08、M09、M10、M11
 - 相关任务：AgentScope Java 主运行时接入
@@ -43,6 +43,8 @@ P1 主链路为：
 
 AgentScope ReAct 现在注册真实 `AgentTool`，模型 ToolUse 会先在 M04 转成强类型 `AgentToolCall`，再交给 M05 的平台守护执行器。M04 生成的 policy 引用只用于满足当前信封契约，M05 会忽略该引用并以服务端重新授权结果为准。Agent Tool 请求、完成和拒绝三类语义事件契约骨架、M05 发布接线、执行器级审计和多 Tool 幂等恢复演练已经补齐；终态 Agent workflow 会复用持久化的 `AgentTaskResult` 状态、摘要和 toolCallCount，避免幂等重试时把 Runtime 失败误报成通用终态失败。评测集和路由解释 API 仍需后续补齐。确定性单 Skill 只读入口继续作为联调、兼容和紧急回退路径。
 
+截至 2026-06-28，M04 已新增动态模型供应方设置：管理员可通过 M09 操作台维护 OpenAI-compatible `baseUrl`、模型名、运行限制和 API Key，并切换当前默认供应方。API Key 只允许在受保护请求中直接提交一次，控制面使用 `OPS_AGENT_MODEL_SECRET_MASTER_KEY` 派生的本地密钥进行 AES-GCM 加密后持久化；摘要 API 只返回指纹和配置版本，不返回明文或密文。测试配置通过 OpenAI-compatible `/chat/completions` 最小请求执行受控连通性探测，本地占位 Key 不出网，失败时只返回稳定摘要，不回显供应方响应体或 Key。Agent Runtime 每次运行前读取当前默认供应方并解密调用所需 Key，未设置默认供应方时才回退到旧的环境变量配置。
+
 AgentScope Java 负责：
 
 1. 理解操作员的只读诊断意图。
@@ -50,6 +52,7 @@ AgentScope Java 负责：
 3. 在一次 Agent workflow 中选择一个或多个只读 Tool。
 4. 读取 Tool Result 并决定是否继续诊断。
 5. 输出最终诊断摘要和结构化结果。
+6. 解析当前默认模型供应方配置，但不得把模型配置选择视为授权决策。
 
 平台继续负责：
 
@@ -60,6 +63,7 @@ AgentScope Java 负责：
 5. M07 Worker 隔离执行和 M08 目标系统适配器。
 6. M09 强类型语义事件展示。
 7. M10 结构化日志、指标、追踪和审计留存。
+8. M02 对模型供应方读取、写入、Key 轮换、测试和默认切换进行 RBAC 授权与请求级审计。
 
 ## AgentScope Skill 与平台契约分离
 
@@ -125,6 +129,9 @@ backend/contracts/skills/packages/<skill-slug>/
 - 每一次 Tool Call 都必须形成强类型 `AgentToolCall` 或等价平台命令记录，并带有 Skill 版本、参数哈希、策略引用、工作空间、操作员和 trace 上下文。
 - 模型内部推理过程不得写入日志、事件、审计或制品。
 - 目录式 Skill 包中的 schema、样例和 README 不得包含密钥、生产数据或可执行脚本。
+- 模型供应方 API Key 不得出现在响应、日志、审计原因、前端状态持久化、测试数据或文档样例中；仅允许保存加密后的密文、随机 nonce、算法标识和不可逆指纹。
+- 模型供应方测试配置不得暴露第三方响应体、异常细节或 API Key；本地占位 Key 必须在服务端短路，不得向外部供应方发起请求。
+- 默认模型切换只能改变 M04 运行时选择，不能绕过 M01/M02/M03/M05/M07 的身份、策略、工作流、Skill 和 Worker 边界。
 
 ## 考虑过的备选方案
 
@@ -163,6 +170,7 @@ backend/contracts/skills/packages/<skill-slug>/
 - Skill 检查覆盖两类目录：AgentScope 目录必须包含可解析的 `SKILL.md`；平台契约目录必须包含 `manifest.json`、`manifest.signature.json`、`input.schema.json`、`output.schema.json` 和三类测试样例。
 - 工作流测试覆盖 Agent workflow 幂等、Tool Step 顺序、Agent Runtime 失败和恢复事件。
 - Agent Runtime 测试覆盖 ReAct ToolUse 通过真实 AgentScope `AgentTool` 回调平台 `AgentToolExecutor`，并将结构化 Tool Result 回送给下一轮 ReAct。
+- 模型供应方测试覆盖 URL 校验、API Key AES-GCM 加密、R2DBC 持久化、受保护管理 API、受控 OpenAI-compatible 连通性探测、占位 Key 不出网、错误响应不回显敏感信息、RBAC 拒绝和运行时默认供应方动态解析。
 - 集成测试覆盖 `/api/v1/agent/diagnostics` 的认证、授权和受控只读诊断路径。
 - 评测覆盖 Prompt 注入、Tool 输出注入、写操作请求、模型超时和输出格式错误。
 
