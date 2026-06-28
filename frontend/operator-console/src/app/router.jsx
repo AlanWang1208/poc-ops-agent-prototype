@@ -1,8 +1,6 @@
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 
-import { WorkspacePageFrame } from "../components/layout/WorkspacePageFrame.jsx";
-import { WorkspaceStatusBar } from "../components/layout/WorkspaceStatusBar.jsx";
-import { Card } from "../components/primitives/Card.jsx";
+import { As400ObjectManagementPage } from "../features/as400-object-management/As400ObjectManagementPage.jsx";
 import { AgentWorkspacePage } from "../features/agent-workspace/AgentWorkspacePage.jsx";
 import { AuditRecordsPage } from "../features/audit-records/AuditRecordsPage.jsx";
 import { LoginPage } from "../features/auth/LoginPage.jsx";
@@ -19,26 +17,6 @@ import { RagQuestionPage } from "../features/rag-question/RagQuestionPage.jsx";
 import { SkillRegistryPage } from "../features/skill-registry/SkillRegistryPage.jsx";
 import { SqlWorkbenchPage } from "../features/sql-workbench/SqlWorkbenchPage.jsx";
 import { WorkflowEventsPage } from "../features/workflow-events/WorkflowEventsPage.jsx";
-
-/**
- * 尚未接入真实后端能力的受保护占位页。
- *
- * 占位页仍必须放在 ProtectedRoute 内，避免未登录用户看到内部导航或误以为这些后续能力已经开放。
- *
- * @param {{title: string, description: string}} props
- */
-function ProtectedPlaceholder({ title, description }) {
-  return (
-    <WorkspacePageFrame>
-      <WorkspaceStatusBar title={title} />
-      <Card ariaLabel={`${title}内容`}>
-        <h2>{title}入口</h2>
-        <p>{description}</p>
-        <p>当前页面只展示 P1 只读范围内的占位入口，后续任务再接入真实接口。</p>
-      </Card>
-    </WorkspacePageFrame>
-  );
-}
 
 const legacyAgentViewRoutes = {
   audit: "/audit",
@@ -170,10 +148,7 @@ export function AppRouter() {
       <Route
         element={
           <ProtectedRoute>
-            <ProtectedPlaceholder
-              description="AS400 数据对象管理入口，表结构变更能力在受控变更阶段再接入审批和执行链路。"
-              title="AS400对象管理"
-            />
+            <As400ObjectManagementPage />
           </ProtectedRoute>
         }
         path="/as400-ddl"
