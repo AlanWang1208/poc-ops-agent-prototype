@@ -68,6 +68,9 @@ class PolicyEnforcementWebFilterTest {
         "internal.sql-workbench.queries.run",
         resolvedAction(MockServerHttpRequest.post("/internal/sql-workbench/queries/run")));
     assertEquals(
+        "internal.sql-workbench.assistant.use",
+        resolvedAction(MockServerHttpRequest.post("/internal/sql-workbench/assistant")));
+    assertEquals(
         "internal.sql-workbench.results.read",
         resolvedAction(MockServerHttpRequest.get("/internal/sql-workbench/results/result-1")));
   }

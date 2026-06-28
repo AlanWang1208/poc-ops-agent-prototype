@@ -87,6 +87,9 @@ ops-agent:
       internal.sql-workbench.queries.run:
         - ROLE_ops-reader
         - ROLE_ops-admin
+      internal.sql-workbench.assistant.use:
+        - ROLE_ops-reader
+        - ROLE_ops-admin
       internal.sql-workbench.results.read:
         - ROLE_ops-reader
         - ROLE_ops-admin
@@ -97,6 +100,16 @@ ops-agent:
         - ROLE_ops-reader
         - ROLE_ops-admin
       internal.identity.password-reset:
+        - ROLE_ops-admin
+      internal.model-providers.read:
+        - ROLE_ops-admin
+      internal.model-providers.write:
+        - ROLE_ops-admin
+      internal.model-providers.api-key.rotate:
+        - ROLE_ops-admin
+      internal.model-providers.test:
+        - ROLE_ops-admin
+      internal.model-providers.switch:
         - ROLE_ops-admin
   worker:
     base-url: http://127.0.0.1:8091
@@ -114,6 +127,7 @@ ops-agent:
     max-tool-calls: 5
     max-tool-call-duration: 30s
     max-iterations: 5
+    model-provider-secret-master-key: ${OPS_AGENT_MODEL_SECRET_MASTER_KEY:OPS_AGENT_MODEL_SECRET_MASTER_KEY_REPLACE_ME}
     p1-read-only-only: true
     workspace-id: workspace-default
     workspace-code: default

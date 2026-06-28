@@ -8,6 +8,8 @@ import { z } from "zod";
  * @typedef {z.infer<typeof sqlQueryRunRequestSchema>} SqlQueryRunRequest
  * @typedef {z.infer<typeof sqlQueryRunResultSchema>} SqlQueryRunResult
  * @typedef {z.infer<typeof sqlResultPageSchema>} SqlResultPage
+ * @typedef {z.infer<typeof sqlAssistantRequestSchema>} SqlAssistantRequest
+ * @typedef {z.infer<typeof sqlAssistantResponseSchema>} SqlAssistantResponse
  */
 
 const nonBlankString = z.string().trim().min(1);
@@ -32,6 +34,11 @@ const sqlQueryActionSchema = z.enum([
   "EXPLAIN",
   "RUN_READ_ONLY",
   "PREFLIGHT_DML",
+]);
+const sqlAssistantActionSchema = z.enum([
+  "EXPLAIN_SQL",
+  "OPTIMIZE_SQL",
+  "ANALYZE_ERROR",
 ]);
 
 const sqlConnectionSchema = z
@@ -131,6 +138,41 @@ export const sqlValidationReportSchema = z
     risks: z.array(nonBlankString),
     rejectionReasons: z.array(nonBlankString),
     unverifiedItems: z.array(nonBlankString),
+  })
+  .strict();
+
+export const sqlAssistantRequestSchema = z
+  .object({
+    contractVersion: z.literal("1.0"),
+    connectionId: nonBlankString,
+    targetEnvironment: targetEnvironmentSchema,
+    schema: nonBlankString,
+    assistantAction: sqlAssistantActionSchema,
+    sql: nonBlankString.max(20_000),
+    limits: sqlQueryLimitsSchema,
+    diagnosticContext: z.string().trim().min(1).max(4_000).optional(),
+    idempotencyKey: nonBlankString,
+  })
+  .strict();
+
+const sqlAssistantSuggestionSchema = z
+  .object({
+    title: nonBlankString,
+    rationale: nonBlankString,
+    suggestedSql: z.string().trim().min(1).max(20_000).nullable().optional(),
+  })
+  .strict();
+
+export const sqlAssistantResponseSchema = z
+  .object({
+    contractVersion: z.literal("1.0"),
+    status: z.enum(["SUCCEEDED", "MODEL_NOT_CONFIGURED", "FAILED", "REJECTED"]),
+    assistantAction: sqlAssistantActionSchema,
+    summary: nonBlankString,
+    suggestions: z.array(sqlAssistantSuggestionSchema),
+    safetyNotes: z.array(nonBlankString),
+    validationRequired: z.literal(true),
+    modelProviderFingerprint: z.string().trim().min(1).optional().nullable(),
   })
   .strict();
 

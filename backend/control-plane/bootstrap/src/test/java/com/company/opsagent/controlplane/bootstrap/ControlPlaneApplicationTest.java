@@ -82,6 +82,11 @@ import org.springframework.test.web.reactive.server.WebTestClient;
     "ops-agent.policy.required-roles-by-action.internal.sql-workbench.results.read[1]=ROLE_ops-admin",
     "ops-agent.policy.required-roles-by-action.internal.agent.diagnostics.read[0]=ROLE_ops-reader",
     "ops-agent.policy.required-roles-by-action.internal.agent.diagnostics.read[1]=ROLE_ops-admin",
+    "ops-agent.policy.required-roles-by-action.internal.model-providers.read[0]=ROLE_ops-admin",
+    "ops-agent.policy.required-roles-by-action.internal.model-providers.write[0]=ROLE_ops-admin",
+    "ops-agent.policy.required-roles-by-action.internal.model-providers.api-key.rotate[0]=ROLE_ops-admin",
+    "ops-agent.policy.required-roles-by-action.internal.model-providers.test[0]=ROLE_ops-admin",
+    "ops-agent.policy.required-roles-by-action.internal.model-providers.switch[0]=ROLE_ops-admin",
     "ops-agent.skill-registry.root-path=target/test-classes/skills",
     "ops-agent.skill-registry.signature-required=true",
     "ops-agent.skill-registry.signing-secret=ops-agent-skill-signing-key-2026-06-06-0001",
@@ -397,29 +402,33 @@ class ControlPlaneApplicationTest {
   }
 
   @Test
-  void exposesOnlyDevelopmentAndTestSqlConnections() {
+  void doesNotExposeRuntimeMockSqlConnections() {
     webTestClient.get()
         .uri("/internal/sql-workbench/connections")
         .headers(headers -> headers.setBearerAuth(token("alice", List.of("ops-reader"), "ops-agent-internal")))
         .exchange()
         .expectStatus().isOk()
-        .expectBody()
-        .jsonPath("$[0].connectionId").isEqualTo("as400-development")
-        .jsonPath("$[1].connectionId").isEqualTo("as400-test")
-        .jsonPath("$[?(@.targetEnvironment == 'production')]").isEmpty();
+        .expectBody(String.class)
+        .value(body -> {
+          Assertions.assertFalse(body.contains("as400-development"));
+          Assertions.assertFalse(body.contains("as400-test"));
+          Assertions.assertFalse(body.contains("\"targetEnvironment\":\"production\""));
+        });
   }
 
   @Test
   void probesSqlConnectionWithFailClosedControlPlaneResult() {
     auditTrail.clear();
+    createSqlConnection("SQL Dev Probe", "sql-dev-probe", "ORDERS");
+
     webTestClient.post()
-        .uri("/internal/sql-workbench/connections/as400-development/probe")
+        .uri("/internal/sql-workbench/connections/sql-dev-probe/probe")
         .headers(headers -> headers.setBearerAuth(token("alice", List.of("ops-reader"), "ops-agent-internal")))
         .exchange()
         .expectStatus().isOk()
         .expectBody()
         .jsonPath("$.contractVersion").isEqualTo("1.0")
-        .jsonPath("$.connectionId").isEqualTo("as400-development")
+        .jsonPath("$.connectionId").isEqualTo("sql-dev-probe")
         .jsonPath("$.status").isEqualTo("PROBE_FAILED");
 
     AuditEvent event = auditTrail.latest().orElseThrow();
@@ -428,6 +437,8 @@ class ControlPlaneApplicationTest {
 
   @Test
   void preflightsDmlWithoutExecutingIt() {
+    createSqlConnection("SQL Dev DML", "sql-dev-dml", "ORDERS");
+
     webTestClient.post()
         .uri("/internal/sql-workbench/queries/validate")
         .headers(headers -> headers.setBearerAuth(token("alice", List.of("ops-reader"), "ops-agent-internal")))
@@ -435,7 +446,7 @@ class ControlPlaneApplicationTest {
         .bodyValue("""
             {
               "contractVersion": "1.0",
-              "connectionId": "as400-development",
+              "connectionId": "sql-dev-dml",
               "targetEnvironment": "development",
               "schema": "ORDERS",
               "action": "PREFLIGHT_DML",
@@ -491,6 +502,74 @@ class ControlPlaneApplicationTest {
         .expectStatus().isEqualTo(503)
         .expectBody()
         .jsonPath("$.code").isEqualTo("AGENT_RUNTIME_DISABLED");
+  }
+
+  @Test
+  void managesModelProvidersWithoutReturningApiKeyMaterial() {
+    auditTrail.clear();
+    webTestClient.post()
+        .uri("/internal/model-providers")
+        .headers(headers -> headers.setBearerAuth(token("admin", List.of("ops-admin"), "ops-agent-internal")))
+        .contentType(APPLICATION_JSON)
+        .bodyValue("""
+            {
+              "displayName": "OpenAI",
+              "baseUrl": "https://api.openai.com/v1",
+              "modelName": "gpt-4.1-mini",
+              "apiKey": "test-model-api-key",
+              "timeoutSeconds": 30,
+              "maxIterations": 5,
+              "maxToolCalls": 5,
+              "maxToolCallDurationSeconds": 30
+            }
+            """)
+        .exchange()
+        .expectStatus().isOk()
+        .expectBody()
+        .jsonPath("$.providerId").isNotEmpty()
+        .jsonPath("$.apiKeyConfigured").isEqualTo(true)
+        .jsonPath("$.apiKeyFingerprint").isNotEmpty()
+        .jsonPath("$.apiKey").doesNotExist()
+        .jsonPath("$.apiKeyCiphertext").doesNotExist();
+
+    webTestClient.get()
+        .uri("/internal/model-providers")
+        .headers(headers -> headers.setBearerAuth(token("admin", List.of("ops-admin"), "ops-agent-internal")))
+        .exchange()
+        .expectStatus().isOk()
+        .expectBody()
+        .jsonPath("$[0].displayName").isEqualTo("OpenAI")
+        .jsonPath("$[0].apiKey").doesNotExist()
+        .jsonPath("$[0].apiKeyCiphertext").doesNotExist();
+
+    Assertions.assertFalse(auditTrail.snapshot().stream()
+        .map(AuditEvent::reason)
+        .anyMatch(reason -> reason != null && reason.contains("test-model-api-key")));
+  }
+
+  @Test
+  void rejectsReaderFromModelProviderWriteEndpoint() {
+    auditTrail.clear();
+    webTestClient.post()
+        .uri("/internal/model-providers")
+        .headers(headers -> headers.setBearerAuth(token("alice", List.of("ops-reader"), "ops-agent-internal")))
+        .contentType(APPLICATION_JSON)
+        .bodyValue("""
+            {
+              "displayName": "OpenAI",
+              "baseUrl": "https://api.openai.com/v1",
+              "modelName": "gpt-4.1-mini",
+              "apiKey": "test-model-api-key",
+              "timeoutSeconds": 30,
+              "maxIterations": 5,
+              "maxToolCalls": 5,
+              "maxToolCallDurationSeconds": 30
+            }
+            """)
+        .exchange()
+        .expectStatus().isForbidden()
+        .expectBody()
+        .jsonPath("$.code").isEqualTo("POLICY_DENIED");
   }
 
   @Test
@@ -626,6 +705,34 @@ class ControlPlaneApplicationTest {
     } catch (JOSEException exception) {
       throw new IllegalStateException("failed to create test token", exception);
     }
+  }
+
+  private void createSqlConnection(String displayName, String expectedConnectionId, String schema) {
+    webTestClient.post()
+        .uri("/internal/sql-workbench/connections")
+        .headers(headers -> headers.setBearerAuth(token("admin", List.of("ops-admin"), "ops-agent-internal")))
+        .contentType(APPLICATION_JSON)
+        .bodyValue("""
+            {
+              "contractVersion": "1.0",
+              "displayName": "%s",
+              "targetEnvironment": "development",
+              "platformType": "DB2_FOR_I",
+              "host": "as400-dev.internal",
+              "port": 446,
+              "defaultSchema": "%s",
+              "allowedSchemas": ["%s"],
+              "capabilities": ["VALIDATE", "RUN_READ_ONLY", "PREFLIGHT_DML"],
+              "credentialAlias": "sql-dev-readonly",
+              "maxRowsDefault": 500,
+              "timeoutSecondsDefault": 30
+            }
+            """.formatted(displayName, schema, schema))
+        .exchange()
+        .expectStatus().isOk()
+        .expectBody()
+        .jsonPath("$.connectionId").isEqualTo(expectedConnectionId)
+        .jsonPath("$.status").isEqualTo("PENDING_WORKER_BINDING");
   }
 
   private String agentDiagnosticBody(String idempotencyKey) {

@@ -3,6 +3,8 @@ package com.company.opsagent.controlplane.modules.sqlworkbench;
 import com.company.opsagent.contracts.sqlworkbench.SqlConnectionSummary;
 import com.company.opsagent.contracts.sqlworkbench.SqlConnectionCreateRequest;
 import com.company.opsagent.contracts.sqlworkbench.SqlConnectionProbeResult;
+import com.company.opsagent.contracts.sqlworkbench.SqlAssistantRequest;
+import com.company.opsagent.contracts.sqlworkbench.SqlAssistantResponse;
 import com.company.opsagent.contracts.sqlworkbench.SqlQueryExecutionResult;
 import com.company.opsagent.contracts.sqlworkbench.SqlQueryRequest;
 import com.company.opsagent.contracts.sqlworkbench.SqlResultPage;
@@ -24,6 +26,8 @@ public interface SqlWorkbenchService {
   SqlConnectionProbeResult probeConnection(String connectionId);
 
   SqlValidationReport validate(SqlQueryRequest request);
+
+  SqlAssistantResponse assist(SqlAssistantRequest request);
 
   SqlQueryExecutionResult runReadOnlyQuery(
       SqlQueryRequest request,

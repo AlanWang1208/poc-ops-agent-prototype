@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 
 import { http, HttpResponse } from "msw";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
@@ -135,6 +135,8 @@ describe("AgentWorkspacePage", () => {
       agentWorkspaceCss.match(/(?:^|\n)[.]detailButton\s*[{][^}]+[}]/u)?.[0] ?? "";
     const panelDetailButtonRule =
       agentWorkspaceCss.match(/[.]agentPanel\s*[>]\s*[.]detailButton\s*[{][^}]+[}]/u)?.[0] ?? "";
+    const panelStatusNoteRule =
+      agentWorkspaceCss.match(/[.]panelStatusNote\s*[{][^}]+[}]/u)?.[0] ?? "";
 
     expect(agentLayoutRule).toContain("align-items: stretch");
     expect(agentSideRule).toContain("max-height: 100%");
@@ -151,8 +153,14 @@ describe("AgentWorkspacePage", () => {
     expect(agentPanelRule).toContain("align-content: stretch");
     expect(agentPanelRule).toContain("gap: 6px");
     expect(agentPanelRule).toContain("overflow: hidden");
+    expect(agentWorkspaceCss).not.toContain(".agentPanel::before");
     expect(agentPanelRule).not.toContain("minmax(38px, 1fr)");
     expect(agentWorkspaceCss).not.toContain(".agentPanel:has(> .statusNote)");
+    expect(panelStatusNoteRule).toContain("min-height: 0");
+    expect(panelStatusNoteRule).toContain("max-height: 58px");
+    expect(panelStatusNoteRule).toContain("overflow-y: auto");
+    expect(panelStatusNoteRule).toContain("overflow-wrap: anywhere");
+    expect(panelStatusNoteRule).toContain("word-break: break-word");
     expect(panelHeadingRule).toContain("min-height: 40px");
     expect(miniRowRule).toContain("display: grid");
     expect(miniRowRule).toContain("min-height: 30px");
@@ -378,6 +386,57 @@ describe("AgentWorkspacePage", () => {
     expect(weatherAnswerBubble?.className).toContain("agent");
     expect(container.querySelectorAll('[data-message-tone="operator"]')).toHaveLength(1);
     expect(container.querySelectorAll('[data-message-tone="agent"]')).toHaveLength(1);
+  });
+
+  test("renders Agent markdown summaries as structured rich text", async () => {
+    server.use(
+      http.post("/api/v1/agent/diagnostics", async ({ request }) => {
+        diagnosticRequests.push(await request.json());
+        return HttpResponse.json({
+          ...agentTaskResult,
+          summary: [
+            "# Shanghai 当前天气",
+            "",
+            "| 字段 | 值 |",
+            "|---|---|",
+            "| **地点** | Shanghai |",
+            "| 天气状况 | Cloudy |",
+            "| 观测时间 | `2026-06-28T10:00:30Z` |",
+            "",
+            "- 执行状态：**SUCCEEDED**",
+          ].join("\n"),
+        });
+      }),
+    );
+    vi.spyOn(crypto, "randomUUID").mockReturnValue("00000000-0000-4000-8000-000000000012");
+    const user = userEvent.setup();
+
+    const { container } = renderPage();
+
+    expect(await screen.findByText("提交后由服务端路由")).toBeInTheDocument();
+    await user.type(screen.getByRole("textbox", { name: "任务目标" }), "查询上海天气");
+    const sendButton = screen.getByRole("button", { name: "发送任务" });
+    await waitFor(() => expect(sendButton).toBeEnabled());
+    await user.click(sendButton);
+
+    await waitFor(() =>
+      expect(container.querySelectorAll('[data-message-tone="agent"]')).toHaveLength(1),
+    );
+    const agentMessage = container.querySelector('[data-message-tone="agent"]');
+    expect(agentMessage).toBeInTheDocument();
+    const agentMessageScope = within(/** @type {HTMLElement} */ (agentMessage));
+    expect(agentMessageScope.getByRole("heading", { name: "Shanghai 当前天气" })).toBeInTheDocument();
+    const markdownTable = agentMessageScope.getByRole("table", { name: "Agent 摘要表格" });
+    expect(markdownTable).toBeInTheDocument();
+    const markdownTableScope = within(markdownTable);
+    expect(markdownTableScope.getByText("字段")).toBeInTheDocument();
+    expect(markdownTableScope.getByText("地点")).toBeInTheDocument();
+    expect(markdownTableScope.getByText("Shanghai")).toBeInTheDocument();
+    expect(markdownTableScope.getByText("2026-06-28T10:00:30Z")).toBeInTheDocument();
+    expect(agentMessageScope.getByText("执行状态：")).toBeInTheDocument();
+    expect(agentMessageScope.getByText("SUCCEEDED")).toBeInTheDocument();
+    expect(agentMessage).not.toHaveTextContent("|---|---|");
+    expect(agentWorkspaceSource).not.toContain("dangerouslySetInnerHTML");
   });
 
   test("submits the task goal when pressing Enter in the composer", async () => {
@@ -715,6 +774,9 @@ describe("AgentWorkspacePage", () => {
     expect(exchangeWindowRule).toContain("overflow: hidden");
     expect(exchangeBodyRule).toContain("min-height: 0");
     expect(exchangeBodyRule).toContain("overflow-y: auto");
+    expect(agentCanvasRule).toContain("overflow: clip");
+    expect(agentCanvasRule).toContain("overflow-clip-margin: 0");
+    expect(agentCanvasRule).not.toContain("overflow: hidden");
   });
 
   test("uses the shared dialog standard for detail overlays without nested JSON scrolling", async () => {
@@ -876,7 +938,9 @@ describe("AgentWorkspacePage", () => {
     expect(agentWorkspaceCss).toContain("radial-gradient(circle at 78% 14%, rgba(14, 165, 183, 0.14), transparent 18rem)");
     expect(agentCanvasRule).toContain("border: 1px solid rgba(166, 64, 92, 0.18)");
     expect(agentCanvasRule).toContain("border-radius: 24px");
-    expect(agentCanvasRule).toContain("overflow: hidden");
+    expect(agentCanvasRule).toContain("overflow: clip");
+    expect(agentCanvasRule).toContain("overflow-clip-margin: 0");
+    expect(agentCanvasRule).not.toContain("overflow: hidden");
     expect(agentCanvasRule).toContain("background: var(--agent-bg-base)");
     expect(agentCanvasRule).toContain("font-family: var(--agent-font-sans)");
     expect(agentCanvasRule).toContain("0 18px 56px rgba(31, 41, 51, 0.055)");

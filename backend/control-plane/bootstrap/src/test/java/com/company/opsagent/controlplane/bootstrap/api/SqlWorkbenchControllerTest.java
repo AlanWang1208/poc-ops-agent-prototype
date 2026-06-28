@@ -6,6 +6,11 @@ import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import com.company.opsagent.contracts.sqlworkbench.SqlConnectionCreateRequest;
 import com.company.opsagent.contracts.sqlworkbench.SqlConnectionProbeResult;
 import com.company.opsagent.contracts.sqlworkbench.SqlConnectionSummary;
+import com.company.opsagent.contracts.sqlworkbench.SqlAssistantAction;
+import com.company.opsagent.contracts.sqlworkbench.SqlAssistantRequest;
+import com.company.opsagent.contracts.sqlworkbench.SqlAssistantResponse;
+import com.company.opsagent.contracts.sqlworkbench.SqlAssistantStatus;
+import com.company.opsagent.contracts.sqlworkbench.SqlAssistantSuggestion;
 import com.company.opsagent.contracts.sqlworkbench.SqlQueryExecutionResult;
 import com.company.opsagent.contracts.sqlworkbench.SqlQueryRequest;
 import com.company.opsagent.contracts.sqlworkbench.SqlResultPage;
@@ -59,9 +64,44 @@ class SqlWorkbenchControllerTest {
     assertEquals(0, service.createCount.get());
   }
 
+  @Test
+  void passesSqlAssistantRequestThroughTypedServiceBoundary() throws Exception {
+    var request = objectMapper.readTree("""
+        {
+          "contractVersion": "1.0",
+          "connectionId": "as400-development",
+          "targetEnvironment": "development",
+          "schema": "ORDERS",
+          "assistantAction": "ANALYZE_ERROR",
+          "sql": "select * from ORDERS.ORDERS",
+          "limits": {
+            "maxRows": 500,
+            "maxBytes": 5000000,
+            "timeoutSeconds": 30
+          },
+          "diagnosticContext": "SQL syntax is not supported",
+          "idempotencyKey": "assistant-key-1"
+        }
+        """);
+
+    StepVerifier.create(controller.assist(request))
+        .assertNext(response -> {
+          assertEquals(SqlAssistantStatus.SUCCEEDED, response.status());
+          assertEquals(SqlAssistantAction.ANALYZE_ERROR, response.assistantAction());
+          assertEquals(true, response.validationRequired());
+        })
+        .verifyComplete();
+
+    assertEquals(1, service.assistCount.get());
+    assertEquals(SqlAssistantAction.ANALYZE_ERROR, service.lastAssistantRequest.assistantAction());
+    assertEquals("SQL syntax is not supported", service.lastAssistantRequest.diagnosticContext());
+  }
+
   private static final class RecordingSqlWorkbenchService implements SqlWorkbenchService {
 
     private final AtomicInteger createCount = new AtomicInteger();
+    private final AtomicInteger assistCount = new AtomicInteger();
+    private SqlAssistantRequest lastAssistantRequest;
 
     @Override
     public List<SqlConnectionSummary> listConnections() {
@@ -82,6 +122,24 @@ class SqlWorkbenchControllerTest {
     @Override
     public SqlValidationReport validate(SqlQueryRequest request) {
       throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public SqlAssistantResponse assist(SqlAssistantRequest request) {
+      assistCount.incrementAndGet();
+      lastAssistantRequest = request;
+      return new SqlAssistantResponse(
+          "1.0",
+          SqlAssistantStatus.SUCCEEDED,
+          request.assistantAction(),
+          "The error points to SQL syntax.",
+          List.of(new SqlAssistantSuggestion(
+              "Check statement syntax",
+              "The parser rejected the submitted SQL before execution.",
+              null)),
+          List.of("AI suggestions must be validated before execution."),
+          true,
+          "provider:fingerprint");
     }
 
     @Override

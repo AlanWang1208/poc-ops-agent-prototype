@@ -308,6 +308,16 @@
   --nav-spark-y: 5px;
 }
 
+.navTonemodel {
+  --nav-color: #5f6fa3;
+  --nav-mark: #6577ad;
+  --nav-icon-radius: 8px 14px 8px 14px;
+  --nav-symbol-radius: 5px 11px 5px 11px;
+  --nav-detail-radius: 3px 7px 3px 7px;
+  --nav-spark-x: 17px;
+  --nav-spark-y: 5px;
+}
+
 .active {
   --nav-color: var(--color-info);
   --nav-mark: #207fa4;

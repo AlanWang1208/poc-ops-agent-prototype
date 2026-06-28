@@ -8,14 +8,28 @@ import com.company.opsagent.controlplane.modules.agentruntime.AgentscopeAgentCli
 import com.company.opsagent.controlplane.modules.agentruntime.AgentscopeAgentResponse;
 import com.company.opsagent.controlplane.modules.agentruntime.AgentscopePrimaryAgentRuntimeService;
 import com.company.opsagent.controlplane.modules.agentruntime.AgentscopeReActAgentClientFactory;
+import com.company.opsagent.controlplane.modules.agentruntime.AesGcmModelProviderSecretCodec;
+import com.company.opsagent.controlplane.modules.agentruntime.DefaultModelProviderManagementService;
+import com.company.opsagent.controlplane.modules.agentruntime.DynamicModelProviderAgentscopeAgentClient;
 import com.company.opsagent.controlplane.modules.agentruntime.LocalWeatherSmokeAgentClient;
+import com.company.opsagent.controlplane.modules.agentruntime.ModelProviderProbe;
+import com.company.opsagent.controlplane.modules.agentruntime.ModelProviderSecretCodec;
+import com.company.opsagent.controlplane.modules.agentruntime.ModelProviderStore;
+import com.company.opsagent.controlplane.modules.agentruntime.OpenAiCompatibleModelProviderProbe;
+import com.company.opsagent.controlplane.modules.agentruntime.R2dbcModelProviderStore;
 import com.company.opsagent.controlplane.modules.skillregistry.RegisteredSkill;
 import com.company.opsagent.controlplane.modules.skillregistry.SkillPublicationStatus;
 import com.company.opsagent.controlplane.modules.skillregistry.SkillRegistryService;
+import io.r2dbc.spi.ConnectionFactory;
+import java.time.Clock;
 import java.util.List;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.r2dbc.connection.init.ConnectionFactoryInitializer;
+import org.springframework.r2dbc.connection.init.ResourceDatabasePopulator;
+import org.springframework.r2dbc.core.DatabaseClient;
 import reactor.core.publisher.Mono;
 
 /**
@@ -30,6 +44,8 @@ import reactor.core.publisher.Mono;
 public class AgentRuntimeConfiguration {
 
   private static final String LOCAL_FAKE_API_KEY = "OPS_AGENT_FAKE_API_KEY_REPLACE_ME";
+  private static final String LOCAL_MODEL_PROVIDER_MASTER_KEY =
+      "OPS_AGENT_MODEL_SECRET_MASTER_KEY_REPLACE_ME";
 
   /**
    * 从注册中心生成模型可见的只读 Tool Catalog。
@@ -44,10 +60,21 @@ public class AgentRuntimeConfiguration {
   }
 
   @Bean
-  AgentscopeAgentClient agentscopeAgentClient(AgentRuntimeProperties properties) {
+  AgentscopeAgentClient agentscopeAgentClient(
+      AgentRuntimeProperties properties,
+      ModelProviderStore modelProviderStore,
+      ModelProviderSecretCodec modelProviderSecretCodec) {
     if ("local-weather-smoke".equals(properties.getProvider())) {
       return new LocalWeatherSmokeAgentClient();
     }
+    return new DynamicModelProviderAgentscopeAgentClient(
+        modelProviderStore,
+        modelProviderSecretCodec,
+        AgentscopeReActAgentClientFactory::openAiCompatible,
+        legacyPropertiesClient(properties));
+  }
+
+  private AgentscopeAgentClient legacyPropertiesClient(AgentRuntimeProperties properties) {
     String apiKey = resolvedApiKey(properties);
     if (isBlank(properties.getModelName()) || isBlank(apiKey)) {
       return notConfiguredClient();
@@ -61,6 +88,45 @@ public class AgentRuntimeConfiguration {
         properties.getBaseUrl(),
         properties.getMaxIterations(),
         properties.getTimeout());
+  }
+
+  @Bean
+  ModelProviderStore modelProviderStore(DatabaseClient databaseClient) {
+    return new R2dbcModelProviderStore(databaseClient);
+  }
+
+  @Bean
+  ModelProviderSecretCodec modelProviderSecretCodec(AgentRuntimeProperties properties) {
+    String masterKey = isBlank(properties.getModelProviderSecretMasterKey())
+        ? LOCAL_MODEL_PROVIDER_MASTER_KEY
+        : properties.getModelProviderSecretMasterKey();
+    return new AesGcmModelProviderSecretCodec(masterKey);
+  }
+
+  @Bean
+  ModelProviderProbe modelProviderProbe(ModelProviderSecretCodec modelProviderSecretCodec) {
+    return new OpenAiCompatibleModelProviderProbe(modelProviderSecretCodec);
+  }
+
+  @Bean
+  DefaultModelProviderManagementService modelProviderManagementService(
+      ModelProviderStore modelProviderStore,
+      ModelProviderSecretCodec modelProviderSecretCodec,
+      ModelProviderProbe modelProviderProbe) {
+    return new DefaultModelProviderManagementService(
+        modelProviderStore,
+        modelProviderSecretCodec,
+        modelProviderProbe,
+        Clock.systemUTC());
+  }
+
+  @Bean
+  ConnectionFactoryInitializer modelProviderSchemaInitializer(ConnectionFactory connectionFactory) {
+    var initializer = new ConnectionFactoryInitializer();
+    initializer.setConnectionFactory(connectionFactory);
+    initializer.setDatabasePopulator(new ResourceDatabasePopulator(
+        new ClassPathResource("sql/migrations/V001__model_provider_schema.sql")));
+    return initializer;
   }
 
   /**

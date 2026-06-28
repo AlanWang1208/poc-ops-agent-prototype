@@ -12,6 +12,11 @@ import com.company.opsagent.contracts.events.AgentToolCallRequestedPayload;
 import com.company.opsagent.contracts.events.SemanticEvent;
 import com.company.opsagent.contracts.events.SemanticEventType;
 import com.company.opsagent.contracts.events.WorkflowStartedPayload;
+import com.company.opsagent.contracts.sqlworkbench.SqlAssistantAction;
+import com.company.opsagent.contracts.sqlworkbench.SqlAssistantRequest;
+import com.company.opsagent.contracts.sqlworkbench.SqlAssistantResponse;
+import com.company.opsagent.contracts.sqlworkbench.SqlAssistantStatus;
+import com.company.opsagent.contracts.sqlworkbench.SqlAssistantSuggestion;
 import com.company.opsagent.contracts.sqlworkbench.SqlConnectionCreateRequest;
 import com.company.opsagent.contracts.sqlworkbench.SqlQueryAction;
 import com.company.opsagent.contracts.sqlworkbench.SqlQueryLimits;
@@ -143,6 +148,33 @@ class ContractsTest {
   }
 
   @Test
+  void rejectsProductionSqlAssistantRequests() {
+    assertThrows(IllegalArgumentException.class, () -> new SqlAssistantRequest(
+        "1.0",
+        "as400-production",
+        "production",
+        "ORDERS",
+        SqlAssistantAction.OPTIMIZE_SQL,
+        "select * from orders",
+        new SqlQueryLimits(100, 1_000_000, 30),
+        null,
+        "sql-assistant-1"));
+  }
+
+  @Test
+  void successfulSqlAssistantResponsesRequireRevalidation() {
+    assertThrows(IllegalArgumentException.class, () -> new SqlAssistantResponse(
+        "1.0",
+        SqlAssistantStatus.SUCCEEDED,
+        SqlAssistantAction.OPTIMIZE_SQL,
+        "Use explicit columns.",
+        List.of(new SqlAssistantSuggestion("Limit columns", "Reduce returned data.", "select id from orders")),
+        List.of("Validate before execution."),
+        false,
+        "provider:fingerprint"));
+  }
+
+  @Test
   void rejectsUnsafeSqlWorkbenchConnectionCreateRequests() {
     assertThrows(IllegalArgumentException.class, () -> connectionCreateRequest(
         "production",
@@ -187,6 +219,24 @@ class ContractsTest {
         .map(JsonNode::asText)
         .toList();
     assertEquals(List.of("DB2_FOR_I", "H2", "MYSQL"), platformTypes);
+  }
+
+  @Test
+  void sqlAssistantSchemasRejectSecretAndResultFields() throws Exception {
+    ObjectMapper mapper = new ObjectMapper();
+    JsonNode requestSchema = mapper
+        .readTree(Path.of("sqlworkbench/sql-assistant-request-v1.schema.json").toFile());
+    JsonNode responseSchema = mapper
+        .readTree(Path.of("sqlworkbench/sql-assistant-response-v1.schema.json").toFile());
+
+    assertEquals(false, requestSchema.path("additionalProperties").asBoolean());
+    assertEquals(false, responseSchema.path("additionalProperties").asBoolean());
+    assertTrue(!requestSchema.path("properties").has("apiKey"));
+    assertTrue(!requestSchema.path("properties").has("password"));
+    assertTrue(!requestSchema.path("properties").has("rows"));
+    assertTrue(!responseSchema.path("properties").has("apiKey"));
+    assertTrue(!responseSchema.path("properties").has("providerResponseBody"));
+    assertTrue(!responseSchema.path("properties").has("rows"));
   }
 
   @Test

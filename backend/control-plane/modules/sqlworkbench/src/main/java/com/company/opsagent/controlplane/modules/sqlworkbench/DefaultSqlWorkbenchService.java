@@ -3,6 +3,9 @@ package com.company.opsagent.controlplane.modules.sqlworkbench;
 import com.company.opsagent.contracts.sqlworkbench.SqlConnectionCreateRequest;
 import com.company.opsagent.contracts.sqlworkbench.SqlConnectionProbeResult;
 import com.company.opsagent.contracts.sqlworkbench.SqlConnectionSummary;
+import com.company.opsagent.contracts.sqlworkbench.SqlAssistantRequest;
+import com.company.opsagent.contracts.sqlworkbench.SqlAssistantResponse;
+import com.company.opsagent.contracts.sqlworkbench.SqlAssistantStatus;
 import com.company.opsagent.contracts.sqlworkbench.SqlQueryAction;
 import com.company.opsagent.contracts.sqlworkbench.SqlQueryExecutionRequest;
 import com.company.opsagent.contracts.sqlworkbench.SqlQueryExecutionResult;
@@ -26,6 +29,7 @@ public class DefaultSqlWorkbenchService implements SqlWorkbenchService {
   private final SqlConnectionCatalog connectionCatalog;
   private final SqlValidationService validationService;
   private final SqlWorkbenchWorkerClient workerClient;
+  private final SqlAssistantClient assistantClient;
   private final Clock clock;
 
   public DefaultSqlWorkbenchService(
@@ -35,6 +39,7 @@ public class DefaultSqlWorkbenchService implements SqlWorkbenchService {
         connectionCatalog,
         validationService,
         new FailClosedSqlWorkbenchWorkerClient(),
+        new FailClosedSqlAssistantClient(),
         Clock.systemUTC());
   }
 
@@ -43,9 +48,24 @@ public class DefaultSqlWorkbenchService implements SqlWorkbenchService {
       SqlValidationService validationService,
       SqlWorkbenchWorkerClient workerClient,
       Clock clock) {
+    this(
+        connectionCatalog,
+        validationService,
+        workerClient,
+        new FailClosedSqlAssistantClient(),
+        clock);
+  }
+
+  public DefaultSqlWorkbenchService(
+      SqlConnectionCatalog connectionCatalog,
+      SqlValidationService validationService,
+      SqlWorkbenchWorkerClient workerClient,
+      SqlAssistantClient assistantClient,
+      Clock clock) {
     this.connectionCatalog = connectionCatalog;
     this.validationService = validationService;
     this.workerClient = workerClient;
+    this.assistantClient = assistantClient;
     this.clock = clock;
   }
 
@@ -100,6 +120,32 @@ public class DefaultSqlWorkbenchService implements SqlWorkbenchService {
       throw new IllegalArgumentException("SQL references a schema outside the connection allow list");
     }
     return report;
+  }
+
+  @Override
+  public SqlAssistantResponse assist(SqlAssistantRequest request) {
+    SqlConnectionSummary connection = connectionCatalog.find(request.connectionId())
+        .orElseThrow(() -> new IllegalArgumentException("SQL connection is not available"));
+    SqlQueryRequest validationRequest = new SqlQueryRequest(
+        "1.0",
+        request.connectionId(),
+        request.targetEnvironment(),
+        request.schema(),
+        SqlQueryAction.VALIDATE,
+        request.sql(),
+        List.of(),
+        request.limits(),
+        request.idempotencyKey());
+    SqlValidationReport report = validate(validationRequest);
+    return assistantClient.ask(new SqlAssistantPrompt(
+        request.assistantAction(),
+        connection.connectionId(),
+        connection.targetEnvironment(),
+        request.schema(),
+        connection.platformType(),
+        request.sql(),
+        report,
+        request.diagnosticContext()));
   }
 
   @Override
@@ -160,6 +206,22 @@ public class DefaultSqlWorkbenchService implements SqlWorkbenchService {
     @Override
     public SqlResultPage readResultPage(String resultId) {
       throw new IllegalStateException("SQL workbench worker client is not configured");
+    }
+  }
+
+  private static final class FailClosedSqlAssistantClient implements SqlAssistantClient {
+
+    @Override
+    public SqlAssistantResponse ask(SqlAssistantPrompt prompt) {
+      return new SqlAssistantResponse(
+          "1.0",
+          SqlAssistantStatus.MODEL_NOT_CONFIGURED,
+          prompt.assistantAction(),
+          "SQL assistant model provider is not configured.",
+          List.of(),
+          List.of("AI SQL assistant is advisory only and cannot execute SQL."),
+          true,
+          null);
     }
   }
 }

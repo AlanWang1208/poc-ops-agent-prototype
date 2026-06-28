@@ -15,6 +15,7 @@ public class AgentRuntimeProperties {
   private String baseUrl = "";
   private String apiKey = "";
   private String apiKeyEnv = "AGENTSCOPE_API_KEY";
+  private String modelProviderSecretMasterKey = "";
   private Duration timeout = Duration.ofSeconds(30);
   private int maxToolCalls = 5;
   private Duration maxToolCallDuration = Duration.ofSeconds(30);
@@ -70,6 +71,14 @@ public class AgentRuntimeProperties {
 
   public void setApiKeyEnv(String apiKeyEnv) {
     this.apiKeyEnv = apiKeyEnv;
+  }
+
+  public String getModelProviderSecretMasterKey() {
+    return modelProviderSecretMasterKey;
+  }
+
+  public void setModelProviderSecretMasterKey(String modelProviderSecretMasterKey) {
+    this.modelProviderSecretMasterKey = modelProviderSecretMasterKey;
   }
 
   public Duration getTimeout() {
