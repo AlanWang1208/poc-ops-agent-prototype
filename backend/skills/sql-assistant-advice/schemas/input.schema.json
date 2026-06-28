@@ -1,0 +1,94 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://company.example/ops-agent/skills/sql-assistant-advice-read/1.0.0/input.schema.json",
+  "title": "sql-assistant-advice-read 输入",
+  "description": "AI SQL 助手只读建议请求输入。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contractVersion",
+    "connectionId",
+    "targetEnvironment",
+    "schema",
+    "assistantAction",
+    "sql",
+    "limits",
+    "idempotencyKey"
+  ],
+  "properties": {
+    "contractVersion": {
+      "const": "1.0"
+    },
+    "connectionId": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200,
+      "description": "SQL 工作台连接目录中的连接标识。"
+    },
+    "targetEnvironment": {
+      "enum": [
+        "development",
+        "test"
+      ],
+      "description": "只允许开发或测试环境。"
+    },
+    "schema": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "description": "SQL 工作台当前 Schema。"
+    },
+    "assistantAction": {
+      "enum": [
+        "EXPLAIN_SQL",
+        "OPTIMIZE_SQL",
+        "ANALYZE_ERROR"
+      ],
+      "description": "助手建议类型。"
+    },
+    "sql": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 20000,
+      "description": "需要分析的 SQL 文本。"
+    },
+    "limits": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "maxRows",
+        "maxBytes",
+        "timeoutSeconds"
+      ],
+      "properties": {
+        "maxRows": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10000
+        },
+        "maxBytes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100000000
+        },
+        "timeoutSeconds": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 300
+        }
+      }
+    },
+    "diagnosticContext": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4000,
+      "description": "可选的错误、执行计划或诊断上下文。"
+    },
+    "idempotencyKey": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200,
+      "description": "请求幂等键。"
+    }
+  }
+}

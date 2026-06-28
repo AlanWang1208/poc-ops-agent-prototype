@@ -58,7 +58,8 @@
 .connectionActions,
 .editorToolbar,
 .formActions,
-.resultFooter {
+.resultFooter,
+.resultPager {
   display: flex;
   min-width: 0;
   align-items: center;
@@ -117,9 +118,14 @@
 .sessionTabs button,
 .drawerHeader button,
 .connectionButton,
+.connectionManagerCreateButton,
+.connectionManagerButton,
+.resultPager button,
 .schemaTree button,
 .aiPanel button,
-.formActions button {
+.formActions button,
+.deleteActions button,
+.dangerButton {
   appearance: none;
   min-width: 0;
   border: 1px solid rgba(34, 126, 166, 0.2);
@@ -135,8 +141,12 @@
 .primaryButton,
 .secondaryButton,
 .editorToolbar button,
+.resultPager button,
 .aiPanel button,
-.formActions button {
+.formActions button,
+.deleteActions button,
+.dangerButton,
+.connectionManagerCreateButton {
   height: 34px;
   display: inline-flex;
   align-items: center;
@@ -159,8 +169,11 @@
 .primaryButton:disabled,
 .secondaryButton:disabled,
 .editorToolbar button:disabled,
+.resultPager button:disabled,
 .aiPanel button:disabled,
-.formActions button:disabled {
+.formActions button:disabled,
+.deleteActions button:disabled,
+.dangerButton:disabled {
   cursor: not-allowed;
   opacity: 0.62;
 }
@@ -212,7 +225,7 @@
   display: grid;
   min-width: 0;
   min-height: 0;
-  grid-template-rows: auto minmax(260px, 1.05fr) minmax(190px, 0.72fr);
+  grid-template-rows: auto minmax(170px, 72fr) 8px minmax(96px, 28fr);
   gap: 10px;
   overflow: hidden;
 }
@@ -266,6 +279,33 @@
   border-color: rgba(189, 123, 29, 0.28);
   background: rgba(189, 123, 29, 0.08);
   color: var(--sql-gold);
+}
+
+.resultResizeHandle {
+  display: grid;
+  height: 8px;
+  min-height: 8px;
+  place-items: center;
+  border-radius: 8px;
+  cursor: row-resize;
+  outline: none;
+}
+
+.resultResizeHandle span {
+  width: min(96px, 28%);
+  height: 3px;
+  border-radius: 999px;
+  background: rgba(34, 126, 166, 0.24);
+  transition: background-color 140ms ease-out;
+}
+
+.resultResizeHandle:hover span,
+.resultResizeHandle:focus-visible span {
+  background: rgba(34, 126, 166, 0.46);
+}
+
+.resultResizeHandle:focus-visible {
+  box-shadow: 0 0 0 3px rgba(34, 126, 166, 0.12);
 }
 
 .sqlEditor {
@@ -345,6 +385,36 @@
   color: var(--sql-muted);
   font-size: 11px;
   font-weight: 760;
+}
+
+.compactPanelHeading {
+  grid-template-columns: 24px minmax(0, 1fr);
+  gap: 6px;
+}
+
+.compactPanelHeading > span {
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+}
+
+.compactPanelHeading > div {
+  display: flex;
+  min-width: 0;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.compactPanelHeading h2 {
+  flex: 0 0 auto;
+  font-size: 13px;
+  line-height: 1;
+}
+
+.compactPanelHeading p {
+  flex: 1 1 auto;
+  font-size: 10px;
+  line-height: 1;
 }
 
 .connectionList {
@@ -499,7 +569,45 @@
 }
 
 .resultPanel {
+  display: flex;
+  flex-direction: column;
+  align-content: stretch;
+  gap: 5px;
   overflow: hidden;
+  padding: 10px 10px 6px;
+}
+
+.resultTable {
+  flex: 1 1 auto;
+  min-height: 0;
+  border-radius: 8px;
+  background: oklch(0.992 0.004 230);
+}
+
+.resultTable table {
+  font-variant-numeric: tabular-nums;
+}
+
+.resultTable th,
+.resultTable td {
+  padding: 6px 10px;
+  line-height: 1.25;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.resultTable th {
+  height: 28px;
+  color: var(--sql-muted);
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.resultTable td {
+  height: 30px;
+  color: var(--sql-ink);
+  font-size: 11px;
+  font-weight: 720;
 }
 
 .errorSummary {
@@ -522,10 +630,40 @@
 }
 
 .resultFooter {
+  flex: 0 0 auto;
+  justify-content: space-between;
   flex-wrap: wrap;
+  margin-top: 0;
+  padding-top: 3px;
   color: var(--sql-muted);
+  font-size: 10px;
+  font-weight: 820;
+}
+
+.resultFooter > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.resultFooter > span:nth-child(4) {
+  flex: 1 1 220px;
+}
+
+.resultPager {
+  margin-left: auto;
+}
+
+.resultPager button {
+  height: 28px;
+  gap: 4px;
+  padding: 0 8px;
+  border-color: rgba(34, 126, 166, 0.18);
+  background: oklch(0.99 0.004 230);
+  color: var(--sql-ink);
   font-size: 11px;
-  font-weight: 780;
+  font-weight: 850;
 }
 
 .aiPanel button {
@@ -623,8 +761,114 @@
 }
 
 .connectionDialog {
-  width: min(920px, calc(100vw - 56px));
-  max-width: 920px;
+  width: min(1060px, calc(100vw - 56px));
+  max-width: 1060px;
+}
+
+.connectionManagerLayout {
+  display: grid;
+  grid-template-columns: 230px minmax(0, 1fr);
+  gap: 14px;
+  align-items: start;
+}
+
+.connectionManagerSidebar {
+  display: grid;
+  min-width: 0;
+  gap: 10px;
+  padding: 10px;
+  border: 1px solid rgba(34, 126, 166, 0.12);
+  border-radius: 8px;
+  background: var(--sql-panel-soft);
+}
+
+.connectionManagerCreateButton {
+  width: 100%;
+  border-color: rgba(22, 135, 90, 0.24);
+  background: rgba(22, 135, 90, 0.08);
+  color: var(--sql-green);
+}
+
+.connectionManagerList {
+  display: grid;
+  max-height: 560px;
+  gap: 7px;
+  overflow-y: auto;
+}
+
+.connectionManagerEmpty {
+  margin: 0;
+  color: var(--sql-muted);
+  font-size: 12px;
+  font-weight: 760;
+}
+
+.connectionManagerButton {
+  display: grid;
+  width: 100%;
+  min-height: 68px;
+  gap: 3px;
+  padding: 9px;
+  text-align: left;
+}
+
+.connectionManagerButton strong,
+.connectionManagerButton span,
+.connectionManagerButton small {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.connectionManagerButton strong {
+  color: var(--sql-ink);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.connectionManagerButton span,
+.connectionManagerButton small {
+  color: var(--sql-muted);
+  font-size: 11px;
+  font-weight: 760;
+}
+
+.activeManagerConnection {
+  border-color: rgba(34, 126, 166, 0.42);
+  background: rgba(34, 126, 166, 0.1);
+}
+
+.connectionFormHeader {
+  display: flex;
+  min-width: 0;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(34, 126, 166, 0.13);
+}
+
+.connectionFormHeader h3,
+.connectionFormHeader p {
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.connectionFormHeader h3 {
+  color: var(--sql-ink);
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.connectionFormHeader p {
+  margin-top: 3px;
+  color: var(--sql-muted);
+  font-size: 11px;
+  font-weight: 760;
 }
 
 .connectionForm {
@@ -730,6 +974,46 @@
   padding-top: 2px;
 }
 
+.deleteSection {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) max-content;
+  gap: 12px;
+  align-items: center;
+  padding: 10px;
+  border: 1px solid rgba(211, 17, 69, 0.16);
+  border-radius: 8px;
+  background: rgba(211, 17, 69, 0.05);
+}
+
+.deleteSection strong,
+.deleteSection p {
+  margin: 0;
+}
+
+.deleteSection strong {
+  color: var(--sql-red);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.deleteSection p {
+  margin-top: 3px;
+  color: var(--sql-muted);
+  font-size: 11px;
+  font-weight: 760;
+}
+
+.deleteActions {
+  display: flex;
+  gap: 8px;
+}
+
+.dangerButton {
+  border-color: rgba(211, 17, 69, 0.24);
+  background: rgba(211, 17, 69, 0.08);
+  color: var(--sql-red);
+}
+
 @media (max-width: 1360px) {
   .sqlCanvas {
     gap: 10px;
@@ -779,7 +1063,7 @@
   }
 
   .editorPanel {
-    grid-template-rows: auto 320px auto;
+    grid-template-rows: auto 320px 8px 220px;
   }
 
   .connectionForm {
@@ -790,11 +1074,19 @@
     width: 100%;
   }
 
+  .connectionManagerLayout {
+    grid-template-columns: 1fr;
+  }
+
   .connectionFormGrid {
     grid-template-columns: 1fr;
   }
 
   .formCapabilities {
+    grid-template-columns: 1fr;
+  }
+
+  .deleteSection {
     grid-template-columns: 1fr;
   }
 }

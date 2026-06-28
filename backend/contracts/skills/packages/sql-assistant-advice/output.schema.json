@@ -1,0 +1,88 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://company.example/ops-agent/skills/sql-assistant-advice-read/1.0.0/output.schema.json",
+  "title": "sql-assistant-advice-read 输出",
+  "description": "AI SQL 助手只读建议结构化输出。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contractVersion",
+    "status",
+    "assistantAction",
+    "summary",
+    "suggestions",
+    "safetyNotes",
+    "validationRequired"
+  ],
+  "properties": {
+    "contractVersion": {
+      "const": "1.0"
+    },
+    "status": {
+      "enum": [
+        "SUCCEEDED",
+        "MODEL_NOT_CONFIGURED",
+        "FAILED",
+        "REJECTED"
+      ]
+    },
+    "assistantAction": {
+      "enum": [
+        "EXPLAIN_SQL",
+        "OPTIMIZE_SQL",
+        "ANALYZE_ERROR"
+      ]
+    },
+    "summary": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4000
+    },
+    "suggestions": {
+      "type": "array",
+      "maxItems": 5,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "title",
+          "rationale"
+        ],
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "rationale": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          },
+          "suggestedSql": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 20000
+          }
+        }
+      }
+    },
+    "safetyNotes": {
+      "type": "array",
+      "maxItems": 8,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 1000
+      }
+    },
+    "validationRequired": {
+      "const": true
+    },
+    "modelProviderFingerprint": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    }
+  }
+}

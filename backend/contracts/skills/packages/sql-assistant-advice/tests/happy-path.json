@@ -1,0 +1,50 @@
+{
+  "caseId": "sql-assistant-advice-read-happy-path",
+  "skillId": "sql-assistant-advice-read",
+  "version": "1.0.0",
+  "description": "对开发环境 SELECT 语句生成只读解释和优化建议。",
+  "operator": {
+    "subject": "ops-reader-1",
+    "roles": [
+      "ROLE_ops-reader"
+    ]
+  },
+  "targetEnvironment": "development",
+  "input": {
+    "contractVersion": "1.0",
+    "connectionId": "h2-local-test",
+    "targetEnvironment": "development",
+    "schema": "ORDERS",
+    "assistantAction": "OPTIMIZE_SQL",
+    "sql": "select id, status from ORDERS.ORDERS where status = 'READY'",
+    "limits": {
+      "maxRows": 500,
+      "maxBytes": 5000000,
+      "timeoutSeconds": 30
+    },
+    "idempotencyKey": "sql-assistant-dev-1"
+  },
+  "expected": {
+    "decision": "ALLOW",
+    "status": "SUCCEEDED",
+    "output": {
+      "contractVersion": "1.0",
+      "status": "SUCCEEDED",
+      "assistantAction": "OPTIMIZE_SQL",
+      "summary": "该查询按状态过滤订单并返回少量列，适合先确认 status 字段是否有索引。",
+      "suggestions": [
+        {
+          "title": "确认过滤列索引",
+          "rationale": "status 是过滤条件；如果 READY 占比较低，索引可以减少扫描范围。",
+          "suggestedSql": "select id, status from ORDERS.ORDERS where status = 'READY'"
+        }
+      ],
+      "safetyNotes": [
+        "助手建议只用于分析，执行前必须经过服务端 SQL 校验。",
+        "本 Skill 不执行 SQL。"
+      ],
+      "validationRequired": true,
+      "modelProviderFingerprint": "model-key:test-fingerprint"
+    }
+  }
+}

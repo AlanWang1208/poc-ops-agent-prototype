@@ -383,6 +383,42 @@ class ContractsTest {
     assertTrue(outputSchema.path("properties").has("temperatureCelsius"));
   }
 
+  @Test
+  void providesSqlAssistantAdviceSkillPackageForAgentScopeAndRegistry() throws Exception {
+    Path skillPackage = Path.of("skills/packages/sql-assistant-advice");
+    Path agentScopeSkill = Path.of("../skills/sql-assistant-advice/SKILL.md");
+
+    assertTrue(Files.exists(agentScopeSkill));
+    assertTrue(Files.exists(skillPackage.resolve("manifest.json")));
+    assertTrue(Files.exists(skillPackage.resolve("manifest.signature.json")));
+    assertTrue(Files.exists(skillPackage.resolve("input.schema.json")));
+    assertTrue(Files.exists(skillPackage.resolve("output.schema.json")));
+    assertTrue(Files.exists(skillPackage.resolve("tests/happy-path.json")));
+    assertTrue(Files.exists(skillPackage.resolve("tests/invalid-parameters.json")));
+    assertTrue(Files.exists(skillPackage.resolve("tests/policy-denied.json")));
+
+    ObjectMapper mapper = new ObjectMapper();
+    JsonNode manifest = mapper.readTree(skillPackage.resolve("manifest.json").toFile());
+    assertEquals("sql-assistant-advice-read", manifest.path("skillId").asText());
+    assertEquals("1.0.0", manifest.path("version").asText());
+    assertTrue(manifest.path("readOnly").asBoolean());
+    assertEquals("READ_ONLY", manifest.path("riskLevel").asText());
+    assertEquals("WORKFLOW", manifest.path("executor").asText());
+
+    JsonNode inputSchema = mapper.readTree(skillPackage.resolve("input.schema.json").toFile());
+    assertEquals(false, inputSchema.path("additionalProperties").asBoolean());
+    assertTrue(inputSchema.path("properties").has("sql"));
+    assertTrue(inputSchema.path("properties").has("limits"));
+    assertTrue(StreamSupport.stream(inputSchema.path("properties").path("targetEnvironment").path("enum").spliterator(), false)
+        .map(JsonNode::asText)
+        .noneMatch("production"::equals));
+
+    JsonNode outputSchema = mapper.readTree(skillPackage.resolve("output.schema.json").toFile());
+    assertTrue(outputSchema.path("$id").asText().contains("sql-assistant-advice-read/1.0.0/output.schema.json"));
+    assertTrue(outputSchema.path("properties").has("suggestions"));
+    assertTrue(outputSchema.path("properties").has("validationRequired"));
+  }
+
   private SqlConnectionCreateRequest connectionCreateRequest(
       String targetEnvironment,
       String credentialAlias,
