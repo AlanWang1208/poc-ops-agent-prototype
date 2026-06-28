@@ -3,6 +3,7 @@ package com.company.opsagent.controlplane.modules.sqlworkbench;
 import com.company.opsagent.contracts.sqlworkbench.SqlConnectionSummary;
 import com.company.opsagent.contracts.sqlworkbench.SqlConnectionCreateRequest;
 import com.company.opsagent.contracts.sqlworkbench.SqlConnectionProbeResult;
+import com.company.opsagent.contracts.sqlworkbench.SqlConnectionUpdateRequest;
 import com.company.opsagent.contracts.sqlworkbench.SqlAssistantRequest;
 import com.company.opsagent.contracts.sqlworkbench.SqlAssistantResponse;
 import com.company.opsagent.contracts.sqlworkbench.SqlQueryExecutionResult;
@@ -22,6 +23,10 @@ public interface SqlWorkbenchService {
   List<SqlConnectionSummary> listConnections();
 
   SqlConnectionSummary createConnection(SqlConnectionCreateRequest request);
+
+  SqlConnectionSummary updateConnection(String connectionId, SqlConnectionUpdateRequest request);
+
+  void deleteConnection(String connectionId);
 
   SqlConnectionProbeResult probeConnection(String connectionId);
 

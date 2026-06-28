@@ -3,6 +3,7 @@ package com.company.opsagent.controlplane.bootstrap.api;
 import com.company.opsagent.contracts.sqlworkbench.SqlConnectionCreateRequest;
 import com.company.opsagent.contracts.sqlworkbench.SqlConnectionProbeResult;
 import com.company.opsagent.contracts.sqlworkbench.SqlConnectionSummary;
+import com.company.opsagent.contracts.sqlworkbench.SqlConnectionUpdateRequest;
 import com.company.opsagent.contracts.sqlworkbench.SqlAssistantRequest;
 import com.company.opsagent.contracts.sqlworkbench.SqlAssistantResponse;
 import com.company.opsagent.contracts.sqlworkbench.SqlQueryExecutionResult;
@@ -22,9 +23,11 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Supplier;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -82,6 +85,18 @@ public class SqlWorkbenchController {
     return blocking(() -> sqlWorkbenchService.createConnection(parseConnectionCreateRequest(request)));
   }
 
+  @PutMapping("/connections/{connectionId}")
+  public Mono<SqlConnectionSummary> updateConnection(
+      @PathVariable("connectionId") String connectionId,
+      @RequestBody JsonNode request) {
+    return blocking(() -> sqlWorkbenchService.updateConnection(connectionId, parseConnectionUpdateRequest(request)));
+  }
+
+  @DeleteMapping("/connections/{connectionId}")
+  public Mono<Void> deleteConnection(@PathVariable("connectionId") String connectionId) {
+    return blockingVoid(() -> sqlWorkbenchService.deleteConnection(connectionId));
+  }
+
   @PostMapping("/connections/{connectionId}/probe")
   public Mono<SqlConnectionProbeResult> probeConnection(@PathVariable("connectionId") String connectionId) {
     return blocking(() -> sqlWorkbenchService.probeConnection(connectionId));
@@ -119,6 +134,10 @@ public class SqlWorkbenchController {
     return Mono.fromSupplier(supplier).subscribeOn(Schedulers.boundedElastic());
   }
 
+  private static Mono<Void> blockingVoid(Runnable runnable) {
+    return Mono.fromRunnable(runnable).subscribeOn(Schedulers.boundedElastic()).then();
+  }
+
   private SqlConnectionCreateRequest parseConnectionCreateRequest(JsonNode request) {
     if (request == null || !request.isObject()) {
       throw new IllegalArgumentException("SQL connection create request must be a JSON object");
@@ -134,6 +153,24 @@ public class SqlWorkbenchController {
       return objectMapper.treeToValue(request, SqlConnectionCreateRequest.class);
     } catch (JsonProcessingException exception) {
       throw new IllegalArgumentException("SQL connection create request is invalid", exception);
+    }
+  }
+
+  private SqlConnectionUpdateRequest parseConnectionUpdateRequest(JsonNode request) {
+    if (request == null || !request.isObject()) {
+      throw new IllegalArgumentException("SQL connection update request must be a JSON object");
+    }
+    Iterator<String> fieldNames = request.fieldNames();
+    while (fieldNames.hasNext()) {
+      String fieldName = fieldNames.next();
+      if (!CONNECTION_CREATE_FIELDS.contains(fieldName)) {
+        throw new IllegalArgumentException("unsupported SQL connection update field: " + fieldName);
+      }
+    }
+    try {
+      return objectMapper.treeToValue(request, SqlConnectionUpdateRequest.class);
+    } catch (JsonProcessingException exception) {
+      throw new IllegalArgumentException("SQL connection update request is invalid", exception);
     }
   }
 

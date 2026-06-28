@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import com.company.opsagent.contracts.sqlworkbench.SqlConnectionCreateRequest;
 import com.company.opsagent.contracts.sqlworkbench.SqlConnectionProbeResult;
 import com.company.opsagent.contracts.sqlworkbench.SqlConnectionSummary;
+import com.company.opsagent.contracts.sqlworkbench.SqlConnectionUpdateRequest;
 import com.company.opsagent.contracts.sqlworkbench.SqlAssistantAction;
 import com.company.opsagent.contracts.sqlworkbench.SqlAssistantRequest;
 import com.company.opsagent.contracts.sqlworkbench.SqlAssistantResponse;
@@ -137,6 +138,44 @@ class DefaultSqlWorkbenchServiceTest {
         "as400-dev-readonly",
         500,
         30)));
+  }
+
+  @Test
+  void updatesConnectionMetadataAndResetsWorkerBindingStatus() {
+    SqlConnectionSummary updated = service.updateConnection(
+        "as400-development",
+        new SqlConnectionUpdateRequest(
+            "1.0",
+            "AS/400 Reporting",
+            "test",
+            "MYSQL",
+            "mysql-reporting.internal",
+            3306,
+            "REPORTING",
+            List.of("REPORTING"),
+            List.of(SqlQueryAction.VALIDATE, SqlQueryAction.RUN_READ_ONLY, SqlQueryAction.PREFLIGHT_DML),
+            "mysql-reporting-readonly",
+            250,
+            45));
+
+    assertEquals("as400-development", updated.connectionId());
+    assertEquals("AS/400 Reporting", updated.displayName());
+    assertEquals("test", updated.targetEnvironment());
+    assertEquals("MYSQL", updated.platformType());
+    assertEquals("mysql-reporting.internal", updated.host());
+    assertEquals("REPORTING", updated.defaultSchema());
+    assertEquals("mysql-reporting-readonly", updated.credentialAlias());
+    assertEquals("PENDING_WORKER_BINDING", updated.status());
+    assertEquals(250, updated.maxRowsDefault());
+    assertEquals(0, workerClient.probeCount);
+  }
+
+  @Test
+  void deletesConnectionFromCatalog() {
+    service.deleteConnection("as400-development");
+
+    assertEquals(0, service.listConnections().size());
+    assertThrows(IllegalArgumentException.class, () -> service.validate(request("ORDERS")));
   }
 
   @Test

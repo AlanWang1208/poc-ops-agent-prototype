@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import com.company.opsagent.contracts.sqlworkbench.SqlConnectionCreateRequest;
 import com.company.opsagent.contracts.sqlworkbench.SqlConnectionProbeResult;
 import com.company.opsagent.contracts.sqlworkbench.SqlConnectionSummary;
+import com.company.opsagent.contracts.sqlworkbench.SqlConnectionUpdateRequest;
 import com.company.opsagent.contracts.sqlworkbench.SqlAssistantAction;
 import com.company.opsagent.contracts.sqlworkbench.SqlAssistantRequest;
 import com.company.opsagent.contracts.sqlworkbench.SqlAssistantResponse;
@@ -65,6 +66,72 @@ class SqlWorkbenchControllerTest {
   }
 
   @Test
+  void rejectsUnknownConnectionUpdateFieldsBeforeServiceLayer() throws Exception {
+    var request = objectMapper.readTree("""
+        {
+          "contractVersion": "1.0",
+          "displayName": "AS/400 Reporting",
+          "targetEnvironment": "test",
+          "platformType": "DB2_FOR_I",
+          "host": "as400-reporting.internal",
+          "port": 446,
+          "defaultSchema": "REPORTING",
+          "allowedSchemas": ["REPORTING"],
+          "capabilities": ["VALIDATE", "RUN_READ_ONLY"],
+          "credentialAlias": "as400-reporting-readonly",
+          "maxRowsDefault": 250,
+          "timeoutSecondsDefault": 45,
+          "password": "must-not-be-accepted"
+        }
+        """);
+
+    StepVerifier.create(controller.updateConnection("as400-development", request))
+        .expectErrorSatisfies(error -> {
+          assertInstanceOf(IllegalArgumentException.class, error);
+          assertEquals("unsupported SQL connection update field: password", error.getMessage());
+        })
+        .verify();
+
+    assertEquals(0, service.updateCount.get());
+  }
+
+  @Test
+  void passesConnectionUpdateAndDeleteThroughServiceBoundary() throws Exception {
+    var request = objectMapper.readTree("""
+        {
+          "contractVersion": "1.0",
+          "displayName": "AS/400 Reporting",
+          "targetEnvironment": "test",
+          "platformType": "DB2_FOR_I",
+          "host": "as400-reporting.internal",
+          "port": 446,
+          "defaultSchema": "REPORTING",
+          "allowedSchemas": ["REPORTING"],
+          "capabilities": ["VALIDATE", "RUN_READ_ONLY"],
+          "credentialAlias": "as400-reporting-readonly",
+          "maxRowsDefault": 250,
+          "timeoutSecondsDefault": 45
+        }
+        """);
+
+    StepVerifier.create(controller.updateConnection("as400-development", request))
+        .assertNext(response -> {
+          assertEquals("as400-development", response.connectionId());
+          assertEquals("AS/400 Reporting", response.displayName());
+        })
+        .verifyComplete();
+
+    StepVerifier.create(controller.deleteConnection("as400-development"))
+        .verifyComplete();
+
+    assertEquals(1, service.updateCount.get());
+    assertEquals("as400-development", service.lastUpdateConnectionId);
+    assertEquals("REPORTING", service.lastUpdateRequest.defaultSchema());
+    assertEquals(1, service.deleteCount.get());
+    assertEquals("as400-development", service.lastDeleteConnectionId);
+  }
+
+  @Test
   void passesSqlAssistantRequestThroughTypedServiceBoundary() throws Exception {
     var request = objectMapper.readTree("""
         {
@@ -100,7 +167,12 @@ class SqlWorkbenchControllerTest {
   private static final class RecordingSqlWorkbenchService implements SqlWorkbenchService {
 
     private final AtomicInteger createCount = new AtomicInteger();
+    private final AtomicInteger updateCount = new AtomicInteger();
+    private final AtomicInteger deleteCount = new AtomicInteger();
     private final AtomicInteger assistCount = new AtomicInteger();
+    private String lastUpdateConnectionId;
+    private SqlConnectionUpdateRequest lastUpdateRequest;
+    private String lastDeleteConnectionId;
     private SqlAssistantRequest lastAssistantRequest;
 
     @Override
@@ -112,6 +184,34 @@ class SqlWorkbenchControllerTest {
     public SqlConnectionSummary createConnection(SqlConnectionCreateRequest request) {
       createCount.incrementAndGet();
       throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public SqlConnectionSummary updateConnection(String connectionId, SqlConnectionUpdateRequest request) {
+      updateCount.incrementAndGet();
+      lastUpdateConnectionId = connectionId;
+      lastUpdateRequest = request;
+      return new SqlConnectionSummary(
+          "1.0",
+          connectionId,
+          request.displayName(),
+          request.targetEnvironment(),
+          request.platformType(),
+          request.host(),
+          request.port(),
+          request.defaultSchema(),
+          request.allowedSchemas(),
+          request.capabilities(),
+          request.credentialAlias(),
+          "PENDING_WORKER_BINDING",
+          request.maxRowsDefault(),
+          request.timeoutSecondsDefault());
+    }
+
+    @Override
+    public void deleteConnection(String connectionId) {
+      deleteCount.incrementAndGet();
+      lastDeleteConnectionId = connectionId;
     }
 
     @Override
