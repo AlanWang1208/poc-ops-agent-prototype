@@ -29,6 +29,8 @@ import reactor.core.publisher.Mono;
 @EnableConfigurationProperties(AgentRuntimeProperties.class)
 public class AgentRuntimeConfiguration {
 
+  private static final String LOCAL_FAKE_API_KEY = "OPS_AGENT_FAKE_API_KEY_REPLACE_ME";
+
   /**
    * 从注册中心生成模型可见的只读 Tool Catalog。
    */
@@ -50,6 +52,9 @@ public class AgentRuntimeConfiguration {
     if (isBlank(properties.getModelName()) || isBlank(apiKey)) {
       return notConfiguredClient();
     }
+    if (isLocalFakeApiKey(apiKey)) {
+      return fakeApiKeyClient();
+    }
     return AgentscopeReActAgentClientFactory.openAiCompatible(
         apiKey,
         properties.getModelName(),
@@ -65,6 +70,16 @@ public class AgentRuntimeConfiguration {
     return invocation -> Mono.just(new AgentscopeAgentResponse(
         "AGENT_RUNTIME_NOT_CONFIGURED",
         "AgentScope model provider is not configured for this environment.",
+        0));
+  }
+
+  /**
+   * 本地占位 Key 只用于打通配置链路，不能触发真实模型调用。
+   */
+  private AgentscopeAgentClient fakeApiKeyClient() {
+    return invocation -> Mono.just(new AgentscopeAgentResponse(
+        "AGENT_RUNTIME_FAKE_API_KEY",
+        "AgentScope model provider is using a local fake API key placeholder.",
         0));
   }
 
@@ -111,5 +126,9 @@ public class AgentRuntimeConfiguration {
 
   private boolean isBlank(String value) {
     return value == null || value.isBlank();
+  }
+
+  private boolean isLocalFakeApiKey(String value) {
+    return LOCAL_FAKE_API_KEY.equals(value);
   }
 }

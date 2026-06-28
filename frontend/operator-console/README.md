@@ -14,7 +14,7 @@
 
 - 登录页：读取 `/auth/session`，匿名用户展示控制面登录入口，已认证用户进入操作台。
 - Agent 工作台：接入 `/api/v1/agent/diagnostics` 主诊断入口，并读取 `/internal/routing/skills/search` 展示 P1 只读、已验证发布的候选 Skill；服务端策略仍是唯一授权决策点。
-- Skill 注册中心：读取 `/internal/skills`，支持真实目录搜索、分类筛选、风险筛选和详情查看；安装、升级、卸载保持禁用。
+- Skill 注册中心：读取 `/internal/skills` 展示真实目录，并通过 `/internal/routing/skills/search` 支持自然语言候选查询、分类筛选、风险筛选和详情查看；安装、升级、卸载保持禁用。
 - SQL 工作台：读取 `/internal/sql-workbench/connections`，通过 `/internal/sql-workbench/queries/validate` 校验 SQL，并通过 `/internal/sql-workbench/queries/run` 与 `/internal/sql-workbench/results/{resultId}` 展示开发/测试环境受控单条 `SELECT` 结果；DML 仍只进入预检报告。
 - 快捷连接：入口和能力短期禁用；后续开放前必须补齐后端契约、服务端策略授权和审计。
 
