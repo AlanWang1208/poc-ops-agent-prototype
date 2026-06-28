@@ -18,6 +18,7 @@ import com.company.opsagent.contracts.sqlworkbench.SqlAssistantResponse;
 import com.company.opsagent.contracts.sqlworkbench.SqlAssistantStatus;
 import com.company.opsagent.contracts.sqlworkbench.SqlAssistantSuggestion;
 import com.company.opsagent.contracts.sqlworkbench.SqlConnectionCreateRequest;
+import com.company.opsagent.contracts.sqlworkbench.SqlConnectionUpdateRequest;
 import com.company.opsagent.contracts.sqlworkbench.SqlQueryAction;
 import com.company.opsagent.contracts.sqlworkbench.SqlQueryLimits;
 import com.company.opsagent.contracts.sqlworkbench.SqlQueryRequest;
@@ -204,6 +205,28 @@ class ContractsTest {
   }
 
   @Test
+  void acceptsSqlWorkbenchConnectionUpdateRequest() {
+    SqlConnectionUpdateRequest request = new SqlConnectionUpdateRequest(
+        "1.0",
+        "AS/400 Reporting",
+        "test",
+        "DB2_FOR_I",
+        "as400-reporting.internal",
+        446,
+        "REPORTING",
+        List.of("REPORTING"),
+        List.of(SqlQueryAction.VALIDATE, SqlQueryAction.RUN_READ_ONLY, SqlQueryAction.PREFLIGHT_DML),
+        "as400-reporting-readonly",
+        250,
+        45);
+
+    assertEquals("AS/400 Reporting", request.displayName());
+    assertEquals("test", request.targetEnvironment());
+    assertEquals("REPORTING", request.defaultSchema());
+    assertEquals(250, request.maxRowsDefault());
+  }
+
+  @Test
   void sqlWorkbenchConnectionCreateSchemaRejectsSecretFields() throws Exception {
     JsonNode schema = new ObjectMapper()
         .readTree(Path.of("sqlworkbench/sql-connection-create-request-v1.schema.json").toFile());
@@ -219,6 +242,18 @@ class ContractsTest {
         .map(JsonNode::asText)
         .toList();
     assertEquals(List.of("DB2_FOR_I", "H2", "MYSQL"), platformTypes);
+  }
+
+  @Test
+  void sqlWorkbenchConnectionUpdateSchemaRejectsSecretFields() throws Exception {
+    JsonNode schema = new ObjectMapper()
+        .readTree(Path.of("sqlworkbench/sql-connection-update-request-v1.schema.json").toFile());
+
+    assertTrue(schema.path("additionalProperties").isBoolean());
+    assertEquals(false, schema.path("additionalProperties").asBoolean());
+    assertTrue(!schema.path("properties").has("password"));
+    assertTrue(!schema.path("properties").has("username"));
+    assertTrue(!schema.path("properties").has("jdbcUrl"));
   }
 
   @Test

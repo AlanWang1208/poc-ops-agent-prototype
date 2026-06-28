@@ -92,7 +92,7 @@ describe("AppShell styles", () => {
     expect(appShellSource).toContain('label: "SQL 工作区"');
     expect(appShellSource).toContain('label: "Skill 注册中心"');
     expect(appShellSource).toContain("会议录制纪要");
-    expect(appShellSource).toContain("AS400改建表");
+    expect(appShellSource).toContain("AS400对象管理");
     expect(appShellSource).not.toContain("快捷连接");
   });
 

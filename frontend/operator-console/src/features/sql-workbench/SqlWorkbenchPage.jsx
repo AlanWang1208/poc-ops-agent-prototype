@@ -383,7 +383,20 @@ export function SqlWorkbenchPage() {
                 ? `${isReadyConnection ? "已连接" : activeConnection.status} · ${activeConnection.targetEnvironment}`
                 : "未配置连接"}
           </StatusPill>
-          <strong>{activeConnection?.connectionId ?? "无可用连接"}</strong>
+          <select
+            aria-label="选择 SQL 连接"
+            className={styles.connectionSelect}
+            disabled={connectionsQuery.isLoading || !hasConnections}
+            onChange={(event) => selectConnection(event.target.value)}
+            value={activeConnection?.connectionId ?? ""}
+          >
+            {!activeConnection ? <option value="">无可用连接</option> : null}
+            {connections.map((connection) => (
+              <option key={connection.connectionId} value={connection.connectionId}>
+                {connection.connectionId}
+              </option>
+            ))}
+          </select>
           <span>{activeSchema || "未选择 Schema"}</span>
           <span>maxRows {activeLimits.maxRows}</span>
         </div>

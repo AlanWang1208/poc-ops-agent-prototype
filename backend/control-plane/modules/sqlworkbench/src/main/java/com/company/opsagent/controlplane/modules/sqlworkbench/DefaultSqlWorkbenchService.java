@@ -3,6 +3,7 @@ package com.company.opsagent.controlplane.modules.sqlworkbench;
 import com.company.opsagent.contracts.sqlworkbench.SqlConnectionCreateRequest;
 import com.company.opsagent.contracts.sqlworkbench.SqlConnectionProbeResult;
 import com.company.opsagent.contracts.sqlworkbench.SqlConnectionSummary;
+import com.company.opsagent.contracts.sqlworkbench.SqlConnectionUpdateRequest;
 import com.company.opsagent.contracts.sqlworkbench.SqlAssistantRequest;
 import com.company.opsagent.contracts.sqlworkbench.SqlAssistantResponse;
 import com.company.opsagent.contracts.sqlworkbench.SqlAssistantStatus;
@@ -86,6 +87,16 @@ public class DefaultSqlWorkbenchService implements SqlWorkbenchService {
       // New connections remain pending until the worker binding can be verified.
     }
     return created;
+  }
+
+  @Override
+  public SqlConnectionSummary updateConnection(String connectionId, SqlConnectionUpdateRequest request) {
+    return connectionCatalog.update(connectionId, request);
+  }
+
+  @Override
+  public void deleteConnection(String connectionId) {
+    connectionCatalog.delete(connectionId);
   }
 
   @Override

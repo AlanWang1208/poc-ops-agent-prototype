@@ -62,6 +62,12 @@ class PolicyEnforcementWebFilterTest {
         "internal.sql-workbench.connections.create",
         resolvedAction(MockServerHttpRequest.post("/internal/sql-workbench/connections")));
     assertEquals(
+        "internal.sql-workbench.connections.update",
+        resolvedAction(MockServerHttpRequest.put("/internal/sql-workbench/connections/as400-development")));
+    assertEquals(
+        "internal.sql-workbench.connections.delete",
+        resolvedAction(MockServerHttpRequest.delete("/internal/sql-workbench/connections/as400-development")));
+    assertEquals(
         "internal.sql-workbench.connections.probe",
         resolvedAction(MockServerHttpRequest.post("/internal/sql-workbench/connections/as400-development/probe")));
     assertEquals(

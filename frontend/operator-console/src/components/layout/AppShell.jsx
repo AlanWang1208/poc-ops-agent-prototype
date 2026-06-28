@@ -27,7 +27,7 @@ const navigation = [
   { icon: SlidersHorizontal, label: "模型设置", tone: "model", to: "/model-settings" },
   { icon: Boxes, label: "Skill 注册中心", tone: "warning", to: "/skills" },
   { icon: AudioLines, label: "会议录制纪要", tone: "meeting", to: "/meeting-notes" },
-  { icon: DatabaseZap, label: "AS400改建表", tone: "as400", to: "/as400-ddl" },
+  { icon: DatabaseZap, label: "AS400对象管理", tone: "as400", to: "/as400-ddl" },
   { icon: Workflow, label: "工作流事件", tone: "green", to: "/workflow-events" },
   { icon: FileClock, label: "审计记录", tone: "slate", to: "/audit" },
 ];

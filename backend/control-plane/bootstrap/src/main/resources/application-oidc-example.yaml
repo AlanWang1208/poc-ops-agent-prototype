@@ -42,6 +42,10 @@ ops-agent:
         - ROLE_ops-admin
       internal.sql-workbench.connections.create:
         - ROLE_ops-admin
+      internal.sql-workbench.connections.update:
+        - ROLE_ops-admin
+      internal.sql-workbench.connections.delete:
+        - ROLE_ops-admin
       internal.sql-workbench.connections.probe:
         - ROLE_ops-reader
         - ROLE_ops-admin

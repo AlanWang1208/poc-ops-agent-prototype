@@ -2,6 +2,7 @@ package com.company.opsagent.controlplane.modules.sqlworkbench;
 
 import com.company.opsagent.contracts.sqlworkbench.SqlConnectionCreateRequest;
 import com.company.opsagent.contracts.sqlworkbench.SqlConnectionSummary;
+import com.company.opsagent.contracts.sqlworkbench.SqlConnectionUpdateRequest;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -54,6 +55,37 @@ public class InMemorySqlConnectionCatalog implements SqlConnectionCatalog {
         request.timeoutSecondsDefault());
     connections.put(connectionId, summary);
     return summary;
+  }
+
+  @Override
+  public synchronized SqlConnectionSummary update(String connectionId, SqlConnectionUpdateRequest request) {
+    if (!connections.containsKey(connectionId)) {
+      throw new IllegalArgumentException("SQL connection is not available");
+    }
+    SqlConnectionSummary summary = new SqlConnectionSummary(
+        "1.0",
+        connectionId,
+        request.displayName(),
+        request.targetEnvironment(),
+        request.platformType(),
+        request.host(),
+        request.port(),
+        request.defaultSchema(),
+        request.allowedSchemas(),
+        request.capabilities(),
+        request.credentialAlias(),
+        "PENDING_WORKER_BINDING",
+        request.maxRowsDefault(),
+        request.timeoutSecondsDefault());
+    connections.put(connectionId, summary);
+    return summary;
+  }
+
+  @Override
+  public synchronized void delete(String connectionId) {
+    if (connections.remove(connectionId) == null) {
+      throw new IllegalArgumentException("SQL connection is not available");
+    }
   }
 
   @Override
