@@ -51,10 +51,8 @@
 }
 
 .stateHeader {
-  display: grid;
-  grid-template-columns: minmax(104px, max-content) minmax(0, 1fr);
-  gap: 16px;
-  align-items: start;
+  display: flex;
+  align-items: center;
 }
 
 .eyebrow {
@@ -73,41 +71,17 @@
   white-space: nowrap;
 }
 
-.stateHeader h2,
-.sectionHeading h3,
-.guidePanel h3 {
+.sectionHeading h3 {
   margin: 0;
   color: var(--overview-ink);
   font-family: var(--font-display);
   letter-spacing: 0;
 }
 
-.stateHeader h2 {
-  font-size: 24px;
-  font-weight: 880;
-  line-height: 1.12;
-}
-
-.stateHeader p {
-  max-width: 840px;
-  margin: 6px 0 0;
-  color: var(--overview-muted);
-  font-size: 13px;
-  font-weight: 760;
-  line-height: 1.48;
-}
-
 .guidePanel {
   display: grid;
-  gap: 10px;
   padding-top: 12px;
   border-top: 1px solid rgba(34, 126, 166, 0.12);
-}
-
-.guidePanel h3 {
-  font-size: 14px;
-  font-weight: 880;
-  line-height: 1.2;
 }
 
 .guideList {

@@ -30,7 +30,7 @@
 | M05 只读工作流切片 | 已完成 | 100% | 已生成强类型只读命令、短期 Worker 请求和顺序语义事件；同时已落地 H2/R2DBC 工作流实例、attempt 与事件持久化、幂等复用、结果与事件回读、启动恢复装配、版本化迁移脚本，以及针对 `FAILED_RETRYABLE` 和 attempt 已过期在途实例的单次受控重放；已新增 workflow-backed Agent Tool 执行器，服务端重算参数哈希、重做 M02 策略决策、写入 Tool Step、发布 Agent Tool requested/completed/rejected 语义事件、记录 Agent Tool 授权审计，并通过 WorkerGateway 提交只读命令；Agent workflow 终态幂等命中时不再重跑 Runtime，而是复用持久化的终态 `AgentTaskResult` 状态、摘要和 toolCallCount | 无；后续仅在 P2/P3 扩展正式生产数据库接入与更长期恢复演练 |
 | M07 受限执行 Worker | 进行中 | 77% | 已提供独立 WebFlux Worker、回环地址开发配置、显式允许列表和 `node-health-read` 适配器；已新增控制面到 Worker 的 HMAC 传输认证、Worker 入站验签、非回环绑定启动保护、ADR 和运行手册；已补充 SQL 出口 allowlist、默认拒绝配置、连接目录校验、Worker 拒绝映射，并将 SQL 工作台 Worker 侧适配抽取到 `execution-worker-sqlworkbench` 运行时模块；已新增配置型 HTTP/JSON 只读适配器、HTTP 出口 allowlist、响应字段白名单和 `weather-current-read` 配置化执行路径，并通过 M05 Agent Tool 执行器生成已授权只读命令信封 | 完成 mTLS、网络层出口策略、短期目标系统凭据、Windows 隔离部署方案和生产演练 |
 | M09 语义事件与只读操作台 | 进行中 | 67% | 已定义强类型语义事件、SSE 接口、React/JSX/JSDoc `checkJs` 最小只读操作台、API/Zod 边界，并补齐 Agent Tool 请求、完成、拒绝三类事件契约和 M05 发布接线；`main` 上 `ab57a00` 已将登录页转为 React 视觉页并接入 `/auth/login` 跳转入口；当前分支已将 `/agent` 转为 React Agent 工作区，按原型还原会话工作区并接入真实 Skill 路由搜索接口，已沉淀 `1440x1080` 截图验收证据 | 继续完成会话读取、匿名跳转、内建身份登录与改密、退出路径、AppShell 会话展示、Skill 注册中心、重连、断点恢复和整套页面浏览器验收 |
-| M09 SQL 工作台 P1 切片 | 进行中 | 58% | 已完成 AS/400 开发测试连接目录、SQL AST 校验、DML 静态预检、Worker 双重拒绝边界、SQL 工作台界面，以及 `execution-worker-sqlworkbench` 中 Worker 侧 SQL 出口 allowlist 默认拒绝路径 | 接入真实 Db2 for i 只读账号、KeyStore 解锁、查询工作流、结果分页脱敏与短期留存 |
+| M09 SQL 工作台 P1 切片 | 进行中 | 58% | 已完成 AS/400 开发测试连接目录、SQL AST 校验、DML 静态预检、Worker 双重拒绝边界、SQL 工作台界面，以及 `execution-worker-sqlworkbench` 中 Worker 侧 SQL 出口 allowlist 默认拒绝路径；2026-06-27 已确认 P1 必须开放开发/测试环境受控单条 `SELECT` 真实执行 | 接入真实 Db2 for i 只读账号、`credentialAlias` 连接创建、KeyStore 解锁、查询工作流、结果分页脱敏与短期留存、多会话 UI 和展开工作区 |
 | M09 SQL 工作台 P2 受控 CRUD | 已规划 | 0% | 已确认语义执行轨道、Notebook 式独立结果和开发环境受控 CRUD 产品方向 | 完成会话与单元契约、DML 影响预览、环境风险策略、持久化工作流、受限写 Worker、短事务、审计和安全评审 |
 | M01 接入网关与身份认证 | 进行中 | 78% | 已完成开发态 JWT、真实 OIDC 配置模式、本地 Mock OIDC 联调，以及正式内建身份模式下的账号、密码、锁定、会话、管理员重置密码、首次改密、登出撤销与身份契约 | 后续补内建 OIDC 对外发行、完整 MFA 实装、自助找回密码与更完整的运维开户工具 |
 
@@ -64,7 +64,7 @@
 - 高风险执行
 - 由人格配置降低安全要求
 
-P1 SQL 工作台仍只允许 DML 预检。开发环境受控增删改查属于 P2 受控变更试点，必须在不开放生产连接的前提下，通过策略、持久化工作流、短事务、审计和 Worker 二次校验完成。
+P1 SQL 工作台必须开放开发和测试环境受控单条 `SELECT` 真实执行，同时仍只允许 DML 预检。开发环境受控增删改查属于 P2 受控变更试点，必须在不开放生产连接的前提下，通过策略、持久化工作流、短事务、审计和 Worker 二次校验完成。
 
 ## 前两个迭代
 

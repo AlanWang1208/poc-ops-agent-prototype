@@ -1,5 +1,8 @@
 package com.company.opsagent.contracts.workflow;
 
+import com.company.opsagent.contracts.sqlworkbench.SqlConnectionSummary;
+import com.company.opsagent.contracts.sqlworkbench.SqlQueryExecutionRequest;
+import com.company.opsagent.contracts.sqlworkbench.SqlQueryRequest;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -65,6 +68,92 @@ public final class WorkerRequestSignature {
   }
 
   /**
+   * 构造 SQL 工作台只读查询执行请求的 canonical payload。
+   */
+  public static String canonicalSqlPayload(String keyId, String timestamp, SqlQueryExecutionRequest request) {
+    requireText(keyId, "keyId");
+    requireText(timestamp, "timestamp");
+    if (request == null) {
+      throw new IllegalArgumentException("request is required");
+    }
+    SqlQueryRequest query = request.query();
+    OperatorContext operator = request.operator();
+    PolicyDecisionReference policyDecision = request.policyDecision();
+    TraceContext trace = request.trace();
+    return String.join("\n",
+        SIGNATURE_VERSION,
+        "sql-query-execution-v1",
+        keyId,
+        timestamp,
+        request.contractVersion(),
+        request.executionRequestId(),
+        request.workflowId(),
+        request.validationHash(),
+        request.expiresAt().toString(),
+        query.contractVersion(),
+        query.connectionId(),
+        query.targetEnvironment(),
+        query.schema(),
+        query.action().name(),
+        query.idempotencyKey(),
+        String.valueOf(query.limits().maxRows()),
+        String.valueOf(query.limits().maxBytes()),
+        String.valueOf(query.limits().timeoutSeconds()),
+        operator.operatorId(),
+        String.join(",", operator.roles()),
+        policyDecision.decisionId(),
+        policyDecision.policyVersion(),
+        policyDecision.decision(),
+        trace.traceId(),
+        trace.requestId(),
+        sha256Hex(query.sql()),
+        sha256Hex(query.parameters().toString()));
+  }
+
+  /**
+   * 构造 SQL 工作台结果页读取请求的 canonical payload。
+   */
+  public static String canonicalSqlResultReadPayload(String keyId, String timestamp, String resultId) {
+    requireText(keyId, "keyId");
+    requireText(timestamp, "timestamp");
+    resultId = requireCanonicalText(resultId, "resultId");
+    return String.join("\n",
+        SIGNATURE_VERSION,
+        "sql-result-read-v1",
+        keyId,
+        timestamp,
+        resultId);
+  }
+
+  /**
+   * 构造 SQL 工作台连接探测请求的 canonical payload。
+   */
+  public static String canonicalSqlConnectionProbePayload(
+      String keyId,
+      String timestamp,
+      SqlConnectionSummary connection) {
+    requireText(keyId, "keyId");
+    requireText(timestamp, "timestamp");
+    if (connection == null) {
+      throw new IllegalArgumentException("connection is required");
+    }
+    return String.join("\n",
+        SIGNATURE_VERSION,
+        "sql-connection-probe-v1",
+        keyId,
+        timestamp,
+        connection.contractVersion(),
+        connection.connectionId(),
+        connection.targetEnvironment(),
+        connection.platformType(),
+        connection.host(),
+        String.valueOf(connection.port()),
+        connection.defaultSchema(),
+        String.join(",", connection.allowedSchemas()),
+        connection.credentialAlias());
+  }
+
+  /**
    * 使用 HMAC-SHA256 对 canonical payload 签名，返回 Base64 字符串。
    */
   public static String sign(String sharedSecret, String canonicalPayload) {
@@ -109,5 +198,10 @@ public final class WorkerRequestSignature {
     if (value == null || value.isBlank()) {
       throw new IllegalArgumentException(name + " is required");
     }
+  }
+
+  private static String requireCanonicalText(String value, String name) {
+    requireText(value, name);
+    return value;
   }
 }

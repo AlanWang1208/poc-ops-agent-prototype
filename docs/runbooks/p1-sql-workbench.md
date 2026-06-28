@@ -2,43 +2,127 @@
 
 ## 当前能力
 
-- 查询 AS/400 开发和测试连接目录。
-- 对单条 `SELECT` 做只读执行前校验。
-- 对 `INSERT`、`UPDATE`、`DELETE` 做静态预检，不执行 DML。
-- 在控制面与 Worker 两侧独立拒绝非只读 SQL。
+- 控制面提供开发和测试环境 SQL 连接目录、连接创建、连接探测、SQL 校验、只读查询执行和结果读取 API。
+- P1 只允许 `development` 与 `test` 环境的单条 `SELECT` 进入真实执行链路。
+- `INSERT`、`UPDATE`、`DELETE`、DDL、`CALL`、存储过程、`MERGE` 和多语句脚本只能进入静态预检或被拒绝，不得真实执行。
+- 控制面生成短期 SQL 执行信封并通过 Worker 传输认证调用 SQL Worker。
+- Worker 在本地再次校验请求过期时间、只读 SQL、连接目录、目标环境、出口 allowlist 和 `credentialAlias`，然后才创建 JDBC DataSource。
+- 查询结果由 Worker 短期留存并分页读取，结果页包含过期时间。
 
-## 当前禁止能力
+## 禁止能力
 
-- 生产连接。
-- DML、DDL、`CALL`、存储过程、`MERGE` 和多语句脚本执行。
-- 浏览器或控制面直接持有 AS/400 凭据。
-- 未配置 KeyStore 时回退到明文配置或模拟成功。
+- 不得配置、展示或调用生产 SQL 连接。
+- 不得在浏览器、控制面配置、日志、测试数据、Prompt 或源码中保存数据库密码、完整 JDBC 凭据 URL 或目标系统长期密钥。
+- 不得绕过控制面直接从前端调用 Worker。
+- 不得在 P1 开放 DML 写执行、手动 `Commit`、手动 `Rollback`、长事务或任意脚本执行。
+- 未配置 KeyStore 或连接目录时，Worker 必须失败关闭，不得模拟成功。
+
+## 控制面配置
+
+控制面只保存连接元数据和 `credentialAlias`，不保存真实数据库凭据。Worker 传输认证在非回环部署中必须启用。
+
+```yaml
+ops-agent:
+  worker:
+    base-url: http://127.0.0.1:8091
+    transport-auth:
+      enabled: true
+      key-id: ${OPS_AGENT_WORKER_KEY_ID}
+      shared-secret: ${OPS_AGENT_WORKER_SHARED_SECRET}
+```
+
+## Worker SQL 出口配置
+
+Worker 默认配置为空列表，表示拒绝所有 SQL 目标。启用真实开发或测试查询前，必须同时配置连接目录、出口 allowlist 和 KeyStore 凭据源。
+
+```yaml
+ops-agent:
+  worker:
+    transport-auth:
+      enabled: true
+      key-id: ${OPS_AGENT_WORKER_KEY_ID}
+      shared-secret: ${OPS_AGENT_WORKER_SHARED_SECRET}
+      max-clock-skew: 30s
+    sql-egress:
+      allowed-targets:
+        - host: as400-dev.internal
+          port: 446
+      connections:
+        - connection-id: as400-development
+          target-environment: development
+          host: as400-dev.internal
+          port: 446
+          credential-alias: as400-dev-readonly
+          username: readonly_user
+          enabled: true
+    sql-credentials:
+      key-store-path: ${OPS_AGENT_SQL_KEYSTORE_PATH}
+      store-password: ${OPS_AGENT_SQL_KEYSTORE_PASSWORD}
+```
+
+配置要求：
+
+1. `target-environment` 只能是 `development` 或 `test`。
+2. `allowed-targets` 中必须显式列出连接目录的 `host` 和 `port`。
+3. `credential-alias` 只能是 Worker 本地 KeyStore 中的别名，不能是密码、令牌或连接串。
+4. `username` 是只读数据库账号名；如省略，Worker 会使用 `credential-alias` 作为账号名，仅适合别名与账号名一致的环境。
+5. `key-store-path` 和 `store-password` 必须由部署系统或受控密钥系统注入，不得提交真实值。
+
+## 新建连接链路
+
+1. 管理员先在 Worker 侧 KeyStore 中预置真实数据库密码，并记录 `credentialAlias`。
+2. 管理员在 Worker 配置中登记连接目录和出口 allowlist。
+3. 操作台新建连接时只提交显示名、环境、平台类型、主机、端口、Schema 白名单、能力、默认限制和 `credentialAlias`。
+4. 控制面保存连接元数据并将连接置为待绑定或待探测状态。
+5. 用户触发探测时，控制面通过签名 Worker 请求调用探测端点。
+6. Worker 校验本地连接目录、出口 allowlist 和 KeyStore 别名后返回稳定探测状态。
+
+探测状态包括：
+
+- `READY`
+- `CREDENTIAL_ALIAS_NOT_FOUND`
+- `CREDENTIAL_LOCKED`
+- `EGRESS_NOT_ALLOWED`
+- `READ_ONLY_ACCOUNT_CHECK_FAILED`
+- `PROBE_FAILED`
+
+## 执行链路
+
+1. 前端只向控制面提交版本化 SQL 请求，不自行判断授权状态。
+2. 控制面执行 SQL 校验、策略检查、审计记录和短期执行信封生成。
+3. 控制面使用 Worker 传输认证调用 `/internal/executions/sql-query`。
+4. Worker 校验签名、请求过期时间、只读 SQL、连接目录、出口 allowlist 和凭据别名。
+5. Worker 使用 JTOpen 创建 Db2 for i DataSource，并在隔离线程池执行阻塞 JDBC 查询。
+6. Worker 将结果短期保存为分页结果，控制面通过签名结果读取请求暴露给前端。
 
 ## 本地验证
 
 ```powershell
-backend\mvnw.cmd -f backend\pom.xml -pl contracts,control-plane/modules/sqlworkbench,control-plane/bootstrap,execution-worker-sqlworkbench,execution-worker -am test
+backend\mvnw.cmd -f backend\pom.xml -pl contracts,execution-worker-sqlworkbench -am test
+backend\mvnw.cmd -f backend\pom.xml -pl contracts,control-plane/modules/sqlworkbench,control-plane/bootstrap -am -Dtest=DefaultSqlWorkbenchServiceTest,WebClientSqlWorkbenchWorkerClientTest,PolicyEnforcementWebFilterTest "-Dsurefire.failIfNoSpecifiedTests=false" test
+```
 
+前端变更时再运行：
+
+```powershell
 Set-Location frontend\operator-console
 npm run build
 ```
 
 ## 真实 AS/400 联调前置条件
 
-1. 为开发或测试环境创建最小权限只读数据库账号。
-2. 将凭据写入部署侧 Java KeyStore，不得写入仓库、配置示例或环境变量示例。
-3. 管理员启动 Worker 时人工输入 KeyStore 解锁口令。
-4. 配置连接标识到 KeyStore 凭据别名和 AS/400 地址的映射。
-5. 验证账号无法执行任何写操作，再启用真实查询执行器。
+1. 已创建开发或测试环境最小权限只读数据库账号。
+2. 只读账号无法执行 DML、DDL、存储过程和管理命令，并已由数据库侧验证。
+3. Worker 运行主机只能访问显式 allowlist 中的数据库地址和端口。
+4. KeyStore 文件和解锁口令由部署系统或受控密钥系统提供。
+5. 控制面和 Worker 传输认证使用相同 Key ID 和共享密钥。
+6. 已验证未签名 Worker 请求返回 `401`。
 
-当前代码未启用真实查询执行器。未完成以上步骤时，Worker 会返回稳定失败结果。
+## 回滚
 
-## P2 前门禁
+1. 清空 Worker `sql-egress.connections` 和 `sql-egress.allowed-targets`。
+2. 移除 Worker KeyStore 挂载和 `sql-credentials` 注入。
+3. 保留控制面连接目录，但将受影响连接标记为不可用或等待重新探测。
+4. 确认 SQL 页面只能继续做校验和 DML 预检，不再触发真实执行。
 
-- 将人工 KeyStore 解锁替换为无人值守安全解锁。
-- 完成结果分页、脱敏、短期留存、过期清理和访问授权。
-- 完成查询工作流持久化、取消、超时和恢复演练。
-- 完成目标 AS/400 环境上的 Db2 for i 方言与 Explain 验证。
-- 按 ADR 0009 完成 SQL 会话与单元契约、DML 影响预览、环境风险策略、受限写 Worker、短事务和安全评审后，才可启用开发环境受控 CRUD。
-
-P1 界面可以展示标准数据库工作台与 AI SQL 助手的目标交互，但所有 DML 执行动作必须只触发预检，不得产生写执行信封。
+P2 之前不得开放受控 DML 写执行。开发环境受控 CRUD 必须另行完成策略、审批、持久化工作流、短事务、审计、安全评审和回滚设计。

@@ -34,7 +34,7 @@ test("受保护页面导航、层级和禁用态在桌面视口中稳定", async
   await page.goto("/agent");
 
   await expect(page.getByRole("heading", { name: "Agent 工作区" })).toBeVisible();
-  await expect(page.getByText("node-health-read")).toBeVisible();
+  await expect(page.getByText("提交后由服务端路由")).toBeVisible();
   await expect(page.getByRole("button", { name: "发送任务" })).toBeDisabled();
   await assertNoHorizontalOverflow(page);
   await attachVisualEvidence(page, testInfo, "agent");
@@ -52,31 +52,40 @@ test("受保护页面导航、层级和禁用态在桌面视口中稳定", async
 
   await page.goto("/sql");
   await expect(page.getByRole("heading", { name: "SQL 工作台" })).toBeVisible();
-  await expect(
-    page.getByRole("button", { name: "as400-development AS/400 Development development" }),
-  ).toBeVisible();
-  await expect(page.getByRole("button", { name: "as400-test AS/400 Test test" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "请求 AI 改写建议" })).toBeDisabled();
+  await expect(page.getByLabel("SQL 工作区连接上下文")).toContainText("已连接 · development");
+  await expect(page.getByRole("button", { name: "新建连接" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "展开工作区" })).toBeVisible();
+  await expect(page.getByText("执行边界")).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "展开 AI SQL 助手" })).toBeDisabled();
   await assertNoHorizontalOverflow(page);
   await attachVisualEvidence(page, testInfo, "sql");
 });
 
-test("SQL 工作台只提交校验请求并展示服务端报告", async ({ page }) => {
+test("SQL 工作台执行受控 SELECT 且 DML 只进入预检", async ({ page }) => {
   await page.goto("/sql");
 
   await expect(page.getByRole("heading", { name: "SQL 工作台" })).toBeVisible();
-  await page.getByRole("button", { name: "校验只读 SQL" }).click();
+  await expect(page.getByRole("button", { name: "执行 SELECT" })).toBeDisabled();
+
+  await page.getByRole("button", { name: "校验" }).click();
 
   await expect(page.getByText("VALIDATED")).toBeVisible();
-  await expect(page.getByText("sha256:readonly")).toBeVisible();
+  await expect(page.getByText("sha256:readonly").first()).toBeVisible();
+  await expect(page.getByRole("button", { name: "执行 SELECT" })).toBeEnabled();
 
-  await page.getByRole("button", { name: "预检 DML 风险" }).click();
+  await page.getByRole("button", { name: "执行 SELECT" }).click();
+  await expect(page.getByText("OD-10500")).toBeVisible();
+  await expect(page.getByText("result-001").first()).toBeVisible();
+
+  await page.getByLabel("SQL 文本").fill("UPDATE ORDERS.ORDERS SET status = 'X'");
+  await page.getByRole("button", { name: "DML 预检" }).click();
 
   await expect(page.getByText("REJECTED")).toBeVisible();
   await expect(page.getByText("DML execution is not allowed in P1")).toBeVisible();
-  await expect(page.getByRole("button", { name: "请求 AI 改写建议" })).toBeDisabled();
-  await expect(page.getByRole("button", { name: "校验只读 SQL" })).toBeEnabled();
-  await expect(page.getByRole("button", { name: "预检 DML 风险" })).toBeEnabled();
+  await expect(page.getByRole("button", { name: "执行 SELECT" })).toBeDisabled();
+  await expect(page.getByRole("button", { name: "展开 AI SQL 助手" })).toBeDisabled();
+  await expect(page.getByRole("button", { name: "校验" })).toBeEnabled();
+  await expect(page.getByRole("button", { name: "DML 预检" })).toBeEnabled();
 });
 
 /**
@@ -137,8 +146,12 @@ async function mockConsoleApi(page) {
           displayName: "AS/400 Development",
           targetEnvironment: "development",
           platformType: "DB2_FOR_I",
+          status: "READY",
+          defaultSchema: "ORDERS",
           allowedSchemas: ["ORDERS"],
           capabilities: ["VALIDATE", "RUN_READ_ONLY", "PREFLIGHT_DML"],
+          maxRowsDefault: 500,
+          timeoutSecondsDefault: 30,
         },
         {
           contractVersion: "1.0",
@@ -146,8 +159,12 @@ async function mockConsoleApi(page) {
           displayName: "AS/400 Test",
           targetEnvironment: "test",
           platformType: "DB2_FOR_I",
+          status: "READY",
+          defaultSchema: "ORDERS",
           allowedSchemas: ["ORDERS"],
           capabilities: ["VALIDATE", "RUN_READ_ONLY", "PREFLIGHT_DML"],
+          maxRowsDefault: 500,
+          timeoutSecondsDefault: 30,
         },
       ],
     });
@@ -174,6 +191,52 @@ async function mockConsoleApi(page) {
               unverifiedItems: ["Target row count"],
             }
           : validationReport,
+    });
+  });
+
+  await page.route("**/internal/sql-workbench/queries/run", async (route) => {
+    const request = route.request().postDataJSON();
+    expect(request).toMatchObject({
+      contractVersion: "1.0",
+      connectionId: "as400-development",
+      targetEnvironment: "development",
+      schema: "ORDERS",
+      action: "RUN_READ_ONLY",
+      validationHash: "sha256:validation-readonly",
+    });
+
+    await route.fulfill({
+      json: {
+        contractVersion: "1.0",
+        executionRequestId: "exec-001",
+        workflowId: "wf-001",
+        resultId: "result-001",
+        status: "SUCCEEDED",
+      },
+    });
+  });
+
+  await page.route("**/internal/sql-workbench/results/result-001", async (route) => {
+    await route.fulfill({
+      json: {
+        contractVersion: "1.0",
+        resultId: "result-001",
+        columns: [
+          { name: "order_id", type: "VARCHAR", masked: false },
+          { name: "status", type: "VARCHAR", masked: false },
+        ],
+        rows: [["OD-10500", "PENDING"]],
+        nextCursor: null,
+        truncated: false,
+        expiresAt: "2026-06-27T09:10:00Z",
+      },
+    });
+  });
+
+  await page.route("**/execution-worker/**", async (route) => {
+    await route.fulfill({
+      status: 500,
+      json: { message: "frontend must not call worker directly" },
     });
   });
 }
@@ -240,6 +303,7 @@ const validationReport = {
   statementType: "SELECT",
   validationLevel: "VALIDATED",
   sqlHash: "sha256:readonly",
+  validationHash: "sha256:validation-readonly",
   referencedObjects: ["ORDERS.ORDERS"],
   risks: [],
   rejectionReasons: [],

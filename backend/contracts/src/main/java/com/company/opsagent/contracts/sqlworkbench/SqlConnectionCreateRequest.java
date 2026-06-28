@@ -3,14 +3,15 @@ package com.company.opsagent.contracts.sqlworkbench;
 import static com.company.opsagent.contracts.ContractValues.requiredList;
 import static com.company.opsagent.contracts.ContractValues.requiredText;
 
+import java.util.EnumSet;
 import java.util.List;
+import java.util.Set;
 
 /**
- * 前端可发现的受控数据库连接摘要，不包含连接串或凭据。
+ * SQL 工作台连接创建请求，只允许非敏感元数据和 Worker 侧凭据别名。
  */
-public record SqlConnectionSummary(
+public record SqlConnectionCreateRequest(
     String contractVersion,
-    String connectionId,
     String displayName,
     String targetEnvironment,
     String platformType,
@@ -20,50 +21,25 @@ public record SqlConnectionSummary(
     List<String> allowedSchemas,
     List<SqlQueryAction> capabilities,
     String credentialAlias,
-    String status,
     int maxRowsDefault,
     int timeoutSecondsDefault) {
 
-  public SqlConnectionSummary(
-      String contractVersion,
-      String connectionId,
-      String displayName,
-      String targetEnvironment,
-      String platformType,
-      List<String> allowedSchemas,
-      List<SqlQueryAction> capabilities) {
-    this(
-        contractVersion,
-        connectionId,
-        displayName,
-        targetEnvironment,
-        platformType,
-        "not-configured.local",
-        446,
-        requiredList(allowedSchemas, "allowedSchemas").getFirst(),
-        allowedSchemas,
-        capabilities,
-        connectionId,
-        "READY",
-        500,
-        30);
-  }
+  private static final Set<SqlQueryAction> P1_CREATE_CAPABILITIES = EnumSet.of(
+      SqlQueryAction.VALIDATE,
+      SqlQueryAction.RUN_READ_ONLY,
+      SqlQueryAction.PREFLIGHT_DML);
 
-  public SqlConnectionSummary {
+  public SqlConnectionCreateRequest {
     if (!"1.0".equals(contractVersion)) {
       throw new IllegalArgumentException("contractVersion must be 1.0");
     }
-    connectionId = requiredText(connectionId, "connectionId");
     displayName = requiredText(displayName, "displayName");
-    targetEnvironment = requiredText(targetEnvironment, "targetEnvironment");
-    if ("production".equalsIgnoreCase(targetEnvironment)) {
-      throw new IllegalArgumentException("production connections must not be exposed");
-    }
+    targetEnvironment = normalizeEnvironment(targetEnvironment);
     platformType = requiredText(platformType, "platformType");
     if (!"DB2_FOR_I".equals(platformType)) {
       throw new IllegalArgumentException("platformType must be DB2_FOR_I");
     }
-    host = requiredText(host, "host");
+    host = validateHost(host);
     if (port < 1 || port > 65535) {
       throw new IllegalArgumentException("port must be between 1 and 65535");
     }
@@ -74,13 +50,33 @@ public record SqlConnectionSummary(
       throw new IllegalArgumentException("defaultSchema must be present in allowedSchemas");
     }
     capabilities = requiredList(capabilities, "capabilities");
+    if (!P1_CREATE_CAPABILITIES.containsAll(capabilities)) {
+      throw new IllegalArgumentException("capabilities contain actions outside SQL workbench P1");
+    }
     credentialAlias = requiredText(credentialAlias, "credentialAlias");
-    status = requiredText(status, "status");
     if (maxRowsDefault < 1 || maxRowsDefault > 10_000) {
       throw new IllegalArgumentException("maxRowsDefault must be between 1 and 10000");
     }
     if (timeoutSecondsDefault < 1 || timeoutSecondsDefault > 300) {
       throw new IllegalArgumentException("timeoutSecondsDefault must be between 1 and 300");
     }
+  }
+
+  private static String normalizeEnvironment(String targetEnvironment) {
+    String normalized = requiredText(targetEnvironment, "targetEnvironment").toLowerCase();
+    if (!"development".equals(normalized) && !"test".equals(normalized)) {
+      throw new IllegalArgumentException("targetEnvironment must be development or test");
+    }
+    return normalized;
+  }
+
+  private static String validateHost(String host) {
+    String normalized = requiredText(host, "host").trim().toLowerCase();
+    if (normalized.contains("://") || normalized.startsWith("jdbc:")
+        || normalized.contains("@") || normalized.contains("password")
+        || normalized.contains("user=")) {
+      throw new IllegalArgumentException("host must not contain JDBC URLs or credential material");
+    }
+    return normalized;
   }
 }

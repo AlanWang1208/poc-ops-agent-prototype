@@ -1,7 +1,7 @@
 import { http, HttpResponse } from "msw";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, test } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 import App from "../../app/App.jsx";
@@ -34,7 +34,8 @@ beforeEach(() => {
 });
 
 describe("SqlWorkbenchPage", () => {
-  test("renders the rewritten SQL workbench inside the shared shell", async () => {
+  test("renders the P1 workbench with top connection context and collapsible objects", async () => {
+    const user = userEvent.setup();
     server.use(
       http.get("/internal/sql-workbench/connections", () =>
         HttpResponse.json(sqlConnections),
@@ -50,19 +51,31 @@ describe("SqlWorkbenchPage", () => {
     expect(screen.getByRole("navigation", { name: "主导航" })).toBeInTheDocument();
     expect(screen.getByLabelText("当前工作台")).toBeInTheDocument();
     expect(screen.queryByRole("navigation", { name: "SQL 工作台导航" })).not.toBeInTheDocument();
-    expect(screen.queryByText("SQL 控制台")).not.toBeInTheDocument();
-    expect(await screen.findByText("已连接 · development")).toBeInTheDocument();
-    expect(screen.getAllByText("as400-development").length).toBeGreaterThanOrEqual(1);
-    expect(screen.getAllByText("ORDERS").length).toBeGreaterThanOrEqual(1);
-    expect(screen.queryByText("production")).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "校验只读 SQL" })).toBeEnabled();
-    expect(screen.getByRole("button", { name: "预检 DML 风险" })).toBeEnabled();
-    expect(screen.getByRole("button", { name: "请求 AI 改写建议" })).toBeDisabled();
-    expect(screen.queryByText("Commit")).not.toBeInTheDocument();
-    expect(screen.queryByText("Rollback")).not.toBeInTheDocument();
+
+    const contextBar = await screen.findByLabelText("SQL 工作区连接上下文");
+    expect(within(contextBar).getByText("已连接 · development")).toBeInTheDocument();
+    expect(within(contextBar).getByText("as400-development")).toBeInTheDocument();
+    expect(within(contextBar).getByText("ORDERS")).toBeInTheDocument();
+    expect(within(contextBar).getByText("maxRows 500")).toBeInTheDocument();
+    expect(within(contextBar).getByRole("button", { name: "新建连接" })).toBeEnabled();
+    expect(within(contextBar).getByRole("button", { name: "展开工作区" })).toBeEnabled();
+
+    expect(screen.queryByRole("complementary", { name: "SQL 连接目录" })).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("数据库对象浏览器")).not.toBeInTheDocument();
+    expect(screen.queryByText("执行边界")).not.toBeInTheDocument();
+    expect(screen.getByLabelText("SQL 信息面板")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "对象浏览器" }));
+    expect(screen.getByLabelText("数据库对象浏览器")).toBeInTheDocument();
+    expect(screen.getByText("ORDERS.ORDERS")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "展开工作区" }));
+    expect(screen.queryByLabelText("数据库对象浏览器")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("SQL 信息面板")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "退出展开" })).toBeInTheDocument();
   });
 
-  test("submits versioned SQL validation requests and renders server reports", async () => {
+  test("creates a connection with credentialAlias metadata and no password field", async () => {
     const user = userEvent.setup();
     /** @type {unknown[]} */
     const requests = [];
@@ -70,30 +83,162 @@ describe("SqlWorkbenchPage", () => {
       http.get("/internal/sql-workbench/connections", () =>
         HttpResponse.json(sqlConnections),
       ),
-      http.post("/internal/sql-workbench/queries/validate", async ({ request }) => {
+      http.post("/internal/sql-workbench/connections", async ({ request }) => {
         requests.push(await request.json());
-        return HttpResponse.json(rejectedDmlReport);
+        return HttpResponse.json(createdConnection);
       }),
     );
 
     renderAt("/sql");
 
     await screen.findByText("已连接 · development");
-    await user.click(screen.getByRole("button", { name: "预检 DML 风险" }));
+    await user.click(screen.getByRole("button", { name: "新建连接" }));
 
-    await screen.findByText("REJECTED");
-    expect(screen.getByText("UPDATE_WITHOUT_BOUND_IMPACT")).toBeInTheDocument();
-    expect(screen.getAllByText("ORDERS.ORDERS").length).toBeGreaterThanOrEqual(1);
+    const dialog = screen.getByRole("dialog", { name: "新建连接" });
+    expect(within(dialog).queryByLabelText(/密码/u)).not.toBeInTheDocument();
+    expect(within(dialog).queryByLabelText(/password/i)).not.toBeInTheDocument();
+    expect(within(dialog).queryByLabelText(/JDBC URL/u)).not.toBeInTheDocument();
+
+    await user.clear(within(dialog).getByLabelText("连接名称"));
+    await user.type(within(dialog).getByLabelText("连接名称"), "AS/400 Lab");
+    await user.selectOptions(within(dialog).getByLabelText("目标环境"), "test");
+    await user.clear(within(dialog).getByLabelText("主机"));
+    await user.type(within(dialog).getByLabelText("主机"), "as400-lab.internal");
+    await user.clear(within(dialog).getByLabelText("端口"));
+    await user.type(within(dialog).getByLabelText("端口"), "446");
+    await user.clear(within(dialog).getByLabelText("默认 Schema"));
+    await user.type(within(dialog).getByLabelText("默认 Schema"), "LABORDERS");
+    await user.clear(within(dialog).getByLabelText("允许 Schema"));
+    await user.type(within(dialog).getByLabelText("允许 Schema"), "LABORDERS, INVENTORY_QA");
+    await user.clear(within(dialog).getByLabelText("credentialAlias"));
+    await user.type(within(dialog).getByLabelText("credentialAlias"), "as400-lab-readonly");
+    await user.click(within(dialog).getByRole("button", { name: "保存连接" }));
+
     await waitFor(() => expect(requests).toHaveLength(1));
     expect(requests[0]).toMatchObject({
+      contractVersion: "1.0",
+      displayName: "AS/400 Lab",
+      targetEnvironment: "test",
+      platformType: "DB2_FOR_I",
+      host: "as400-lab.internal",
+      port: 446,
+      defaultSchema: "LABORDERS",
+      allowedSchemas: ["LABORDERS", "INVENTORY_QA"],
+      capabilities: ["VALIDATE", "RUN_READ_ONLY", "PREFLIGHT_DML"],
+      credentialAlias: "as400-lab-readonly",
+      maxRowsDefault: 500,
+      timeoutSecondsDefault: 30,
+    });
+    expect(JSON.stringify(requests[0]).toLowerCase()).not.toContain("password");
+    expect(JSON.stringify(requests[0]).toLowerCase()).not.toContain("jdbc");
+  });
+
+  test("keeps SQL text and validation reports isolated per session tab", async () => {
+    const user = userEvent.setup();
+    server.use(
+      http.get("/internal/sql-workbench/connections", () =>
+        HttpResponse.json(sqlConnections),
+      ),
+      http.post("/internal/sql-workbench/queries/validate", async ({ request }) => {
+        const body = await request.json();
+        const sql = typeof body === "object" && body !== null && "sql" in body
+          ? String(/** @type {{sql: unknown}} */ (body).sql)
+          : "";
+        return HttpResponse.json({
+          ...validatedSelectReport,
+          sqlHash: sql.includes("SESSION_ONE") ? "sha256:session-one" : "sha256:session-two",
+          referencedObjects: sql.includes("SESSION_ONE")
+            ? ["ORDERS.SESSION_ONE"]
+            : ["ORDERS.SESSION_TWO"],
+        });
+      }),
+    );
+
+    renderAt("/sql");
+
+    const editor = await screen.findByLabelText("SQL 文本");
+    await user.clear(editor);
+    await user.type(editor, "SELECT * FROM ORDERS.SESSION_ONE");
+    await user.click(screen.getByRole("button", { name: "校验" }));
+    expect(await screen.findAllByText("sha256:session-one")).toHaveLength(2);
+
+    await user.click(screen.getByRole("button", { name: "+ 新建会话" }));
+    expect(screen.getByRole("tab", { name: "SQL 2" })).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByLabelText("SQL 文本")).not.toHaveValue("SELECT * FROM ORDERS.SESSION_ONE");
+    expect(screen.queryByText("sha256:session-one")).not.toBeInTheDocument();
+
+    await user.clear(screen.getByLabelText("SQL 文本"));
+    await user.type(screen.getByLabelText("SQL 文本"), "SELECT * FROM ORDERS.SESSION_TWO");
+    await user.click(screen.getByRole("button", { name: "校验" }));
+    expect(await screen.findAllByText("sha256:session-two")).toHaveLength(2);
+
+    await user.click(screen.getByRole("tab", { name: "SQL 1" }));
+    expect(screen.getByLabelText("SQL 文本")).toHaveValue("SELECT * FROM ORDERS.SESSION_ONE");
+    expect(screen.getAllByText("sha256:session-one")).toHaveLength(2);
+    expect(screen.queryByText("sha256:session-two")).not.toBeInTheDocument();
+  });
+
+  test("executes only server-validated single SELECT and keeps DML on preflight", async () => {
+    const user = userEvent.setup();
+    /** @type {unknown[]} */
+    const runRequests = [];
+    /** @type {unknown[]} */
+    const validationRequests = [];
+    server.use(
+      http.get("/internal/sql-workbench/connections", () =>
+        HttpResponse.json(sqlConnections),
+      ),
+      http.post("/internal/sql-workbench/queries/validate", async ({ request }) => {
+        const body = await request.json();
+        validationRequests.push(body);
+        return HttpResponse.json(
+          typeof body === "object" && body !== null && body.action === "PREFLIGHT_DML"
+            ? rejectedDmlReport
+            : validatedSelectReport,
+        );
+      }),
+      http.post("/internal/sql-workbench/queries/run", async ({ request }) => {
+        runRequests.push(await request.json());
+        return HttpResponse.json(queryRunResult);
+      }),
+      http.get("/internal/sql-workbench/results/result-001", () =>
+        HttpResponse.json(resultPage),
+      ),
+    );
+
+    renderAt("/sql");
+
+    await screen.findByText("已连接 · development");
+    expect(screen.getByRole("button", { name: "执行 SELECT" })).toBeDisabled();
+
+    await user.clear(screen.getByLabelText("SQL 文本"));
+    await user.type(screen.getByLabelText("SQL 文本"), "SELECT * FROM ORDERS.ORDERS");
+    await user.click(screen.getByRole("button", { name: "校验" }));
+    expect(await screen.findByText("VALIDATED")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "执行 SELECT" })).toBeEnabled();
+
+    await user.click(screen.getByRole("button", { name: "执行 SELECT" }));
+    expect(await screen.findByText("OD-10500")).toBeInTheDocument();
+    expect(screen.getAllByText("result-001").length).toBeGreaterThanOrEqual(1);
+
+    await waitFor(() => expect(runRequests).toHaveLength(1));
+    expect(runRequests[0]).toMatchObject({
       contractVersion: "1.0",
       connectionId: "as400-development",
       targetEnvironment: "development",
       schema: "ORDERS",
-      action: "PREFLIGHT_DML",
-      parameters: [],
-      limits: { maxRows: 500, maxBytes: 5000000, timeoutSeconds: 30 },
+      action: "RUN_READ_ONLY",
+      sql: "SELECT * FROM ORDERS.ORDERS",
+      validationHash: "sha256:validation-readonly",
     });
+
+    await user.clear(screen.getByLabelText("SQL 文本"));
+    await user.type(screen.getByLabelText("SQL 文本"), "UPDATE ORDERS.ORDERS SET status = 'X'");
+    await user.click(screen.getByRole("button", { name: "DML 预检" }));
+    expect(await screen.findByText("DML_PRECHECK_ONLY")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "执行 SELECT" })).toBeDisabled();
+    expect(runRequests).toHaveLength(1);
+    expect(validationRequests.at(-1)).toMatchObject({ action: "PREFLIGHT_DML" });
   });
 
   test("blocks invalid production connection data at the contract boundary", async () => {
@@ -118,7 +263,7 @@ describe("SqlWorkbenchPage", () => {
     expect(screen.queryByText("AS/400 Production")).not.toBeInTheDocument();
   });
 
-  test("keeps the AI assistant visibly disabled", async () => {
+  test("keeps the AI assistant disabled or folded outside the P1 execution path", async () => {
     server.use(
       http.get("/internal/sql-workbench/connections", () =>
         HttpResponse.json(sqlConnections),
@@ -127,10 +272,9 @@ describe("SqlWorkbenchPage", () => {
 
     renderAt("/sql");
 
-    await screen.findByText("AI 辅助分析");
-    expect(screen.getByRole("button", { name: "请求 AI 改写建议" })).toBeDisabled();
-    expect(screen.getByRole("button", { name: "查看建议改写" })).toBeDisabled();
-    expect(screen.getByText("潜在逻辑风险")).toBeInTheDocument();
+    await screen.findByText("AI SQL 助手");
+    expect(screen.getByRole("button", { name: "展开 AI SQL 助手" })).toBeDisabled();
+    expect(screen.queryByRole("button", { name: "请求 AI 改写建议" })).not.toBeInTheDocument();
   });
 });
 
@@ -141,8 +285,12 @@ const sqlConnections = [
     displayName: "AS/400 Development",
     targetEnvironment: "development",
     platformType: "DB2_FOR_I",
+    status: "READY",
+    defaultSchema: "ORDERS",
     allowedSchemas: ["ORDERS", "INVENTORY"],
     capabilities: ["VALIDATE", "RUN_READ_ONLY", "PREFLIGHT_DML"],
+    maxRowsDefault: 500,
+    timeoutSecondsDefault: 30,
   },
   {
     contractVersion: "1.0",
@@ -150,16 +298,35 @@ const sqlConnections = [
     displayName: "AS/400 Test",
     targetEnvironment: "test",
     platformType: "DB2_FOR_I",
+    status: "READY",
+    defaultSchema: "ORDERS_QA",
     allowedSchemas: ["ORDERS_QA"],
     capabilities: ["VALIDATE", "RUN_READ_ONLY", "PREFLIGHT_DML"],
+    maxRowsDefault: 500,
+    timeoutSecondsDefault: 30,
   },
 ];
+
+const createdConnection = {
+  contractVersion: "1.0",
+  connectionId: "as400-lab",
+  displayName: "AS/400 Lab",
+  targetEnvironment: "test",
+  platformType: "DB2_FOR_I",
+  status: "PENDING_WORKER_BINDING",
+  defaultSchema: "LABORDERS",
+  allowedSchemas: ["LABORDERS", "INVENTORY_QA"],
+  capabilities: ["VALIDATE", "RUN_READ_ONLY", "PREFLIGHT_DML"],
+  maxRowsDefault: 500,
+  timeoutSecondsDefault: 30,
+};
 
 const validatedSelectReport = {
   contractVersion: "1.0",
   statementType: "SELECT",
   validationLevel: "VALIDATED",
-  sqlHash: "sha256:select-pending-orders",
+  sqlHash: "sha256:readonly",
+  validationHash: "sha256:validation-readonly",
   referencedObjects: ["ORDERS.ORDERS"],
   risks: [],
   rejectionReasons: [],
@@ -170,9 +337,31 @@ const rejectedDmlReport = {
   contractVersion: "1.0",
   statementType: "UPDATE",
   validationLevel: "REJECTED",
-  sqlHash: "sha256:update-review-required",
+  sqlHash: "sha256:dml",
+  validationHash: "sha256:validation-dml",
   referencedObjects: ["ORDERS.ORDERS"],
   risks: ["DML_PRECHECK_ONLY"],
-  rejectionReasons: ["UPDATE_WITHOUT_BOUND_IMPACT"],
+  rejectionReasons: ["DML execution is not allowed in P1"],
   unverifiedItems: ["affectedRows"],
+};
+
+const queryRunResult = {
+  contractVersion: "1.0",
+  executionRequestId: "exec-001",
+  workflowId: "wf-001",
+  resultId: "result-001",
+  status: "SUCCEEDED",
+};
+
+const resultPage = {
+  contractVersion: "1.0",
+  resultId: "result-001",
+  columns: [
+    { name: "order_id", type: "VARCHAR", masked: false },
+    { name: "status", type: "VARCHAR", masked: false },
+  ],
+  rows: [["OD-10500", "PENDING"]],
+  nextCursor: null,
+  truncated: false,
+  expiresAt: "2026-06-27T09:10:00Z",
 };

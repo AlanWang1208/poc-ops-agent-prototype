@@ -1,6 +1,7 @@
 package com.company.opsagent.controlplane.modules.sqlworkbench;
 
 import com.company.opsagent.contracts.sqlworkbench.SqlConnectionSummary;
+import com.company.opsagent.contracts.sqlworkbench.SqlConnectionCreateRequest;
 import java.util.List;
 import java.util.Optional;
 
@@ -12,4 +13,8 @@ public interface SqlConnectionCatalog {
   List<SqlConnectionSummary> list();
 
   Optional<SqlConnectionSummary> find(String connectionId);
+
+  SqlConnectionSummary create(SqlConnectionCreateRequest request);
+
+  SqlConnectionSummary updateStatus(String connectionId, String status);
 }

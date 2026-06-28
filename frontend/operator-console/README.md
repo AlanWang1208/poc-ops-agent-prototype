@@ -15,7 +15,7 @@
 - 登录页：读取 `/auth/session`，匿名用户展示控制面登录入口，已认证用户进入操作台。
 - Agent 工作台：接入 `/api/v1/agent/diagnostics` 主诊断入口，并读取 `/internal/routing/skills/search` 展示 P1 只读、已验证发布的候选 Skill；服务端策略仍是唯一授权决策点。
 - Skill 注册中心：读取 `/internal/skills`，支持真实目录搜索、分类筛选、风险筛选和详情查看；安装、升级、卸载保持禁用。
-- SQL 工作台：读取 `/internal/sql-workbench/connections` 和 `/internal/sql-workbench/queries/validate`，只提供开发/测试连接的 SQL 校验和 DML 预检报告。
+- SQL 工作台：读取 `/internal/sql-workbench/connections`，通过 `/internal/sql-workbench/queries/validate` 校验 SQL，并通过 `/internal/sql-workbench/queries/run` 与 `/internal/sql-workbench/results/{resultId}` 展示开发/测试环境受控单条 `SELECT` 结果；DML 仍只进入预检报告。
 - 快捷连接：入口和能力短期禁用；后续开放前必须补齐后端契约、服务端策略授权和审计。
 
 ## 技术栈
@@ -60,10 +60,13 @@
 
 ## SQL 工作台
 
+- 顶部连接条展示当前连接、环境、Schema 和结果限制；数据库对象浏览器默认收起为抽屉。
 - 只展示控制面返回的 AS/400 开发和测试连接。
-- 支持单条 SELECT 校验以及 INSERT、UPDATE、DELETE 静态预检。
+- 新建连接表单只提交连接元数据和 `credentialAlias`，不包含密码、JDBC URL 或真实凭据。
+- 支持多 SQL 会话标签，每个会话独立保存 SQL 文本、连接、Schema、服务端校验报告、执行状态和结果引用。
+- 支持单条 SELECT 校验与受控执行，结果通过控制面分页读取；INSERT、UPDATE、DELETE 仍只做静态预检。
 - P1 不提供 DML 执行、交互事务、Commit 或 Rollback。
-- Copilot 区域当前只表达安全边界，模型能力通过评测门禁前保持禁用。
+- 服务端校验详情展示在右侧信息面板；Copilot / AI SQL 助手在模型评测和数据脱敏门禁通过前保持禁用。
 - 目标交互以主流数据库客户端为基线，包含对象浏览、多 SQL 文件标签、传统编辑器、执行工具栏和完整结果区；AI SQL 助手在右侧提供错误分析和性能优化。
 - P2 计划开放开发环境受控 CRUD；生产 SQL 连接在所有阶段均不可见、不可调用。
 

@@ -12,8 +12,12 @@ ops-agent:
       enabled: false
       max-clock-skew: 30s
     sql-egress:
+      # Empty by default: no SQL target is reachable until a Worker-local
+      # connection catalog and host/port allowlist are configured.
       allowed-targets: []
       connections: []
+    # Configure only through deployment secrets. Empty config fails closed.
+    sql-credentials: {}
     http-egress:
       allowed-targets: []
     configured-http-skills:

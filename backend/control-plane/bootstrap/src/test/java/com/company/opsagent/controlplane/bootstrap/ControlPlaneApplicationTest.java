@@ -69,11 +69,18 @@ import org.springframework.test.web.reactive.server.WebTestClient;
     "ops-agent.policy.required-roles-by-action.internal.routing.skills.read[0]=ROLE_ops-reader",
     "ops-agent.policy.required-roles-by-action.internal.routing.skills.read[1]=ROLE_ops-admin",
     "ops-agent.policy.required-roles-by-action.internal.sql-workbench.connections.read[0]=ROLE_ops-reader",
+    "ops-agent.policy.required-roles-by-action.internal.sql-workbench.connections.read[1]=ROLE_ops-admin",
+    "ops-agent.policy.required-roles-by-action.internal.sql-workbench.connections.create[0]=ROLE_ops-admin",
+    "ops-agent.policy.required-roles-by-action.internal.sql-workbench.connections.probe[0]=ROLE_ops-reader",
+    "ops-agent.policy.required-roles-by-action.internal.sql-workbench.connections.probe[1]=ROLE_ops-admin",
     "ops-agent.policy.required-roles-by-action.internal.sql-workbench.queries.validate[0]=ROLE_ops-reader",
+    "ops-agent.policy.required-roles-by-action.internal.sql-workbench.queries.validate[1]=ROLE_ops-admin",
+    "ops-agent.policy.required-roles-by-action.internal.sql-workbench.queries.run[0]=ROLE_ops-reader",
+    "ops-agent.policy.required-roles-by-action.internal.sql-workbench.queries.run[1]=ROLE_ops-admin",
+    "ops-agent.policy.required-roles-by-action.internal.sql-workbench.results.read[0]=ROLE_ops-reader",
+    "ops-agent.policy.required-roles-by-action.internal.sql-workbench.results.read[1]=ROLE_ops-admin",
     "ops-agent.policy.required-roles-by-action.internal.agent.diagnostics.read[0]=ROLE_ops-reader",
     "ops-agent.policy.required-roles-by-action.internal.agent.diagnostics.read[1]=ROLE_ops-admin",
-    "ops-agent.policy.required-roles-by-action.internal.sql-workbench.connections.read[0]=ROLE_ops-reader",
-    "ops-agent.policy.required-roles-by-action.internal.sql-workbench.queries.validate[0]=ROLE_ops-reader",
     "ops-agent.skill-registry.root-path=target/test-classes/skills",
     "ops-agent.skill-registry.signature-required=true",
     "ops-agent.skill-registry.signing-secret=ops-agent-skill-signing-key-2026-06-06-0001",
@@ -399,6 +406,23 @@ class ControlPlaneApplicationTest {
         .jsonPath("$[0].connectionId").isEqualTo("as400-development")
         .jsonPath("$[1].connectionId").isEqualTo("as400-test")
         .jsonPath("$[?(@.targetEnvironment == 'production')]").isEmpty();
+  }
+
+  @Test
+  void probesSqlConnectionWithFailClosedControlPlaneResult() {
+    auditTrail.clear();
+    webTestClient.post()
+        .uri("/internal/sql-workbench/connections/as400-development/probe")
+        .headers(headers -> headers.setBearerAuth(token("alice", List.of("ops-reader"), "ops-agent-internal")))
+        .exchange()
+        .expectStatus().isOk()
+        .expectBody()
+        .jsonPath("$.contractVersion").isEqualTo("1.0")
+        .jsonPath("$.connectionId").isEqualTo("as400-development")
+        .jsonPath("$.status").isEqualTo("PROBE_FAILED");
+
+    AuditEvent event = auditTrail.latest().orElseThrow();
+    Assertions.assertEquals("internal.sql-workbench.connections.probe", event.action());
   }
 
   @Test

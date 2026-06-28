@@ -12,6 +12,7 @@ import com.company.opsagent.contracts.events.AgentToolCallRequestedPayload;
 import com.company.opsagent.contracts.events.SemanticEvent;
 import com.company.opsagent.contracts.events.SemanticEventType;
 import com.company.opsagent.contracts.events.WorkflowStartedPayload;
+import com.company.opsagent.contracts.sqlworkbench.SqlConnectionCreateRequest;
 import com.company.opsagent.contracts.sqlworkbench.SqlQueryAction;
 import com.company.opsagent.contracts.sqlworkbench.SqlQueryLimits;
 import com.company.opsagent.contracts.sqlworkbench.SqlQueryRequest;
@@ -142,6 +143,34 @@ class ContractsTest {
   }
 
   @Test
+  void rejectsUnsafeSqlWorkbenchConnectionCreateRequests() {
+    assertThrows(IllegalArgumentException.class, () -> connectionCreateRequest(
+        "production",
+        "as400-prod-readonly",
+        List.of("ORDERS")));
+    assertThrows(IllegalArgumentException.class, () -> connectionCreateRequest(
+        "development",
+        " ",
+        List.of("ORDERS")));
+    assertThrows(IllegalArgumentException.class, () -> connectionCreateRequest(
+        "development",
+        "as400-dev-readonly",
+        List.of()));
+  }
+
+  @Test
+  void sqlWorkbenchConnectionCreateSchemaRejectsSecretFields() throws Exception {
+    JsonNode schema = new ObjectMapper()
+        .readTree(Path.of("sqlworkbench/sql-connection-create-request-v1.schema.json").toFile());
+
+    assertTrue(schema.path("additionalProperties").isBoolean());
+    assertEquals(false, schema.path("additionalProperties").asBoolean());
+    assertTrue(!schema.path("properties").has("password"));
+    assertTrue(!schema.path("properties").has("username"));
+    assertTrue(!schema.path("properties").has("jdbcUrl"));
+  }
+
+  @Test
   void rejectsInvalidSqlQueryLimits() {
     assertThrows(IllegalArgumentException.class, () -> new SqlQueryLimits(0, 1_000_000, 30));
   }
@@ -248,5 +277,24 @@ class ContractsTest {
     assertTrue(outputSchema.path("$id").asText().contains("weather-current-read/1.0.0/output.schema.json"));
     assertTrue(outputSchema.path("properties").has("condition"));
     assertTrue(outputSchema.path("properties").has("temperatureCelsius"));
+  }
+
+  private SqlConnectionCreateRequest connectionCreateRequest(
+      String targetEnvironment,
+      String credentialAlias,
+      List<String> allowedSchemas) {
+    return new SqlConnectionCreateRequest(
+        "1.0",
+        "AS/400 Development",
+        targetEnvironment,
+        "DB2_FOR_I",
+        "as400-dev.internal",
+        446,
+        "ORDERS",
+        allowedSchemas,
+        List.of(SqlQueryAction.VALIDATE, SqlQueryAction.RUN_READ_ONLY, SqlQueryAction.PREFLIGHT_DML),
+        credentialAlias,
+        500,
+        30);
   }
 }

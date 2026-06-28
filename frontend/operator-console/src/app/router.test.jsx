@@ -153,16 +153,17 @@ describe("operator console routes", () => {
     expect(await screen.findByRole("heading", { name: "平台总览" })).toBeInTheDocument();
     const availableEntries = screen.getByRole("region", { name: "可用工作入口" });
     const capabilityMap = screen.getByRole("region", { name: "后续能力地图" });
-    const overviewGuide = screen.getByRole("region", { name: "怎么使用这个总览" });
+    const overviewGuide = screen.getByRole("region", { name: "总览使用步骤" });
 
     expect(
-      screen.getByRole("heading", { name: "当前能用的功能" }),
-    ).toBeInTheDocument();
+      screen.queryByRole("heading", { name: "当前能用的功能" }),
+    ).not.toBeInTheDocument();
     expect(
-      screen.getByText(
+      screen.queryByText(
         "这里是总览页：先选择 Agent 或 SQL 工作区做只读排查；生产写入、脚本执行和绕过审批不会在这里开放。",
       ),
-    ).toBeInTheDocument();
+    ).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "怎么使用这个总览" })).not.toBeInTheDocument();
     expect(
       availableEntries,
     ).toBeInTheDocument();
@@ -438,8 +439,8 @@ describe("operator console routes", () => {
     expect(capabilityMapRule).toContain("grid-template-columns: repeat(2, minmax(0, 1fr))");
     expect(capabilityMapRule).toContain("gap: 10px");
     expect(capabilityRowRule).toContain("grid-template-columns: 36px minmax(0, 1fr) auto");
-    expect(sqlCanvasRule).toContain("grid-template-rows: auto minmax(0, 1fr)");
-    expect(workbenchGridRule).toContain("gap: var(--workspace-layout-gap)");
+    expect(sqlCanvasRule).toContain("grid-template-rows: auto auto minmax(0, 1fr)");
+    expect(workbenchGridRule).toContain("gap: 12px");
     expect(skillRegistryCss).toContain(".registryCanvas");
     expect(skillRegistryCss).toContain(".registryTable");
   });

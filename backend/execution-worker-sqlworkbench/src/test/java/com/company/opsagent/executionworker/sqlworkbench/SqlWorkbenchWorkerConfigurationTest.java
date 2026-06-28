@@ -1,5 +1,6 @@
 package com.company.opsagent.executionworker.sqlworkbench;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
@@ -11,9 +12,14 @@ import com.company.opsagent.contracts.workflow.OperatorContext;
 import com.company.opsagent.contracts.workflow.PolicyDecisionReference;
 import com.company.opsagent.contracts.workflow.TraceContext;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.security.KeyStore;
 import java.time.Clock;
 import java.time.OffsetDateTime;
 import java.util.List;
+import javax.crypto.spec.SecretKeySpec;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
@@ -39,6 +45,34 @@ class SqlWorkbenchWorkerConfigurationTest {
       assertEquals("REJECTED", result.status());
       assertEquals("SQL_CONNECTION_NOT_FOUND", result.errorCode());
     });
+  }
+
+  @Test
+  void registersKeyStorePasswordProviderWhenCredentialStoreIsConfigured() throws Exception {
+    char[] storePassword = "store-password".toCharArray();
+    Path keyStorePath = keyStore("as400-dev-readonly", "database-password", storePassword);
+
+    contextRunner
+        .withPropertyValues(
+            "ops-agent.worker.sql-credentials.key-store-path=" + keyStorePath,
+            "ops-agent.worker.sql-credentials.store-password=store-password")
+        .run(context -> assertArrayEquals(
+            "database-password".toCharArray(),
+            context.getBean(SqlPasswordProvider.class).password("as400-dev-readonly")));
+  }
+
+  private Path keyStore(String alias, String secret, char[] storePassword) throws Exception {
+    Path path = Files.createTempFile("ops-agent-sql", ".jceks");
+    KeyStore keyStore = KeyStore.getInstance("JCEKS");
+    keyStore.load(null, storePassword);
+    keyStore.setEntry(
+        alias,
+        new KeyStore.SecretKeyEntry(new SecretKeySpec(secret.getBytes(StandardCharsets.UTF_8), "AES")),
+        new KeyStore.PasswordProtection(storePassword));
+    try (var output = Files.newOutputStream(path)) {
+      keyStore.store(output, storePassword);
+    }
+    return path;
   }
 
   private SqlQueryExecutionRequest request() {

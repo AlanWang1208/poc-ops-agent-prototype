@@ -1,6 +1,7 @@
 package com.company.opsagent.controlplane.bootstrap.security;
 
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.company.opsagent.controlplane.bootstrap.api.ApiErrorResponseWriter;
@@ -55,6 +56,40 @@ class PolicyEnforcementWebFilterTest {
     assertTrue(auditThreadName.contains("boundedElastic"));
   }
 
+  @Test
+  void mapsSqlWorkbenchMutatingAndResultEndpointsToExplicitActions() {
+    assertEquals(
+        "internal.sql-workbench.connections.create",
+        resolvedAction(MockServerHttpRequest.post("/internal/sql-workbench/connections")));
+    assertEquals(
+        "internal.sql-workbench.connections.probe",
+        resolvedAction(MockServerHttpRequest.post("/internal/sql-workbench/connections/as400-development/probe")));
+    assertEquals(
+        "internal.sql-workbench.queries.run",
+        resolvedAction(MockServerHttpRequest.post("/internal/sql-workbench/queries/run")));
+    assertEquals(
+        "internal.sql-workbench.results.read",
+        resolvedAction(MockServerHttpRequest.get("/internal/sql-workbench/results/result-1")));
+  }
+
+  private String resolvedAction(MockServerHttpRequest.BaseBuilder<?> requestBuilder) {
+    AtomicReference<String> action = new AtomicReference<>();
+    var filter = new PolicyEnforcementWebFilter(
+        capturingPolicy(action),
+        new ThreadRecordingAuditTrail(),
+        new ApiErrorResponseWriter(new ObjectMapper()),
+        token -> Mono.just(new OperatorIdentity("operator-1", "ops.reader", List.of("ROLE_ops-reader"))),
+        emptyPrincipalResolver(),
+        null,
+        "OPS_AGENT_SESSION");
+    var exchange = MockServerWebExchange.from(requestBuilder.header("Authorization", "Bearer valid-token"));
+
+    StepVerifier.create(filter.filter(exchange, chainExchange -> Mono.empty()))
+        .verifyComplete();
+
+    return action.get();
+  }
+
   /**
    * 构造允许所有动作的策略服务，让测试只验证审计线程行为，不混入 RBAC 拒绝路径。
    */
@@ -62,6 +97,21 @@ class PolicyEnforcementWebFilterTest {
     return new PolicyDecisionService() {
       @Override
       public PolicyDecision decide(OperatorIdentity identity, String action, String resource) {
+        return new PolicyDecision(action, resource, "policy-v1", true, "allowed");
+      }
+
+      @Override
+      public String policyVersion() {
+        return "policy-v1";
+      }
+    };
+  }
+
+  private PolicyDecisionService capturingPolicy(AtomicReference<String> actionReference) {
+    return new PolicyDecisionService() {
+      @Override
+      public PolicyDecision decide(OperatorIdentity identity, String action, String resource) {
+        actionReference.set(action);
         return new PolicyDecision(action, resource, "policy-v1", true, "allowed");
       }
 
