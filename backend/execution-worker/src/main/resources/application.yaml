@@ -12,10 +12,19 @@ ops-agent:
       enabled: false
       max-clock-skew: 30s
     sql-egress:
-      # Empty by default: no SQL target is reachable until a Worker-local
-      # connection catalog and host/port allowlist are configured.
-      allowed-targets: []
-      connections: []
+      # Local test binding for the SQL workbench smoke flow. Deployment
+      # environments must replace this with their own Worker-local catalog.
+      allowed-targets:
+        - host: localhost
+          port: 9092
+      connections:
+        - connection-id: h2-local-test
+          target-environment: test
+          platform-type: H2
+          host: localhost
+          port: 9092
+          credential-alias: h2-local-readonly
+          enabled: true
     # Configure only through deployment secrets. Empty config fails closed.
     sql-credentials: {}
     http-egress:

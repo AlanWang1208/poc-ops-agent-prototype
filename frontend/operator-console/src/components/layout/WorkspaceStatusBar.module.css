@@ -56,17 +56,17 @@
   align-items: center;
   overflow: hidden;
   padding: 8px 15px 8px 9px;
-  border: 1px solid oklch(0.78 0.042 236 / 0.86);
+  border: 1px solid oklch(0.82 0.026 236 / 0.82);
   border-radius: 15px;
   background:
     radial-gradient(circle at 13% 28%, oklch(0.72 0.13 18 / 0.18), transparent 4.8rem),
-    radial-gradient(circle at 84% 18%, oklch(0.68 0.105 236 / 0.2), transparent 6.4rem),
-    linear-gradient(112deg, oklch(0.985 0.008 236 / 0.98) 0%, oklch(0.944 0.024 236 / 0.94) 52%, oklch(0.968 0.03 18 / 0.9) 100%),
-    linear-gradient(90deg, oklch(0.98 0.006 236 / 0.94), oklch(0.94 0.018 156 / 0.68));
+    radial-gradient(circle at 84% 18%, oklch(0.76 0.052 236 / 0.11), transparent 6.4rem),
+    linear-gradient(112deg, oklch(0.988 0.006 236 / 0.98) 0%, oklch(0.965 0.012 236 / 0.94) 52%, oklch(0.972 0.026 18 / 0.9) 100%),
+    linear-gradient(90deg, oklch(0.99 0.004 236 / 0.94), oklch(0.956 0.012 156 / 0.62));
   box-shadow:
     0 15px 28px oklch(0.38 0.03 248 / 0.075),
     0 1px 0 oklch(1 0.004 236 / 0.9) inset,
-    0 -10px 24px oklch(0.86 0.026 236 / 0.28) inset;
+    0 -10px 24px oklch(0.9 0.014 236 / 0.22) inset;
 }
 
 .brandPlate::before {
@@ -76,8 +76,8 @@
   border-radius: 12px;
   background:
     radial-gradient(ellipse at 18% 56%, oklch(0.66 0.12 18 / 0.12), transparent 7rem),
-    radial-gradient(ellipse at 88% 36%, oklch(0.58 0.11 236 / 0.13), transparent 8rem),
-    linear-gradient(112deg, transparent 0%, oklch(1 0.004 236 / 0.44) 44%, transparent 78%);
+    radial-gradient(ellipse at 88% 36%, oklch(0.64 0.06 236 / 0.08), transparent 8rem),
+    linear-gradient(112deg, transparent 0%, oklch(1 0.004 236 / 0.4) 44%, transparent 78%);
   content: "";
   mask-image: linear-gradient(90deg, transparent, black 18%, black 92%, transparent);
   opacity: 0.78;

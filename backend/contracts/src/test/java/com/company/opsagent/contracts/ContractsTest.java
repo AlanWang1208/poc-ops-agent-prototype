@@ -159,6 +159,19 @@ class ContractsTest {
   }
 
   @Test
+  void acceptsConfiguredSqlWorkbenchPlatformTypes() {
+    for (String platformType : List.of("DB2_FOR_I", "H2", "MYSQL", "h2", "mysql")) {
+      SqlConnectionCreateRequest request = connectionCreateRequest(
+          "development",
+          "sql-dev-readonly",
+          List.of("ORDERS"),
+          platformType);
+
+      assertEquals(platformType.toUpperCase(), request.platformType());
+    }
+  }
+
+  @Test
   void sqlWorkbenchConnectionCreateSchemaRejectsSecretFields() throws Exception {
     JsonNode schema = new ObjectMapper()
         .readTree(Path.of("sqlworkbench/sql-connection-create-request-v1.schema.json").toFile());
@@ -168,6 +181,12 @@ class ContractsTest {
     assertTrue(!schema.path("properties").has("password"));
     assertTrue(!schema.path("properties").has("username"));
     assertTrue(!schema.path("properties").has("jdbcUrl"));
+    List<String> platformTypes = StreamSupport.stream(
+            schema.path("properties").path("platformType").path("enum").spliterator(),
+            false)
+        .map(JsonNode::asText)
+        .toList();
+    assertEquals(List.of("DB2_FOR_I", "H2", "MYSQL"), platformTypes);
   }
 
   @Test
@@ -283,11 +302,19 @@ class ContractsTest {
       String targetEnvironment,
       String credentialAlias,
       List<String> allowedSchemas) {
+    return connectionCreateRequest(targetEnvironment, credentialAlias, allowedSchemas, "DB2_FOR_I");
+  }
+
+  private SqlConnectionCreateRequest connectionCreateRequest(
+      String targetEnvironment,
+      String credentialAlias,
+      List<String> allowedSchemas,
+      String platformType) {
     return new SqlConnectionCreateRequest(
         "1.0",
         "AS/400 Development",
         targetEnvironment,
-        "DB2_FOR_I",
+        platformType,
         "as400-dev.internal",
         446,
         "ORDERS",

@@ -27,6 +27,12 @@ public class SqlConnectionProbeWorker {
   public SqlConnectionProbeResult probe(SqlConnectionSummary connection) {
     try {
       WorkerSqlConnectionDescriptor descriptor = egressPolicy.validate(connection);
+      if ("H2".equals(descriptor.platformType())) {
+        return result(connection, "READY", "SQL connection probe succeeded");
+      }
+      if (!"DB2_FOR_I".equals(descriptor.platformType())) {
+        return result(connection, "PROBE_FAILED", "SQL platform is not supported by this worker");
+      }
       char[] password = passwordProvider.password(descriptor.credentialAlias());
       Arrays.fill(password, '\0');
       return result(connection, "READY", "SQL connection probe succeeded");

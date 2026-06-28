@@ -55,6 +55,9 @@ public final class WorkerSqlEgressPolicy {
     if (!descriptor.host().equalsIgnoreCase(connection.host()) || descriptor.port() != connection.port()) {
       throw rejected("SQL_CONNECTION_METADATA_MISMATCH", "SQL connection metadata does not match worker binding");
     }
+    if (!descriptor.platformType().equalsIgnoreCase(connection.platformType())) {
+      throw rejected("SQL_CONNECTION_METADATA_MISMATCH", "SQL connection metadata does not match worker binding");
+    }
     if (!descriptor.credentialAlias().equals(connection.credentialAlias())) {
       throw rejected("SQL_CREDENTIAL_ALIAS_MISMATCH", "SQL credential alias does not match worker binding");
     }

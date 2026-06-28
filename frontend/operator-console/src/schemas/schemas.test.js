@@ -91,6 +91,47 @@ describe("SQL schemas", () => {
     ).toHaveLength(1);
   });
 
+  test("accepts configured H2 and MySQL SQL workbench connections", () => {
+    expect(
+      sqlConnectionListSchema.parse([
+        {
+          contractVersion: "1.0",
+          connectionId: "h2-development",
+          displayName: "H2 Development",
+          targetEnvironment: "development",
+          platformType: "H2",
+          allowedSchemas: ["PUBLIC"],
+          capabilities: ["VALIDATE", "RUN_READ_ONLY", "PREFLIGHT_DML"],
+        },
+        {
+          contractVersion: "1.0",
+          connectionId: "mysql-test",
+          displayName: "MySQL Test",
+          targetEnvironment: "test",
+          platformType: "MYSQL",
+          allowedSchemas: ["orders"],
+          capabilities: ["VALIDATE", "RUN_READ_ONLY", "PREFLIGHT_DML"],
+        },
+      ]),
+    ).toHaveLength(2);
+  });
+
+  test("rejects unsupported SQL workbench platform types", () => {
+    expect(() =>
+      sqlConnectionListSchema.parse([
+        {
+          contractVersion: "1.0",
+          connectionId: "postgres-development",
+          displayName: "PostgreSQL Development",
+          targetEnvironment: "development",
+          platformType: "POSTGRESQL",
+          allowedSchemas: ["public"],
+          capabilities: ["VALIDATE"],
+        },
+      ]),
+    ).toThrow();
+  });
+
   test("rejects any production connection instead of silently filtering it", () => {
     expect(() =>
       sqlConnectionListSchema.parse([

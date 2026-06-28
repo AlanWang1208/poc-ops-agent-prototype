@@ -61,6 +61,33 @@ class SqlWorkbenchWorkerConfigurationTest {
             context.getBean(SqlPasswordProvider.class).password("as400-dev-readonly")));
   }
 
+  @Test
+  void executesConfiguredH2ReadOnlyQuery() {
+    contextRunner
+        .withPropertyValues(
+            "ops-agent.worker.sql-egress.allowed-targets[0].host=localhost",
+            "ops-agent.worker.sql-egress.allowed-targets[0].port=9092",
+            "ops-agent.worker.sql-egress.connections[0].connection-id=h2-local-test",
+            "ops-agent.worker.sql-egress.connections[0].target-environment=test",
+            "ops-agent.worker.sql-egress.connections[0].platform-type=H2",
+            "ops-agent.worker.sql-egress.connections[0].host=localhost",
+            "ops-agent.worker.sql-egress.connections[0].port=9092",
+            "ops-agent.worker.sql-egress.connections[0].credential-alias=h2-local-readonly",
+            "ops-agent.worker.sql-egress.connections[0].enabled=true")
+        .run(context -> {
+          var worker = context.getBean(RestrictedSqlQueryExecutionWorker.class);
+          var result = worker.execute(h2Request());
+
+          assertEquals("SUCCEEDED", result.status());
+          var page = context.getBean(SqlResultStore.class).find(result.resultId()).orElseThrow();
+          assertEquals("ORDER_ID", page.columns().getFirst().name());
+          assertEquals("STATUS", page.columns().get(1).name());
+          assertEquals(2, page.rows().size());
+          assertEquals("READY", page.rows().getFirst().get(1).asText());
+          assertEquals("PENDING", page.rows().get(1).get(1).asText());
+        });
+  }
+
   private Path keyStore(String alias, String secret, char[] storePassword) throws Exception {
     Path path = Files.createTempFile("ops-agent-sql", ".jceks");
     KeyStore keyStore = KeyStore.getInstance("JCEKS");
@@ -92,6 +119,29 @@ class SqlWorkbenchWorkerConfigurationTest {
         "workflow-1",
         query,
         "sha256:test",
+        new OperatorContext("operator-1", List.of("ROLE_ops-reader")),
+        new PolicyDecisionReference("decision-1", "policy-v1", "ALLOW"),
+        new TraceContext("trace-1", "request-1"),
+        OffsetDateTime.now().plusSeconds(30));
+  }
+
+  private SqlQueryExecutionRequest h2Request() {
+    var query = new SqlQueryRequest(
+        "1.0",
+        "h2-local-test",
+        "test",
+        "PUBLIC",
+        SqlQueryAction.RUN_READ_ONLY,
+        "select ORDER_ID, STATUS from PUBLIC.ORDERS order by ORDER_ID",
+        List.of(),
+        new SqlQueryLimits(500, 5_000_000, 30),
+        "h2-key");
+    return new SqlQueryExecutionRequest(
+        "1.0",
+        "h2-execution-1",
+        "h2-workflow-1",
+        query,
+        "sha256:h2-test",
         new OperatorContext("operator-1", List.of("ROLE_ops-reader")),
         new PolicyDecisionReference("decision-1", "policy-v1", "ALLOW"),
         new TraceContext("trace-1", "request-1"),

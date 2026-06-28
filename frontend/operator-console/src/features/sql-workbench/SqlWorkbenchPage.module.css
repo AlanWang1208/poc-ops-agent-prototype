@@ -525,46 +525,93 @@
   font-weight: 900;
 }
 
+.connectionDialog {
+  width: min(920px, calc(100vw - 56px));
+  max-width: 920px;
+}
+
 .connectionForm {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.connectionFormSection {
+  display: grid;
   gap: 10px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid rgba(34, 126, 166, 0.13);
+}
+
+.connectionFormSection:last-of-type {
+  padding-bottom: 4px;
+  border-bottom: 0;
+}
+
+.connectionFormSection h3 {
+  margin: 0;
+  color: var(--sql-ink);
+  font-size: 12px;
+  font-weight: 900;
+  line-height: 1.2;
+}
+
+.connectionFormGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px 12px;
 }
 
 .connectionForm label,
 .formCapabilities {
   display: grid;
   min-width: 0;
-  gap: 5px;
+  gap: 6px;
 }
 
 .connectionForm label span,
 .formCapabilities > span {
+  min-width: 0;
+  overflow: hidden;
   color: var(--sql-muted);
   font-size: 11px;
   font-weight: 900;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .connectionForm input,
 .connectionForm select {
   width: 100%;
-  height: 36px;
+  height: 38px;
   min-width: 0;
   padding: 0 10px;
-  border: 1px solid var(--sql-border);
+  border: 1px solid oklch(0.81 0.029 230);
   border-radius: 8px;
-  background: var(--sql-panel);
+  background: oklch(0.99 0.004 230);
   color: var(--sql-ink);
   font: inherit;
   font-size: 12px;
   font-weight: 760;
+  outline: none;
+}
+
+.connectionForm input:focus,
+.connectionForm select:focus {
+  border-color: rgba(34, 126, 166, 0.58);
+  box-shadow: 0 0 0 3px rgba(34, 126, 166, 0.12);
+}
+
+.wideField {
+  grid-column: span 1;
 }
 
 .formCapabilities {
-  grid-column: 1 / -1;
-  grid-template-columns: 110px repeat(3, max-content);
-  align-items: center;
-  gap: 8px;
+  grid-column: span 2;
+  grid-template-columns: minmax(96px, max-content) repeat(3, max-content);
+  align-items: end;
+  gap: 7px;
+  min-height: 38px;
 }
 
 .formCapabilities strong {
@@ -583,7 +630,7 @@
 .formActions {
   grid-column: 1 / -1;
   justify-content: flex-end;
-  padding-top: 4px;
+  padding-top: 2px;
 }
 
 @media (max-width: 1360px) {
@@ -639,6 +686,14 @@
   }
 
   .connectionForm {
+    grid-template-columns: 1fr;
+  }
+
+  .connectionDialog {
+    width: 100%;
+  }
+
+  .connectionFormGrid {
     grid-template-columns: 1fr;
   }
 

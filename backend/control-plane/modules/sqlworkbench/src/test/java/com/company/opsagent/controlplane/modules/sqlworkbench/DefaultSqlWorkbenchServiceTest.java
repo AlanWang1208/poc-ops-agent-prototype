@@ -71,6 +71,8 @@ class DefaultSqlWorkbenchServiceTest {
 
   @Test
   void createsDevelopmentConnectionWithPendingWorkerBindingStatus() {
+    workerClient.probeStatus = "CREDENTIAL_ALIAS_NOT_FOUND";
+
     SqlConnectionSummary created = service.createConnection(new SqlConnectionCreateRequest(
         "1.0",
         "AS/400 Dev Sandbox",
@@ -89,6 +91,28 @@ class DefaultSqlWorkbenchServiceTest {
     assertEquals("as400-dev-readonly", created.credentialAlias());
     assertEquals("ORDERS", created.defaultSchema());
     assertEquals(446, created.port());
+  }
+
+  @Test
+  void promotesCreatedConnectionToReadyWhenWorkerProbeSucceeds() {
+    SqlConnectionSummary created = service.createConnection(new SqlConnectionCreateRequest(
+        "1.0",
+        "H2 Local Test",
+        "test",
+        "H2",
+        "localhost",
+        9092,
+        "PUBLIC",
+        List.of("PUBLIC"),
+        List.of(SqlQueryAction.VALIDATE, SqlQueryAction.RUN_READ_ONLY, SqlQueryAction.PREFLIGHT_DML),
+        "h2-local-readonly",
+        500,
+        30));
+
+    assertEquals("READY", created.status());
+    assertEquals(1, workerClient.probeCount);
+    assertEquals("h2-local-test", workerClient.lastProbeConnection.connectionId());
+    assertEquals("H2", workerClient.lastProbeConnection.platformType());
   }
 
   @Test
@@ -192,6 +216,7 @@ class DefaultSqlWorkbenchServiceTest {
     private int executeCount;
     private int readCount;
     private int probeCount;
+    private String probeStatus = "READY";
     private SqlConnectionSummary lastProbeConnection;
     private SqlQueryExecutionRequest lastExecutionRequest;
 
@@ -202,8 +227,10 @@ class DefaultSqlWorkbenchServiceTest {
       return new SqlConnectionProbeResult(
           "1.0",
           connection.connectionId(),
-          "READY",
-          "SQL connection probe succeeded",
+          probeStatus,
+          "READY".equals(probeStatus)
+              ? "SQL connection probe succeeded"
+              : "SQL connection probe did not match worker binding",
           OffsetDateTime.now(CLOCK));
     }
 

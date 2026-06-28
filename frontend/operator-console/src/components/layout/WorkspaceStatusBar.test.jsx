@@ -81,6 +81,7 @@ describe("WorkspaceStatusBar", () => {
     expect(brandPlateRule).toContain("isolation: isolate");
     expect(brandPlateRule).toContain("overflow: hidden");
     expect(brandPlateRule).toContain("radial-gradient");
+    expect(brandPlateRule).toContain("oklch(0.965 0.012 236 / 0.94)");
     expect(brandPlateRule).not.toContain("repeating-linear-gradient");
     expect(brandPlateBeforeRule).toContain("radial-gradient");
     expect(brandPlateBeforeRule).toContain("mask-image: linear-gradient");
