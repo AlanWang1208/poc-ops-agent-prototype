@@ -25,10 +25,13 @@ ops-agent:
     provider: agentscope
     model-name: ${OPS_AGENT_AGENT_RUNTIME_MODEL_NAME:gpt-4.1-mini}
     base-url: ${OPS_AGENT_AGENT_RUNTIME_BASE_URL:https://api.openai.com/v1}
+    api-key: ${OPS_AGENT_AGENT_RUNTIME_API_KEY:${OPENAI_API_KEY:OPS_AGENT_FAKE_API_KEY_REPLACE_ME}}
     api-key-env: OPENAI_API_KEY
 ```
 
-真实 API Key 必须通过运行环境、部署密钥系统或受保护的外部 Spring 配置源注入，不得写入源码、配置样例、日志、Prompt、制品或测试数据。使用 OpenAI 时，运行环境中提供名为 `OPENAI_API_KEY` 的密钥；使用百炼千问时，在目标环境专用配置中覆盖 `model-name`、`base-url` 和 `api-key-env`，仍不得提交真实密钥。
+`OPS_AGENT_FAKE_API_KEY_REPLACE_ME` 是本地占位值，不是密钥。控制面会识别该占位值并返回 `AGENT_RUNTIME_FAKE_API_KEY`，用于证明 `agent-runtime` profile、模型参数和失败关闭路径已经接通，但不会向模型供应方发起真实请求。提供真实 API Key 后，占位值会被 `OPS_AGENT_AGENT_RUNTIME_API_KEY` 或 `OPENAI_API_KEY` 覆盖，随后进入 OpenAI-compatible AgentScope 客户端。
+
+真实 API Key 必须通过运行环境、部署密钥系统或受保护的外部 Spring 配置源注入，不得写入源码、配置样例、日志、Prompt、制品或测试数据。使用 OpenAI 时，运行环境中提供名为 `OPENAI_API_KEY` 的密钥；如需避免与本机其他 OpenAI 工具共用变量，也可以提供 `OPS_AGENT_AGENT_RUNTIME_API_KEY`。使用百炼千问时，在目标环境专用配置中覆盖 `model-name`、`base-url` 和密钥变量，仍不得提交真实密钥。
 
 真实 Tool Call 还需要 M02 策略动作 `internal.agent.tool.execute`。基础 `application.yaml` 已为 `ROLE_ops-reader` 和 `ROLE_ops-admin` 配置该动作，避免模型发起工具调用后被平台策略默认拒绝。
 
@@ -95,6 +98,7 @@ Linux、macOS 或容器环境：
 |---|---|
 | 返回 `AGENT_RUNTIME_DISABLED` | 检查 `ops-agent.agent-runtime.enabled` 是否为 `true` |
 | 返回 `AGENT_RUNTIME_NOT_CONFIGURED` | 检查 `agent-runtime` profile、`model-name`、`base-url` 和 `api-key-env` 指向的运行环境变量 |
+| 返回 `AGENT_RUNTIME_FAKE_API_KEY` | 当前仍使用本地占位 Key；通过 `OPS_AGENT_AGENT_RUNTIME_API_KEY` 或 `OPENAI_API_KEY` 注入真实密钥后重启 |
 | 返回 `POLICY_DENIED` | 检查调用身份是否具备 `internal.agent.diagnostics.read` 和 `internal.agent.tool.execute` 对应角色 |
 | Agent 输出为空 | 检查模型供应方响应；平台只返回最终文本摘要，不暴露模型内部推理 |
 | 出现非只读工具调用 | 保持 P1 拒绝，不得临时放宽策略；先补安全评审和 ADR |

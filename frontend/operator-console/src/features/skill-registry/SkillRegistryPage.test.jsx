@@ -1,6 +1,7 @@
 import { http, HttpResponse } from "msw";
 import { MemoryRouter } from "react-router-dom";
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { describe, expect, test } from "vitest";
 
 import App from "../../app/App.jsx";
@@ -97,6 +98,52 @@ describe("SkillRegistryPage", () => {
     ).toBeInTheDocument();
   });
 
+  test("submits natural-language registry queries to the skill routing endpoint", async () => {
+    useAuthenticatedSession();
+    /** @type {unknown[]} */
+    const requests = [];
+    server.use(
+      http.get("/internal/skills", () =>
+        HttpResponse.json({ total: 1, skills: [registeredSkill] }),
+      ),
+      http.post("/internal/routing/skills/search", async ({ request }) => {
+        requests.push(await request.json());
+        return HttpResponse.json({
+          total: 1,
+          candidates: [
+            {
+              skill: applicationLogSkill,
+              releaseSnapshot: releaseSnapshotFor(applicationLogSkill),
+              score: 105,
+              matchedRules: ["分类匹配", "风险等级满足约束", "发布状态匹配"],
+            },
+          ],
+        });
+      }),
+    );
+
+    renderSkillRegistry();
+
+    const user = userEvent.setup();
+    await user.type(await screen.findByLabelText("自然语言查询 Skill"), "应用日志只读");
+    await user.click(screen.getByRole("button", { name: "查询候选 Skill" }));
+
+    expect(await screen.findByText("候选 Skill")).toBeInTheDocument();
+    expect(screen.getByText("application-log-summary-read")).toBeInTheDocument();
+    expect(screen.getByText("候选分 105")).toBeInTheDocument();
+    expect(requests).toEqual([
+      {
+        skillId: null,
+        category: "APPLICATION_DIAGNOSTICS",
+        maxRiskLevel: "READ_ONLY",
+        requiredParameters: [],
+        requiredTags: ["log"],
+        requestContextTags: [],
+        publicationStatusRequired: "VALIDATED",
+      },
+    ]);
+  });
+
   test("blocks invalid skill catalog data", async () => {
     useAuthenticatedSession();
     server.use(
@@ -139,3 +186,57 @@ const registeredSkill = {
   publicationStatus: "VALIDATED",
   manifestPath: "node-health/manifest.json",
 };
+
+const applicationLogSkill = {
+  descriptor: {
+    skillId: "application-log-summary-read",
+    version: "1.0.0",
+    displayName: "Application log summary",
+    description: "Reads recent application logs",
+    category: "APPLICATION_DIAGNOSTICS",
+    riskLevel: "READ_ONLY",
+    executor: "HTTP",
+    outputType: "MARKDOWN",
+    readOnly: true,
+    timeoutSeconds: 30,
+    owner: "application-ops",
+    requiredRoles: ["ROLE_ops-reader"],
+    tags: ["application", "log", "summary"],
+    interceptors: ["AUTHORIZATION", "AUDIT", "SENSITIVE_DATA_MASKING"],
+    parameters: [
+      {
+        name: "applicationName",
+        displayName: "Application name",
+        description: "Application identifier",
+        type: "STRING",
+        required: true,
+        allowedValues: [],
+        defaultValue: null,
+      },
+    ],
+  },
+  publication: {
+    publishedBy: "application-ops",
+    publishedAt: "2026-06-14T00:00:00Z",
+    checksumSha256: "b".repeat(64),
+    signatureAlgorithm: "HmacSHA256",
+    signature: "signed",
+  },
+  publicationStatus: "VALIDATED",
+  manifestPath: "application-log-summary/manifest.json",
+};
+
+/**
+ * @param {{descriptor: {skillId: string, version: string}}} skill
+ */
+function releaseSnapshotFor(skill) {
+  return {
+    skillId: skill.descriptor.skillId,
+    version: skill.descriptor.version,
+    stage: "GENERAL_AVAILABLE",
+    rolloutPercentage: 100,
+    targetContextTags: [],
+    reason: "P1 read-only registry search",
+    updatedAt: "2026-06-14T00:00:00Z",
+  };
+}
