@@ -228,6 +228,34 @@ describe("operator console routes", () => {
     expect(screen.queryByRole("button", { name: "执行生产写操作" })).not.toBeInTheDocument();
   });
 
+  it("renders the meeting notes prototype instead of the placeholder page", async () => {
+    renderAt("/meeting-notes");
+
+    expect(await screen.findByRole("heading", { name: "会议录制纪要" })).toBeInTheDocument();
+    expect(screen.getByRole("region", { name: "会议纪要库" })).toBeInTheDocument();
+    expect(screen.getByRole("search", { name: "会议纪要筛选" })).toBeInTheDocument();
+    expect(screen.getByRole("complementary", { name: "会议纪要辅助区" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "开始录制" })).toHaveAttribute(
+      "href",
+      "/meeting-notes/record/new",
+    );
+    expect(
+      screen.queryByText("当前页面只展示 P1 只读范围内的占位入口，后续任务再接入真实接口。"),
+    ).not.toBeInTheDocument();
+  });
+
+  it.each([
+    ["/meeting-notes/recording-settings", "本机录制程序配置"],
+    ["/meeting-notes/record/new", "开始录制会议"],
+    ["/meeting-notes/meeting-payment-review", "支付链路故障复盘会"],
+    ["/meeting-notes/meeting-payment-review/edit", "编辑会议纪要草稿"],
+  ])("renders meeting notes sub-route %s", async (path, heading) => {
+    renderAt(path);
+
+    expect(await screen.findByRole("heading", { name: heading })).toBeInTheDocument();
+    expect(screen.getByLabelText("当前工作台")).toBeInTheDocument();
+  });
+
   it("renders the workflow events workspace from the prototype while keeping the shared shell", async () => {
     renderAt("/workflow-events");
 

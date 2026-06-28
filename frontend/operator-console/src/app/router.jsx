@@ -6,6 +6,11 @@ import { Card } from "../components/primitives/Card.jsx";
 import { AgentWorkspacePage } from "../features/agent-workspace/AgentWorkspacePage.jsx";
 import { AuditRecordsPage } from "../features/audit-records/AuditRecordsPage.jsx";
 import { LoginPage } from "../features/auth/LoginPage.jsx";
+import { MeetingDraftEditorPage } from "../features/meeting-notes/MeetingDraftEditorPage.jsx";
+import { MeetingNoteDetailPage } from "../features/meeting-notes/MeetingNoteDetailPage.jsx";
+import { MeetingNotesPage } from "../features/meeting-notes/MeetingNotesPage.jsx";
+import { RecordingSettingsPage } from "../features/meeting-notes/RecordingSettingsPage.jsx";
+import { RecordingWizardPage } from "../features/meeting-notes/RecordingWizardPage.jsx";
 import { ProtectedRoute } from "../features/auth/ProtectedRoute.jsx";
 import { OverviewPage } from "../features/overview/OverviewPage.jsx";
 import { QuickLinksPage } from "../features/quick-links/QuickLinksPage.jsx";
@@ -124,13 +129,42 @@ export function AppRouter() {
       <Route
         element={
           <ProtectedRoute>
-            <ProtectedPlaceholder
-              description="会议录音、纪要总结和文件归档入口，后续接入受控接口。"
-              title="会议录制纪要"
-            />
+            <MeetingNotesPage />
           </ProtectedRoute>
         }
         path="/meeting-notes"
+      />
+      <Route
+        element={
+          <ProtectedRoute>
+            <RecordingWizardPage />
+          </ProtectedRoute>
+        }
+        path="/meeting-notes/record/new"
+      />
+      <Route
+        element={
+          <ProtectedRoute>
+            <RecordingSettingsPage />
+          </ProtectedRoute>
+        }
+        path="/meeting-notes/recording-settings"
+      />
+      <Route
+        element={
+          <ProtectedRoute>
+            <MeetingDraftEditorPage />
+          </ProtectedRoute>
+        }
+        path="/meeting-notes/:noteId/edit"
+      />
+      <Route
+        element={
+          <ProtectedRoute>
+            <MeetingNoteDetailPage />
+          </ProtectedRoute>
+        }
+        path="/meeting-notes/:noteId"
       />
       <Route
         element={
