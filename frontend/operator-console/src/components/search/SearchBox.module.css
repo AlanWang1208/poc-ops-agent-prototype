@@ -1,0 +1,202 @@
+.searchBox {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: 1fr;
+  gap: 0;
+  align-items: stretch;
+}
+
+.tabList {
+  display: flex;
+  grid-column: 1 / -1;
+  align-items: end;
+  gap: 4px;
+  padding: 0 0 0 2px;
+  border-bottom: 1px solid #dbe2ea;
+}
+
+.tabList button,
+.clearButton,
+.submitButton {
+  appearance: none;
+  border: 0;
+  cursor: pointer;
+  font: inherit;
+  letter-spacing: 0;
+}
+
+.tabList button {
+  min-height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 0 13px;
+  border: 1px solid transparent;
+  border-bottom: 0;
+  border-radius: 8px 8px 0 0;
+  background: transparent;
+  color: #687789;
+  font-size: 12px;
+  font-weight: 820;
+  white-space: nowrap;
+}
+
+.tabIcon {
+  flex: 0 0 auto;
+}
+
+.tabList .activeTab {
+  margin-bottom: -1px;
+  border-color: #dbe2ea;
+  background: #ffffff;
+  color: #2584a9;
+}
+
+.conditionPanel {
+  display: grid;
+  grid-column: 1 / -1;
+  min-width: 0;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  align-items: stretch;
+  padding: 12px;
+  border: 1px solid #dbe2ea;
+  border-top: 0;
+  border-radius: 0 8px 8px;
+  background: #ffffff;
+}
+
+.conditionControls {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: minmax(220px, 1fr) auto auto;
+  gap: 10px;
+  align-items: stretch;
+}
+
+.inputShell {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: 18px 1fr;
+  gap: 2px 8px;
+  align-items: center;
+  padding: 8px 11px;
+  border: 1px solid #dbe2ea;
+  border-radius: 8px;
+  background: #f9fbfc;
+  color: #687789;
+}
+
+.inputShell span {
+  color: #687789;
+  font-size: 11px;
+  font-weight: 820;
+}
+
+.inputShell input {
+  grid-column: 1 / -1;
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: #34404d;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 720;
+}
+
+.inputShell input::placeholder {
+  color: color-mix(in srgb, #687789 70%, transparent);
+}
+
+.clearButton {
+  width: 36px;
+  min-height: 50px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  align-self: stretch;
+  border: 1px solid #dbe2ea;
+  border-radius: 8px;
+  background: #f9fbfc;
+  color: #687789;
+}
+
+.submitButton {
+  min-width: 82px;
+  min-height: 50px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 0 14px;
+  border: 1px solid #2584a9;
+  border-radius: 8px;
+  background: #2584a9;
+  color: #fbfdff;
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.submitButton:hover {
+  background: color-mix(in srgb, #2584a9 88%, #1c596f);
+}
+
+.naturalPanel {
+  grid-column: 1 / -1;
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid #dbe2ea;
+  border-top: 0;
+  border-radius: 0 8px 8px;
+  background: #ffffff;
+}
+
+.conditionFilters {
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.conditionFilters button {
+  appearance: none;
+  min-width: 88px;
+  min-height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 12px;
+  border: 1px solid #dbe2ea;
+  border-radius: 8px;
+  background: #f9fbfc;
+  color: #34404d;
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 820;
+}
+
+.conditionFilters .activeCondition {
+  border-color: #2584a9;
+  background: #2584a9;
+  color: #fbfdff;
+}
+
+@media (max-width: 760px) {
+  .searchBox {
+    grid-template-columns: 1fr;
+  }
+
+  .conditionControls {
+    grid-template-columns: 1fr;
+  }
+
+  .tabList,
+  .clearButton,
+  .submitButton {
+    width: 100%;
+  }
+}
