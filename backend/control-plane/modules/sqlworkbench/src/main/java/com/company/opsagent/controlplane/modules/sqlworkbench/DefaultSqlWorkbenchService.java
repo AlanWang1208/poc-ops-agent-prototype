@@ -56,7 +56,16 @@ public class DefaultSqlWorkbenchService implements SqlWorkbenchService {
 
   @Override
   public SqlConnectionSummary createConnection(SqlConnectionCreateRequest request) {
-    return connectionCatalog.create(request);
+    SqlConnectionSummary created = connectionCatalog.create(request);
+    try {
+      SqlConnectionProbeResult probe = workerClient.probe(created);
+      if ("READY".equalsIgnoreCase(probe.status())) {
+        return connectionCatalog.updateStatus(created.connectionId(), "READY");
+      }
+    } catch (RuntimeException ignored) {
+      // New connections remain pending until the worker binding can be verified.
+    }
+    return created;
   }
 
   @Override

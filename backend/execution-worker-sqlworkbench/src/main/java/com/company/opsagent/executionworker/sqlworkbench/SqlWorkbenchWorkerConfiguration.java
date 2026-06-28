@@ -79,12 +79,11 @@ public class SqlWorkbenchWorkerConfiguration {
   SqlDataSourceRegistry sqlDataSourceRegistry(
       WorkerSqlEgressPolicy workerSqlEgressPolicy,
       SqlPasswordProvider sqlPasswordProvider) {
-    return new PolicyEnforcedSqlDataSourceRegistry(
+    return new ConfiguredSqlDataSourceRegistry(
         workerSqlEgressPolicy,
-        new Jt400SqlDataSourceRegistry(
-            workerSqlEgressPolicy,
-            sqlPasswordProvider,
-            new Jt400DataSourceFactory()));
+        sqlPasswordProvider,
+        new Jt400DataSourceFactory(),
+        new H2SqlDataSourceFactory());
   }
 
   /**

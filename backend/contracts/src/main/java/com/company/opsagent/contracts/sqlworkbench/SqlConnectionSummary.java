@@ -59,10 +59,7 @@ public record SqlConnectionSummary(
     if ("production".equalsIgnoreCase(targetEnvironment)) {
       throw new IllegalArgumentException("production connections must not be exposed");
     }
-    platformType = requiredText(platformType, "platformType");
-    if (!"DB2_FOR_I".equals(platformType)) {
-      throw new IllegalArgumentException("platformType must be DB2_FOR_I");
-    }
+    platformType = SqlPlatformTypes.normalize(platformType);
     host = requiredText(host, "host");
     if (port < 1 || port > 65535) {
       throw new IllegalArgumentException("port must be between 1 and 65535");

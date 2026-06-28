@@ -76,6 +76,7 @@ public class WorkerSqlEgressProperties {
 
     private String connectionId;
     private String targetEnvironment;
+    private String platformType = "DB2_FOR_I";
     private String host;
     private int port;
     private String credentialAlias;
@@ -96,6 +97,14 @@ public class WorkerSqlEgressProperties {
 
     public void setTargetEnvironment(String targetEnvironment) {
       this.targetEnvironment = targetEnvironment;
+    }
+
+    public String getPlatformType() {
+      return platformType;
+    }
+
+    public void setPlatformType(String platformType) {
+      this.platformType = platformType;
     }
 
     public String getHost() {
@@ -144,6 +153,7 @@ public class WorkerSqlEgressProperties {
       return new WorkerSqlConnectionDescriptor(
           connectionId,
           targetEnvironment,
+          platformType,
           host,
           port,
           credentialAlias,

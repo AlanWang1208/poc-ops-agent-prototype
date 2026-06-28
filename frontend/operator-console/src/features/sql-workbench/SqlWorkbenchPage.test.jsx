@@ -95,42 +95,54 @@ describe("SqlWorkbenchPage", () => {
     await user.click(screen.getByRole("button", { name: "新建连接" }));
 
     const dialog = screen.getByRole("dialog", { name: "新建连接" });
+    expect(within(dialog).getByText("连接身份")).toBeInTheDocument();
+    expect(within(dialog).getByText("目标端点")).toBeInTheDocument();
+    expect(within(dialog).getByText("Schema 与限制")).toBeInTheDocument();
     expect(within(dialog).queryByLabelText(/密码/u)).not.toBeInTheDocument();
     expect(within(dialog).queryByLabelText(/password/i)).not.toBeInTheDocument();
     expect(within(dialog).queryByLabelText(/JDBC URL/u)).not.toBeInTheDocument();
 
     await user.clear(within(dialog).getByLabelText("连接名称"));
-    await user.type(within(dialog).getByLabelText("连接名称"), "AS/400 Lab");
+    await user.type(within(dialog).getByLabelText("连接名称"), "H2 Lab");
     await user.selectOptions(within(dialog).getByLabelText("目标环境"), "test");
+    await user.selectOptions(within(dialog).getByLabelText("平台类型"), "H2");
+    expect(within(dialog).getByLabelText("端口")).toHaveValue("9092");
+    expect(within(dialog).getByLabelText("默认 Schema")).toHaveValue("PUBLIC");
+    expect(within(dialog).getByLabelText("允许 Schema")).toHaveValue("PUBLIC");
     await user.clear(within(dialog).getByLabelText("主机"));
-    await user.type(within(dialog).getByLabelText("主机"), "as400-lab.internal");
+    await user.type(within(dialog).getByLabelText("主机"), "localhost");
     await user.clear(within(dialog).getByLabelText("端口"));
-    await user.type(within(dialog).getByLabelText("端口"), "446");
+    await user.type(within(dialog).getByLabelText("端口"), "9092");
     await user.clear(within(dialog).getByLabelText("默认 Schema"));
-    await user.type(within(dialog).getByLabelText("默认 Schema"), "LABORDERS");
+    await user.type(within(dialog).getByLabelText("默认 Schema"), "PUBLIC");
     await user.clear(within(dialog).getByLabelText("允许 Schema"));
-    await user.type(within(dialog).getByLabelText("允许 Schema"), "LABORDERS, INVENTORY_QA");
-    await user.clear(within(dialog).getByLabelText("credentialAlias"));
-    await user.type(within(dialog).getByLabelText("credentialAlias"), "as400-lab-readonly");
+    await user.type(within(dialog).getByLabelText("允许 Schema"), "PUBLIC");
+    await user.clear(within(dialog).getByLabelText("凭据别名 credentialAlias"));
+    await user.type(
+      within(dialog).getByLabelText("凭据别名 credentialAlias"),
+      "h2-lab-readonly",
+    );
     await user.click(within(dialog).getByRole("button", { name: "保存连接" }));
 
     await waitFor(() => expect(requests).toHaveLength(1));
     expect(requests[0]).toMatchObject({
       contractVersion: "1.0",
-      displayName: "AS/400 Lab",
+      displayName: "H2 Lab",
       targetEnvironment: "test",
-      platformType: "DB2_FOR_I",
-      host: "as400-lab.internal",
-      port: 446,
-      defaultSchema: "LABORDERS",
-      allowedSchemas: ["LABORDERS", "INVENTORY_QA"],
+      platformType: "H2",
+      host: "localhost",
+      port: 9092,
+      defaultSchema: "PUBLIC",
+      allowedSchemas: ["PUBLIC"],
       capabilities: ["VALIDATE", "RUN_READ_ONLY", "PREFLIGHT_DML"],
-      credentialAlias: "as400-lab-readonly",
+      credentialAlias: "h2-lab-readonly",
       maxRowsDefault: 500,
       timeoutSecondsDefault: 30,
     });
     expect(JSON.stringify(requests[0]).toLowerCase()).not.toContain("password");
     expect(JSON.stringify(requests[0]).toLowerCase()).not.toContain("jdbc");
+    expect(await screen.findByText("as400-lab")).toBeInTheDocument();
+    expect(screen.getByText("LABORDERS")).toBeInTheDocument();
   });
 
   test("keeps SQL text and validation reports isolated per session tab", async () => {

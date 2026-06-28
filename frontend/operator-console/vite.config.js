@@ -2,9 +2,20 @@ import { configDefaults, defineConfig } from "vitest/config";
 import react from "@vitejs/plugin-react";
 
 const backendTarget = process.env.VITE_BACKEND_TARGET ?? "http://127.0.0.1:8080";
+const devBearerToken = process.env.OPS_AGENT_DEV_BEARER_TOKEN ?? "";
+/** @type {import("vite").ProxyOptions} */
 const backendProxy = {
   target: backendTarget,
   changeOrigin: false,
+  /**
+   * @param {{on: (event: string, handler: (proxyRequest: import("node:http").ClientRequest, request: import("node:http").IncomingMessage) => void) => void}} proxy
+   */
+  configure(proxy) {
+    if (!devBearerToken) {
+      return;
+    }
+    proxy.on("proxyReq", applyDevProxyAuthorization);
+  },
 };
 
 export default defineConfig({
@@ -49,9 +60,24 @@ function authProxyPlugin() {
           }
 
           try {
+            if (isDevSessionRequest(request)) {
+              response.statusCode = 200;
+              response.setHeader("Content-Type", "application/json");
+              response.end(JSON.stringify({
+                authenticated: true,
+                subject: "operator-dev-admin",
+                username: "ops.admin",
+                roles: ["ROLE_ops-admin", "ROLE_ops-reader"],
+                authenticationType: "dev-hs256",
+              }));
+              return;
+            }
+
+            const headers = readForwardHeaders(request.headers);
+            applyDevAuthorization(headers, request.headers);
             const backendResponse = await fetch(new URL(request.url, backendTarget), {
               body: hasBody(request.method) ? await readRequestBody(request) : undefined,
-              headers: readForwardHeaders(request.headers),
+              headers,
               method: request.method,
               redirect: "manual",
             });
@@ -78,6 +104,37 @@ function authProxyPlugin() {
  */
 function hasBody(method) {
   return !["GET", "HEAD"].includes(method ?? "GET");
+}
+
+/**
+ * @param {import("node:http").IncomingMessage} request
+ */
+function isDevSessionRequest(request) {
+  return Boolean(
+    devBearerToken &&
+    request.method === "GET" &&
+    request.url?.split("?")[0] === "/auth/session",
+  );
+}
+
+/**
+ * @param {Headers} headers
+ * @param {import("node:http").IncomingHttpHeaders} source
+ */
+function applyDevAuthorization(headers, source) {
+  if (devBearerToken && !source.authorization) {
+    headers.set("Authorization", `Bearer ${devBearerToken}`);
+  }
+}
+
+/**
+ * @param {import("node:http").ClientRequest} proxyRequest
+ * @param {import("node:http").IncomingMessage} request
+ */
+function applyDevProxyAuthorization(proxyRequest, request) {
+  if (devBearerToken && !request.headers.authorization) {
+    proxyRequest.setHeader("Authorization", `Bearer ${devBearerToken}`);
+  }
 }
 
 /**

@@ -12,6 +12,7 @@ import { z } from "zod";
 
 const nonBlankString = z.string().trim().min(1);
 const targetEnvironmentSchema = z.enum(["development", "test"]);
+const sqlPlatformTypeSchema = z.enum(["DB2_FOR_I", "H2", "MYSQL"]);
 const sqlConnectionStatusSchema = z.enum([
   "READY",
   "PENDING_WORKER_BINDING",
@@ -39,7 +40,7 @@ const sqlConnectionSchema = z
     connectionId: nonBlankString,
     displayName: nonBlankString,
     targetEnvironment: targetEnvironmentSchema,
-    platformType: z.literal("DB2_FOR_I"),
+    platformType: sqlPlatformTypeSchema,
     host: nonBlankString.optional(),
     port: z.number().int().min(1).max(65_535).optional(),
     status: sqlConnectionStatusSchema.default("READY"),
@@ -59,7 +60,7 @@ export const sqlConnectionCreateRequestSchema = z
     contractVersion: z.literal("1.0"),
     displayName: nonBlankString,
     targetEnvironment: targetEnvironmentSchema,
-    platformType: z.literal("DB2_FOR_I"),
+    platformType: sqlPlatformTypeSchema,
     host: nonBlankString,
     port: z.number().int().min(1).max(65_535),
     defaultSchema: nonBlankString,

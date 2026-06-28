@@ -77,9 +77,31 @@ const DEFAULT_LIMITS = {
   timeoutSeconds: 30,
 };
 
+const PLATFORM_FORM_DEFAULTS = {
+  DB2_FOR_I: {
+    host: "",
+    port: "446",
+    defaultSchema: "ORDERS",
+    allowedSchemas: "ORDERS",
+  },
+  H2: {
+    host: "localhost",
+    port: "9092",
+    defaultSchema: "PUBLIC",
+    allowedSchemas: "PUBLIC",
+  },
+  MYSQL: {
+    host: "",
+    port: "3306",
+    defaultSchema: "ops",
+    allowedSchemas: "ops",
+  },
+};
+
 const DEFAULT_CONNECTION_FORM = {
   displayName: "",
   targetEnvironment: "development",
+  platformType: "DB2_FOR_I",
   host: "",
   port: "446",
   defaultSchema: "ORDERS",
@@ -449,6 +471,15 @@ export function SqlWorkbenchPage() {
           createConnectionMutation.mutate(request, {
             onSuccess: (connection) => {
               setCreatedConnections((current) => [...current, connection]);
+              updateSession(activeSession.id, {
+                connectionId: connection.connectionId,
+                schema: connection.defaultSchema ?? connection.allowedSchemas[0] ?? activeSchema,
+                validation: null,
+                execution: null,
+                resultPage: null,
+                resultPageToken: null,
+                errorMessage: null,
+              });
               setIsConnectionDialogOpen(false);
             },
           });
@@ -754,6 +785,49 @@ function ConnectionDialog({ isPending, onClose, onSubmit, open }) {
   }
 
   /**
+   * @param {string} platformType
+   */
+  function updatePlatformType(platformType) {
+    const nextDefaults =
+      PLATFORM_FORM_DEFAULTS[
+        /** @type {keyof typeof PLATFORM_FORM_DEFAULTS} */ (platformType)
+      ];
+    if (!nextDefaults) {
+      updateField("platformType", platformType);
+      return;
+    }
+
+    setForm((current) => {
+      const currentDefaults =
+        PLATFORM_FORM_DEFAULTS[
+          /** @type {keyof typeof PLATFORM_FORM_DEFAULTS} */ (current.platformType)
+        ];
+      return {
+        ...current,
+        platformType,
+        host:
+          current.host === "" || current.host === currentDefaults?.host
+            ? nextDefaults.host
+            : current.host,
+        port:
+          current.port === "" || current.port === currentDefaults?.port
+            ? nextDefaults.port
+            : current.port,
+        defaultSchema:
+          current.defaultSchema === "" ||
+          current.defaultSchema === currentDefaults?.defaultSchema
+            ? nextDefaults.defaultSchema
+            : current.defaultSchema,
+        allowedSchemas:
+          current.allowedSchemas === "" ||
+          current.allowedSchemas === currentDefaults?.allowedSchemas
+            ? nextDefaults.allowedSchemas
+            : current.allowedSchemas,
+      };
+    });
+  }
+
+  /**
    * @param {import("react").FormEvent<HTMLFormElement>} event
    */
   function submitForm(event) {
@@ -762,7 +836,7 @@ function ConnectionDialog({ isPending, onClose, onSubmit, open }) {
       contractVersion: "1.0",
       displayName: form.displayName.trim(),
       targetEnvironment: /** @type {"development" | "test"} */ (form.targetEnvironment),
-      platformType: "DB2_FOR_I",
+      platformType: /** @type {"DB2_FOR_I" | "H2" | "MYSQL"} */ (form.platformType),
       host: form.host.trim(),
       port: Number(form.port),
       defaultSchema: form.defaultSchema.trim(),
@@ -776,97 +850,128 @@ function ConnectionDialog({ isPending, onClose, onSubmit, open }) {
 
   return (
     <Dialog
+      className={styles.connectionDialog}
       closeLabel="关闭新建连接"
       description="只提交连接目录元数据和 Worker 侧 credentialAlias。"
       icon={<Database size={18} strokeWidth={2.4} />}
       onClose={onClose}
       open={open}
+      size="wide"
       title="新建连接"
     >
       <form className={styles.connectionForm} onSubmit={submitForm}>
-        <label>
-          <span>连接名称</span>
-          <input
-            onChange={(event) => updateField("displayName", event.target.value)}
-            required
-            value={form.displayName}
-          />
-        </label>
-        <label>
-          <span>目标环境</span>
-          <select
-            onChange={(event) => updateField("targetEnvironment", event.target.value)}
-            value={form.targetEnvironment}
-          >
-            <option value="development">development</option>
-            <option value="test">test</option>
-          </select>
-        </label>
-        <label>
-          <span>主机</span>
-          <input
-            onChange={(event) => updateField("host", event.target.value)}
-            required
-            value={form.host}
-          />
-        </label>
-        <label>
-          <span>端口</span>
-          <input
-            inputMode="numeric"
-            onChange={(event) => updateField("port", event.target.value)}
-            required
-            value={form.port}
-          />
-        </label>
-        <label>
-          <span>默认 Schema</span>
-          <input
-            onChange={(event) => updateField("defaultSchema", event.target.value)}
-            required
-            value={form.defaultSchema}
-          />
-        </label>
-        <label>
-          <span>允许 Schema</span>
-          <input
-            onChange={(event) => updateField("allowedSchemas", event.target.value)}
-            required
-            value={form.allowedSchemas}
-          />
-        </label>
-        <label>
-          <span>credentialAlias</span>
-          <input
-            onChange={(event) => updateField("credentialAlias", event.target.value)}
-            required
-            value={form.credentialAlias}
-          />
-        </label>
-        <label>
-          <span>maxRows</span>
-          <input
-            inputMode="numeric"
-            onChange={(event) => updateField("maxRowsDefault", event.target.value)}
-            required
-            value={form.maxRowsDefault}
-          />
-        </label>
-        <label>
-          <span>timeoutSeconds</span>
-          <input
-            inputMode="numeric"
-            onChange={(event) => updateField("timeoutSecondsDefault", event.target.value)}
-            required
-            value={form.timeoutSecondsDefault}
-          />
-        </label>
-        <div className={styles.formCapabilities}>
-          <span>capabilities</span>
-          <strong>VALIDATE</strong>
-          <strong>RUN_READ_ONLY</strong>
-          <strong>PREFLIGHT_DML</strong>
-        </div>
+        <section className={styles.connectionFormSection}>
+          <h3>连接身份</h3>
+          <div className={styles.connectionFormGrid}>
+            <label>
+              <span>连接名称</span>
+              <input
+                onChange={(event) => updateField("displayName", event.target.value)}
+                required
+                value={form.displayName}
+              />
+            </label>
+            <label>
+              <span>目标环境</span>
+              <select
+                onChange={(event) => updateField("targetEnvironment", event.target.value)}
+                value={form.targetEnvironment}
+              >
+                <option value="development">development</option>
+                <option value="test">test</option>
+              </select>
+            </label>
+            <label>
+              <span>平台类型</span>
+              <select
+                onChange={(event) => updatePlatformType(event.target.value)}
+                value={form.platformType}
+              >
+                <option value="DB2_FOR_I">DB2 for i</option>
+                <option value="H2">H2</option>
+                <option value="MYSQL">MySQL</option>
+              </select>
+            </label>
+          </div>
+        </section>
+
+        <section className={styles.connectionFormSection}>
+          <h3>目标端点</h3>
+          <div className={styles.connectionFormGrid}>
+            <label className={styles.wideField}>
+              <span>主机</span>
+              <input
+                onChange={(event) => updateField("host", event.target.value)}
+                required
+                value={form.host}
+              />
+            </label>
+            <label>
+              <span>端口</span>
+              <input
+                inputMode="numeric"
+                onChange={(event) => updateField("port", event.target.value)}
+                required
+                value={form.port}
+              />
+            </label>
+            <label>
+              <span>凭据别名 credentialAlias</span>
+              <input
+                onChange={(event) => updateField("credentialAlias", event.target.value)}
+                required
+                value={form.credentialAlias}
+              />
+            </label>
+          </div>
+        </section>
+
+        <section className={styles.connectionFormSection}>
+          <h3>Schema 与限制</h3>
+          <div className={styles.connectionFormGrid}>
+            <label>
+              <span>默认 Schema</span>
+              <input
+                onChange={(event) => updateField("defaultSchema", event.target.value)}
+                required
+                value={form.defaultSchema}
+              />
+            </label>
+            <label>
+              <span>允许 Schema</span>
+              <input
+                onChange={(event) => updateField("allowedSchemas", event.target.value)}
+                required
+                value={form.allowedSchemas}
+              />
+            </label>
+            <label>
+              <span>maxRows</span>
+              <input
+                inputMode="numeric"
+                onChange={(event) => updateField("maxRowsDefault", event.target.value)}
+                required
+                value={form.maxRowsDefault}
+              />
+            </label>
+            <label>
+              <span>timeoutSeconds</span>
+              <input
+                inputMode="numeric"
+                onChange={(event) => updateField("timeoutSecondsDefault", event.target.value)}
+                required
+                value={form.timeoutSecondsDefault}
+              />
+            </label>
+            <div className={styles.formCapabilities}>
+              <span>capabilities</span>
+              <strong>VALIDATE</strong>
+              <strong>RUN_READ_ONLY</strong>
+              <strong>PREFLIGHT_DML</strong>
+            </div>
+          </div>
+        </section>
+
         <div className={styles.formActions}>
           <button className={styles.secondaryButton} onClick={onClose} type="button">
             取消

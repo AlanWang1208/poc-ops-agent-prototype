@@ -53,6 +53,7 @@ import org.springframework.test.web.reactive.server.WebTestClient;
     "ops-agent.security.audience=ops-agent-internal",
     "ops-agent.security.username-claim=preferred_username",
     "ops-agent.security.role-claim=roles",
+    "ops-agent.worker.base-url=http://127.0.0.1:1",
     "ops-agent.policy.version=rbac-v1",
     "ops-agent.policy.required-roles-by-action.internal.health.read[0]=ROLE_ops-reader",
     "ops-agent.policy.required-roles-by-action.internal.health.read[1]=ROLE_ops-admin",

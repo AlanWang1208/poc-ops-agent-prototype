@@ -4,6 +4,7 @@
 
 - 控制面提供开发和测试环境 SQL 连接目录、连接创建、连接探测、SQL 校验、只读查询执行和结果读取 API。
 - P1 只允许 `development` 与 `test` 环境的单条 `SELECT` 进入真实执行链路。
+- P1 连接契约允许的 `platformType` 为 `DB2_FOR_I`、`H2` 和 `MYSQL`；新增平台仍必须通过连接目录、出口 allowlist、凭据别名和 Worker 二次校验。
 - `INSERT`、`UPDATE`、`DELETE`、DDL、`CALL`、存储过程、`MERGE` 和多语句脚本只能进入静态预检或被拒绝，不得真实执行。
 - 控制面生成短期 SQL 执行信封并通过 Worker 传输认证调用 SQL Worker。
 - Worker 在本地再次校验请求过期时间、只读 SQL、连接目录、目标环境、出口 allowlist 和 `credentialAlias`，然后才创建 JDBC DataSource。
@@ -63,10 +64,11 @@ ops-agent:
 配置要求：
 
 1. `target-environment` 只能是 `development` 或 `test`。
-2. `allowed-targets` 中必须显式列出连接目录的 `host` 和 `port`。
-3. `credential-alias` 只能是 Worker 本地 KeyStore 中的别名，不能是密码、令牌或连接串。
-4. `username` 是只读数据库账号名；如省略，Worker 会使用 `credential-alias` 作为账号名，仅适合别名与账号名一致的环境。
-5. `key-store-path` 和 `store-password` 必须由部署系统或受控密钥系统注入，不得提交真实值。
+2. `platformType` 只能是 `DB2_FOR_I`、`H2` 或 `MYSQL`；配置中不得传入 JDBC URL、用户名密码或连接串。
+3. `allowed-targets` 中必须显式列出连接目录的 `host` 和 `port`。
+4. `credential-alias` 只能是 Worker 本地 KeyStore 中的别名，不能是密码、令牌或连接串。
+5. `username` 是只读数据库账号名；如省略，Worker 会使用 `credential-alias` 作为账号名，仅适合别名与账号名一致的环境。
+6. `key-store-path` 和 `store-password` 必须由部署系统或受控密钥系统注入，不得提交真实值。
 
 ## 新建连接链路
 

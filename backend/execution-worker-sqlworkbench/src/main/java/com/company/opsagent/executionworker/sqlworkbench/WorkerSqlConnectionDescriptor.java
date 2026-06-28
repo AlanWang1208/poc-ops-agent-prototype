@@ -1,16 +1,21 @@
 package com.company.opsagent.executionworker.sqlworkbench;
 
+import java.util.Set;
+
 /**
- * Worker 本地 SQL 连接目录项，只保存连接元数据和凭据别名，不保存真实密钥。
+ * Worker-local SQL connection metadata. This stores no cleartext credentials.
  */
 public record WorkerSqlConnectionDescriptor(
     String connectionId,
     String targetEnvironment,
+    String platformType,
     String host,
     int port,
     String credentialAlias,
     String username,
     boolean enabled) {
+
+  private static final Set<String> SUPPORTED_PLATFORM_TYPES = Set.of("DB2_FOR_I", "H2", "MYSQL");
 
   public WorkerSqlConnectionDescriptor(
       String connectionId,
@@ -19,7 +24,18 @@ public record WorkerSqlConnectionDescriptor(
       int port,
       String credentialAlias,
       boolean enabled) {
-    this(connectionId, targetEnvironment, host, port, credentialAlias, credentialAlias, enabled);
+    this(connectionId, targetEnvironment, "DB2_FOR_I", host, port, credentialAlias, credentialAlias, enabled);
+  }
+
+  public WorkerSqlConnectionDescriptor(
+      String connectionId,
+      String targetEnvironment,
+      String host,
+      int port,
+      String credentialAlias,
+      String username,
+      boolean enabled) {
+    this(connectionId, targetEnvironment, "DB2_FOR_I", host, port, credentialAlias, username, enabled);
   }
 
   public WorkerSqlConnectionDescriptor {
@@ -27,6 +43,10 @@ public record WorkerSqlConnectionDescriptor(
     targetEnvironment = requiredText(targetEnvironment, "targetEnvironment").toLowerCase();
     if (!"development".equals(targetEnvironment) && !"test".equals(targetEnvironment)) {
       throw new IllegalArgumentException("targetEnvironment must be development or test");
+    }
+    platformType = requiredText(platformType, "platformType").toUpperCase();
+    if (!SUPPORTED_PLATFORM_TYPES.contains(platformType)) {
+      throw new IllegalArgumentException("platformType must be one of DB2_FOR_I, H2, MYSQL");
     }
     host = requiredText(host, "host").toLowerCase();
     if (port < 1 || port > 65535) {
