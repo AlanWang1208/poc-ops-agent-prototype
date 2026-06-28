@@ -119,7 +119,7 @@ const capabilityRows = [
   },
   {
     icon: DatabaseZap,
-    label: "AS400改建表",
+    label: "AS400对象管理",
     owner: "受控变更",
     status: "P2 后启用",
     tone: "as400",

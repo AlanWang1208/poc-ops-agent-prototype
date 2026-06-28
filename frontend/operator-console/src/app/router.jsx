@@ -171,8 +171,8 @@ export function AppRouter() {
         element={
           <ProtectedRoute>
             <ProtectedPlaceholder
-              description="AS400 JT400 DDL 快速改表与建表入口，受控变更阶段再接入审批和执行链路。"
-              title="AS400改建表"
+              description="AS400 数据对象管理入口，表结构变更能力在受控变更阶段再接入审批和执行链路。"
+              title="AS400对象管理"
             />
           </ProtectedRoute>
         }

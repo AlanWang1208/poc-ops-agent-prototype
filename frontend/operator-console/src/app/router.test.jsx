@@ -130,7 +130,7 @@ describe("operator console routes", () => {
     ["/audit", "审计记录"],
     ["/skills", "Skill 注册中心"],
     ["/meeting-notes", "会议录制纪要"],
-    ["/as400-ddl", "AS400改建表"],
+    ["/as400-ddl", "AS400对象管理"],
     ["/quick-links", "快捷连接"],
     ["/sql", "SQL 工作台"],
     ["/model-settings", "模型设置"],
@@ -196,7 +196,7 @@ describe("operator console routes", () => {
     expect(within(capabilityMap).getByRole("link", { name: /RAG 问答/u })).toHaveAttribute("href", "/rag");
     expect(within(capabilityMap).getByRole("link", { name: /Skill 注册中心/u })).toHaveAttribute("href", "/skills");
     expect(within(capabilityMap).getByRole("link", { name: /会议录制纪要/u })).toHaveAttribute("href", "/meeting-notes");
-    expect(within(capabilityMap).getByRole("link", { name: /AS400改建表/u })).toHaveAttribute("href", "/as400-ddl");
+    expect(within(capabilityMap).getByRole("link", { name: /AS400对象管理/u })).toHaveAttribute("href", "/as400-ddl");
     expect(within(capabilityMap).getByText("快捷连接")).toBeInTheDocument();
     expect(within(capabilityMap).getByText("后续切片")).toBeInTheDocument();
     expect(within(capabilityMap).queryByRole("link", { name: /快捷连接/u })).not.toBeInTheDocument();

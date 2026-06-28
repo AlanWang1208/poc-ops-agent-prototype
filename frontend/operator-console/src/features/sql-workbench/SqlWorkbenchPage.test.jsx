@@ -95,6 +95,38 @@ describe("SqlWorkbenchPage", () => {
     expect(screen.getByRole("button", { name: "退出展开" })).toBeInTheDocument();
   });
 
+  test("switches the active connection from the top connection selector", async () => {
+    const user = userEvent.setup();
+    const connections = [
+      sqlConnections[0],
+      {
+        ...sqlConnections[1],
+        maxRowsDefault: 250,
+      },
+    ];
+    server.use(
+      http.get("/internal/sql-workbench/connections", () =>
+        HttpResponse.json(connections),
+      ),
+    );
+
+    renderAt("/sql");
+
+    const contextBar = await screen.findByLabelText("SQL 工作区连接上下文");
+    const connectionSelect = within(contextBar).getByRole("combobox", {
+      name: "选择 SQL 连接",
+    });
+    await waitFor(() => expect(connectionSelect).toHaveValue("as400-development"));
+    expect(within(contextBar).getByText("ORDERS")).toBeInTheDocument();
+    expect(within(contextBar).getByText("maxRows 500")).toBeInTheDocument();
+
+    await user.selectOptions(connectionSelect, "as400-test");
+
+    expect(connectionSelect).toHaveValue("as400-test");
+    expect(within(contextBar).getByText("ORDERS_QA")).toBeInTheDocument();
+    expect(within(contextBar).getByText("maxRows 250")).toBeInTheDocument();
+  });
+
   test("creates a connection with credentialAlias metadata and no password field", async () => {
     const user = userEvent.setup();
     /** @type {unknown[]} */
