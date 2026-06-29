@@ -27,6 +27,17 @@ class CalciteSqlValidationServiceTest {
   }
 
   @Test
+  void acceptsSingleSelectWithLineCommentsForReadOnlyExecution() {
+    var report = service.validate(request(SqlQueryAction.RUN_READ_ONLY,
+        "-- operator note\nselect order_id, status from ORDERS.ORDERS\n-- stable ordering\norder by order_id"));
+
+    assertEquals(SqlStatementType.SELECT, report.statementType());
+    assertEquals(SqlValidationLevel.VALIDATED, report.validationLevel());
+    assertTrue(report.rejectionReasons().isEmpty());
+    assertTrue(report.referencedObjects().contains("ORDERS.ORDERS"));
+  }
+
+  @Test
   void rejectsDmlExecution() {
     var report = service.validate(request(SqlQueryAction.RUN_READ_ONLY,
         "update ORDERS.ORDERS set status = 'READY' where order_id = 42"));

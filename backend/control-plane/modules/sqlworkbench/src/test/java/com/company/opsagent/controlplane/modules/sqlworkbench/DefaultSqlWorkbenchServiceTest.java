@@ -2,6 +2,7 @@ package com.company.opsagent.controlplane.modules.sqlworkbench;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.company.opsagent.contracts.sqlworkbench.SqlConnectionCreateRequest;
 import com.company.opsagent.contracts.sqlworkbench.SqlConnectionProbeResult;
@@ -187,6 +188,27 @@ class DefaultSqlWorkbenchServiceTest {
         operator(),
         policy(),
         trace()));
+    assertEquals(0, workerClient.executeCount);
+  }
+
+  @Test
+  void runReadOnlyReportsValidationDetailsBeforeWorkerSubmission() {
+    SqlQueryRequest request = request(
+        "ORDERS",
+        SqlQueryAction.RUN_READ_ONLY,
+        "update ORDERS.ORDERS set status = 'READY' where order_id = 42");
+
+    IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> service.runReadOnlyQuery(
+        request,
+        operator(),
+        policy(),
+        trace()));
+
+    assertTrue(exception.getMessage().contains("SELECT 执行未通过服务端只读校验"));
+    assertTrue(exception.getMessage().contains("statementType=UPDATE"));
+    assertTrue(exception.getMessage().contains("validationLevel=REJECTED"));
+    assertTrue(exception.getMessage().contains("rejectionReasons=DML execution is prohibited in P1"));
+    assertTrue(exception.getMessage().contains("sqlHash=sha256:"));
     assertEquals(0, workerClient.executeCount);
   }
 

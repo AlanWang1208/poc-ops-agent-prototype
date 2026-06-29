@@ -523,6 +523,17 @@ function formatTemperature(value) {
 function TaskDetailPanel({ onShowDetail, task }) {
   const result = task.result;
   const hasWorkflowError = taskTone(task) === "danger";
+  const statusLabel = currentInputStatusLabel(task);
+  const summaryText =
+    task.status === "contractError"
+      ? "请求未通过契约校验。"
+      : hasWorkflowError
+        ? "Agent 诊断请求失败。"
+        : result
+          ? "只读诊断结果已归档。"
+          : task.status === "running"
+            ? "只读诊断正在执行。"
+            : "等待发送只读诊断。";
 
   return (
     <section className={styles.agentPanel}>
@@ -532,24 +543,9 @@ function TaskDetailPanel({ onShowDetail, task }) {
         </span>
         对话执行状态
       </h3>
-      <MiniRow label="状态" tone={taskTone(task)} value={result?.status ?? taskStateLabel(task.status)} />
-      <MiniRow label="策略" tone="ok" value={agentRequestScope.policy} />
-      <MiniRow
-        label="Skill 调用"
-        tone="info"
-        value={result ? `${result.toolResults.length}/${result.toolCallCount}` : "0/0"}
-      />
-      <MiniRow label="workflow" value={task.workflowId ?? "pending"} />
-      <MiniRow label="当前输入" tone={taskTone(task)} value={currentInputStatusLabel(task)} />
-      {hasWorkflowError ? (
-        <div className={`${styles.statusNote} ${styles.panelStatusNote} ${styles.errorNote}`}>
-          <ShieldCheck aria-hidden="true" size={16} />
-          <span>
-            {task.errorCode ? `${task.errorCode}: ` : ""}
-            {task.errorMessage ?? result?.summary ?? "Agent 诊断请求失败"}
-          </span>
-        </div>
-      ) : null}
+      <PanelSummary tone={taskTone(task)} value={statusLabel}>
+        {summaryText}
+      </PanelSummary>
       <Button
         aria-label="查看对话执行详情"
         className={styles.detailButton}
@@ -580,6 +576,10 @@ function SkillEventPanel({ onShowDetail, task }) {
   const firstToolDescriptor = firstToolResult
     ? parseOutputSchemaId(firstToolResult.outputSchemaId)
     : null;
+  const routeSummary =
+    toolResults.length > 0
+      ? `${sequenceValue} · 已执行 ${toolResults.length} 个只读 Skill，首个 ${firstToolDescriptor?.skillId ?? "unknown-skill"}。`
+      : "提交后由服务端路由";
 
   return (
     <section className={styles.agentPanel}>
@@ -589,25 +589,9 @@ function SkillEventPanel({ onShowDetail, task }) {
         </span>
         {toolResults.length > 0 ? "已执行 Skill" : "Skill 路由状态"}
       </h3>
-      <MiniRow label="最近事件" tone="info" value={latestEventType} />
-      <MiniRow label="sequence" tone="info" value={sequenceValue} />
-      {toolResults.length > 0 ? (
-        <>
-          <MiniRow label="已执行" tone="info" value={`${toolResults.length} 个 Skill`} />
-          <MiniRow label="首个 Skill" value={firstToolDescriptor?.skillId ?? "unknown-skill"} />
-          <MiniRow
-            label="状态"
-            tone={firstToolResult?.status === "SUCCEEDED" ? "ok" : "danger"}
-            value={firstToolResult?.status ?? "unknown"}
-          />
-        </>
-      ) : (
-        <>
-          <MiniRow label="候选状态" tone="info" value="提交后由服务端路由" />
-          <MiniRow label="候选 Skill" tone="info" value="等待任务提交" />
-          <MiniRow label="候选风险" tone="info" value="未判定" />
-        </>
-      )}
+      <PanelSummary tone={toolResults.length > 0 ? "ok" : taskTone(task)} value={latestEventType}>
+        {routeSummary}
+      </PanelSummary>
       <Button
         aria-label="查看 Skill 调用详情"
         className={styles.detailButton}
@@ -669,6 +653,12 @@ function ToolResultCard({ toolResult }) {
  */
 function SessionContextPanel({ onShowDetail, task }) {
   const toolResults = task.result?.toolResults ?? [];
+  const chainSummary =
+    toolResults.length > 0
+      ? `${toolResults.length} 次只读调用已归档。`
+      : task.workflowId
+        ? "只读执行链已登记。"
+        : "等待任务进入执行链。";
 
   return (
     <section className={`${styles.agentPanel} ${styles.scanLine}`}>
@@ -678,11 +668,9 @@ function SessionContextPanel({ onShowDetail, task }) {
         </span>
         执行链
       </h3>
-      <MiniRow label="READ_ONLY 策略" tone="ok" value="policy-v1" />
-      <MiniRow label="M05 workflow" value={task.workflowId ?? "pending"} />
-      <MiniRow label="M07 Worker" tone="info" value={toolResults.length > 0 ? "已执行" : "等待调用"} />
-      <MiniRow label="Skill 链路" tone="info" value={toolResults.length > 0 ? `${toolResults.length} 个只读调用` : "等待调用"} />
-      <MiniRow label="结果" tone={taskTone(task)} value={task.result?.status ?? taskStateLabel(task.status)} />
+      <PanelSummary tone={taskTone(task)} value={currentInputStatusLabel(task)}>
+        {chainSummary}
+      </PanelSummary>
       <Button
         aria-label="查看执行链详情"
         className={styles.detailButton}
@@ -963,6 +951,18 @@ function DetailRow({ label, tone = "default", value }) {
     <div className={styles.detailRow}>
       <span>{label}</span>
       <strong data-tone={tone}>{value}</strong>
+    </div>
+  );
+}
+
+/**
+ * @param {{children: string, tone?: "default" | "info" | "ok" | "danger", value: string}} props
+ */
+function PanelSummary({ children, tone = "default", value }) {
+  return (
+    <div className={styles.panelSummary}>
+      <strong data-tone={tone}>{value}</strong>
+      <p>{children}</p>
     </div>
   );
 }

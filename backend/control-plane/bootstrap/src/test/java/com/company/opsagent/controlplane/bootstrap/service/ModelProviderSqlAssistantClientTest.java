@@ -83,6 +83,7 @@ class ModelProviderSqlAssistantClientTest {
     assertEquals("select order_id, status from ORDERS.ORDERS", response.suggestions().getFirst().suggestedSql());
     assertEquals("Bearer " + API_KEY, authorization.get());
     assertTrue(requestBody.get().contains("\"model\":\"gpt-4.1-mini\""));
+    assertTrue(requestBody.get().contains("必须使用中文输出"));
     assertTrue(requestBody.get().contains("ORDERS.ORDERS"));
     assertFalse(requestBody.get().contains(API_KEY));
   }

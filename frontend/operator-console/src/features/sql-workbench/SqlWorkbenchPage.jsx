@@ -1,4 +1,10 @@
-import { useEffect, useMemo, useState } from "react";
+import { sql } from "@codemirror/lang-sql";
+import { HighlightStyle, syntaxHighlighting } from "@codemirror/language";
+import { Compartment, EditorState, RangeSetBuilder } from "@codemirror/state";
+import { EditorView, GutterMarker, gutter } from "@codemirror/view";
+import { tags } from "@lezer/highlight";
+import { basicSetup } from "codemirror";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   AlertTriangle,
   ChevronLeft,
@@ -71,6 +77,8 @@ const DEFAULT_LIMITS = {
 const DEFAULT_EDITOR_RESULT_SPLIT = 72;
 const EDITOR_RESULT_SPLIT_MIN = 42;
 const EDITOR_RESULT_SPLIT_MAX = 84;
+const LEGACY_READ_ONLY_VALIDATION_ERROR =
+  "query must pass read-only validation before execution";
 
 const PLATFORM_FORM_DEFAULTS = {
   DB2_FOR_I: {
@@ -92,6 +100,59 @@ const PLATFORM_FORM_DEFAULTS = {
     allowedSchemas: "",
   },
 };
+
+const sqlCommentHighlightStyle = HighlightStyle.define([
+  { tag: [tags.comment, tags.lineComment, tags.blockComment], class: "cm-sql-comment" },
+]);
+
+const sqlEditorTheme = EditorView.theme({
+  "&": {
+    height: "100%",
+    background: "transparent",
+    color: "var(--sql-ink)",
+  },
+  ".cm-scroller": {
+    fontFamily: 'Consolas, "SFMono-Regular", monospace',
+    lineHeight: "22px",
+  },
+  ".cm-content": {
+    minHeight: "100%",
+    padding: "12px 14px",
+    caretColor: "var(--sql-ink)",
+    fontFamily: 'Consolas, "SFMono-Regular", monospace',
+    fontSize: "12px",
+    fontWeight: "760",
+    lineHeight: "22px",
+  },
+  ".cm-line": {
+    padding: "0",
+  },
+  ".cm-gutters": {
+    border: "0",
+    background: "transparent",
+    color: "var(--sql-muted)",
+  },
+  ".cm-lineNumbers, .cm-foldGutter": {
+    display: "none",
+  },
+  ".cm-sql-run-gutter": {
+    minWidth: "30px",
+    paddingLeft: "6px",
+    background: "transparent",
+  },
+  ".cm-focused": {
+    outline: "none",
+  },
+  ".cm-cursor": {
+    borderLeftColor: "var(--sql-ink)",
+  },
+  ".cm-selectionBackground": {
+    background: "rgba(34, 126, 166, 0.18) !important",
+  },
+  ".cm-activeLine": {
+    backgroundColor: "transparent",
+  },
+});
 
 const DEFAULT_CONNECTION_FORM = {
   displayName: "",
@@ -155,6 +216,11 @@ export function SqlWorkbenchPage() {
   const currentResultPage = resultPageQuery.data ?? activeSession.resultPage;
   const isReadyConnection = activeConnection?.status === "READY";
   const hasSqlText = activeSession.sql.trim().length > 0;
+  const activeSqlStatements = useMemo(
+    () => findSqlEditorStatements(activeSession.sql),
+    [activeSession.sql],
+  );
+  const hasMultipleSqlStatements = activeSqlStatements.length > 1;
   const isRunnableSelectSql = isLikelyReadOnlySql(activeSession.sql);
   const canValidate =
     isReadyConnection &&
@@ -167,6 +233,11 @@ export function SqlWorkbenchPage() {
     activeConnection?.capabilities.includes("RUN_READ_ONLY") === true &&
     hasSqlText &&
     isRunnableSelectSql &&
+    !hasMultipleSqlStatements &&
+    !runMutation.isPending;
+  const canRunSqlStatement =
+    isReadyConnection &&
+    activeConnection?.capabilities.includes("RUN_READ_ONLY") === true &&
     !runMutation.isPending;
   const canUseAssistant =
     canValidate &&
@@ -308,22 +379,17 @@ export function SqlWorkbenchPage() {
     if (!activeSession || !activeConnection) {
       return;
     }
+    const sessionId = activeSession.id;
+    const sql = activeSession.sql;
+    const schema = activeSchema;
+    const connection = activeConnection;
+    const request = buildSqlQueryRequest(connection, schema, action, sql, action);
 
     validateMutation.mutate(
-      {
-        contractVersion: "1.0",
-        connectionId: activeConnection.connectionId,
-        targetEnvironment: activeConnection.targetEnvironment,
-        schema: activeSchema,
-        action,
-        sql: activeSession.sql,
-        parameters: [],
-        limits: buildLimits(activeConnection),
-        idempotencyKey: createSqlIdempotencyKey(action),
-      },
+      request,
       {
         onSuccess: (report) => {
-          updateSession(activeSession.id, {
+          updateSession(sessionId, {
             validation: report,
             execution: null,
             resultPage: null,
@@ -334,9 +400,18 @@ export function SqlWorkbenchPage() {
             assistant: null,
             assistantErrorMessage: null,
           });
+          maybeRequestSyntaxErrorAnalysis({
+            connection,
+            errorMessage: null,
+            limits: request.limits,
+            report,
+            schema,
+            sessionId,
+            sql,
+          });
         },
         onError: (error) => {
-          updateSession(activeSession.id, {
+          updateSession(sessionId, {
             validation: null,
             execution: null,
             resultPage: null,
@@ -356,22 +431,36 @@ export function SqlWorkbenchPage() {
     if (!activeConnection || !canExecuteSelect) {
       return;
     }
+    runReadOnlySql(activeSession.sql);
+  }
+
+  /**
+   * @param {string} sqlText
+   */
+  function runReadOnlySql(sqlText) {
+    if (!activeConnection || !canRunSqlStatement) {
+      return;
+    }
+    const sql = sqlText.trim();
+    if (!isLikelyReadOnlySql(sql)) {
+      return;
+    }
+    const sessionId = activeSession.id;
+    const schema = activeSchema;
+    const connection = activeConnection;
+    const request = buildSqlQueryRequest(
+      connection,
+      schema,
+      "RUN_READ_ONLY",
+      sql,
+      "RUN_READ_ONLY",
+    );
 
     runMutation.mutate(
-      {
-        contractVersion: "1.0",
-        connectionId: activeConnection.connectionId,
-        targetEnvironment: activeConnection.targetEnvironment,
-        schema: activeSchema,
-        action: "RUN_READ_ONLY",
-        sql: activeSession.sql,
-        parameters: [],
-        limits: buildLimits(activeConnection),
-        idempotencyKey: createSqlIdempotencyKey("RUN_READ_ONLY"),
-      },
+      request,
       {
         onSuccess: (execution) => {
-          updateSession(activeSession.id, {
+          updateSession(sessionId, {
             execution,
             resultPage: null,
             resultPageIndex: 0,
@@ -381,17 +470,134 @@ export function SqlWorkbenchPage() {
           });
         },
         onError: (error) => {
-          updateSession(activeSession.id, {
+          const errorMessage = error instanceof Error ? error.message : "SELECT 执行请求失败";
+          updateSession(sessionId, {
             execution: null,
             resultPage: null,
             resultPageIndex: 0,
             resultPageToken: null,
             resultPageTokens: [null],
-            errorMessage: error instanceof Error ? error.message : "SELECT 执行请求失败",
+            errorMessage,
+            assistant: null,
+            assistantErrorMessage: null,
+          });
+          if (shouldFetchValidationDiagnostics(error)) {
+            validateMutation.mutate(
+              {
+                ...request,
+                idempotencyKey: createSqlIdempotencyKey("RUN_READ_ONLY_DIAGNOSTIC"),
+              },
+              {
+                onSuccess: (report) => {
+                  const diagnosticMessage = buildReadOnlyValidationDiagnosticMessage(report);
+                  updateSession(sessionId, {
+                    validation: report,
+                    execution: null,
+                    resultPage: null,
+                    resultPageIndex: 0,
+                    resultPageToken: null,
+                    resultPageTokens: [null],
+                    errorMessage: diagnosticMessage,
+                    assistant: null,
+                    assistantErrorMessage: null,
+                  });
+                  maybeRequestSyntaxErrorAnalysis({
+                    connection,
+                    errorMessage: diagnosticMessage,
+                    limits: request.limits,
+                    report,
+                    schema,
+                    sessionId,
+                    sql,
+                  });
+                },
+                onError: (validationError) => {
+                  const validationErrorMessage =
+                    validationError instanceof Error
+                      ? validationError.message
+                      : "服务端校验报告补充失败";
+                  updateSession(sessionId, {
+                    errorMessage: `${errorMessage}\nvalidationDiagnosticError=${validationErrorMessage}`,
+                  });
+                },
+              },
+            );
+          }
+        },
+      },
+    );
+  }
+
+  /**
+   * @param {{
+   *   assistantAction: SqlAssistantAction,
+   *   connection: SqlConnectionSummary,
+   *   diagnosticContext?: string,
+   *   limits: {maxRows: number, maxBytes: number, timeoutSeconds: number},
+   *   schema: string,
+   *   sessionId: string,
+   *   sql: string,
+   * }} input
+   */
+  function submitAssistantRequest(input) {
+    assistantMutation.mutate(
+      {
+        contractVersion: "1.0",
+        connectionId: input.connection.connectionId,
+        targetEnvironment: input.connection.targetEnvironment,
+        schema: input.schema,
+        assistantAction: input.assistantAction,
+        sql: input.sql,
+        limits: input.limits,
+        diagnosticContext: input.diagnosticContext,
+        idempotencyKey: createSqlIdempotencyKey(`ASSISTANT_${input.assistantAction}`),
+      },
+      {
+        onSuccess: (assistant) => {
+          updateSession(input.sessionId, {
+            assistant,
+            assistantErrorMessage: null,
+          });
+        },
+        onError: (error) => {
+          updateSession(input.sessionId, {
+            assistant: null,
+            assistantErrorMessage:
+              error instanceof Error ? error.message : "AI SQL 助手请求失败",
           });
         },
       },
     );
+  }
+
+  /**
+   * @param {{
+   *   connection: SqlConnectionSummary,
+   *   errorMessage: string | null,
+   *   limits: {maxRows: number, maxBytes: number, timeoutSeconds: number},
+   *   report: SqlValidationReport,
+   *   schema: string,
+   *   sessionId: string,
+   *   sql: string,
+   * }} input
+   */
+  function maybeRequestSyntaxErrorAnalysis(input) {
+    if (!shouldAutoAnalyzeValidation(input.report)) {
+      return;
+    }
+    submitAssistantRequest({
+      assistantAction: "ANALYZE_ERROR",
+      connection: input.connection,
+      diagnosticContext: buildAssistantDiagnosticContext({
+        errorMessage: input.errorMessage,
+        execution: null,
+        validation: input.report,
+      }),
+      limits: input.limits,
+      schema: input.schema,
+      sessionId: input.sessionId,
+      sql: input.sql,
+    });
   }
 
   /**
@@ -402,34 +608,15 @@ export function SqlWorkbenchPage() {
       return;
     }
 
-    assistantMutation.mutate(
-      {
-        contractVersion: "1.0",
-        connectionId: activeConnection.connectionId,
-        targetEnvironment: activeConnection.targetEnvironment,
-        schema: activeSchema,
-        assistantAction,
-        sql: activeSession.sql,
-        limits: buildLimits(activeConnection),
-        diagnosticContext: buildAssistantDiagnosticContext(activeSession),
-        idempotencyKey: createSqlIdempotencyKey(`ASSISTANT_${assistantAction}`),
-      },
-      {
-        onSuccess: (assistant) => {
-          updateSession(activeSession.id, {
-            assistant,
-            assistantErrorMessage: null,
-          });
-        },
-        onError: (error) => {
-          updateSession(activeSession.id, {
-            assistant: null,
-            assistantErrorMessage:
-              error instanceof Error ? error.message : "AI SQL 助手请求失败",
-          });
-        },
-      },
-    );
+    submitAssistantRequest({
+      assistantAction,
+      connection: activeConnection,
+      diagnosticContext: buildAssistantDiagnosticContext(activeSession),
+      limits: buildLimits(activeConnection),
+      schema: activeSchema,
+      sessionId: activeSession.id,
+      sql: activeSession.sql,
+    });
   }
 
   function readNextResultPage() {
@@ -662,6 +849,11 @@ export function SqlWorkbenchPage() {
               <button
                 disabled={!canExecuteSelect}
                 onClick={runSelect}
+                title={
+                  hasMultipleSqlStatements
+                    ? "检测到多条 SQL，请使用左侧绿色按钮执行单条语句"
+                    : undefined
+                }
                 type="button"
               >
                 <Play aria-hidden="true" size={15} />
@@ -679,15 +871,15 @@ export function SqlWorkbenchPage() {
                 停止
               </button>
             </div>
-            <label className={styles.sqlEditor}>
+            <section className={styles.sqlEditor} aria-label={`${activeSession.label}.sql`}>
               <span>{activeSession.label}.sql</span>
-              <textarea
-                aria-label="SQL 文本"
-                onChange={(event) => updateSql(event.target.value)}
-                spellCheck="false"
+              <SqlCodeEditor
+                canRunStatements={canRunSqlStatement}
+                onChange={updateSql}
+                onRunStatement={runReadOnlySql}
                 value={activeSession.sql}
               />
-            </label>
+            </section>
           </section>
 
           <div
@@ -723,7 +915,7 @@ export function SqlWorkbenchPage() {
             assistantErrorMessage={activeSession.assistantErrorMessage}
             assistantPending={assistantMutation.isPending}
             canUseAssistant={canUseAssistant}
-            error={validateMutation.error ?? runMutation.error}
+            error={validateMutation.error ?? (activeSession.validation ? null : runMutation.error)}
             execution={activeSession.execution}
             isPending={validateMutation.isPending}
             onApplyAssistantSuggestion={updateSql}
@@ -780,6 +972,322 @@ function SqlWorkbenchFrame({ children, expanded = false }) {
       {children}
     </WorkspacePageFrame>
   );
+}
+
+/**
+ * @typedef {{from: number, sql: string, to: number}} SqlEditorStatement
+ */
+
+class SqlRunGutterSpacerMarker extends GutterMarker {
+  /**
+   * @param {GutterMarker} other
+   */
+  eq(other) {
+    return other instanceof SqlRunGutterSpacerMarker;
+  }
+
+  toDOM() {
+    const spacer = document.createElement("span");
+    spacer.className = "cm-sql-run-spacer";
+    spacer.setAttribute("aria-hidden", "true");
+    spacer.textContent = "▶";
+    return spacer;
+  }
+}
+
+const sqlRunGutterSpacerMarker = new SqlRunGutterSpacerMarker();
+
+class SqlRunGutterMarker extends GutterMarker {
+  /**
+   * @param {SqlEditorStatement} statement
+   * @param {boolean} canRun
+   * @param {{current: (sqlText: string) => void}} onRunStatementRef
+   */
+  constructor(statement, canRun, onRunStatementRef) {
+    super();
+    this.statement = statement;
+    this.canRun = canRun;
+    this.onRunStatementRef = onRunStatementRef;
+  }
+
+  /**
+   * @param {GutterMarker} other
+   */
+  eq(other) {
+    return (
+      other instanceof SqlRunGutterMarker &&
+      other.statement.from === this.statement.from &&
+      other.statement.to === this.statement.to &&
+      other.statement.sql === this.statement.sql &&
+      other.canRun === this.canRun
+    );
+  }
+
+  toDOM() {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "cm-sql-run-button";
+    button.setAttribute("aria-label", "执行此 SQL");
+    button.title = this.canRun
+      ? "执行此 SQL"
+      : "仅支持开发/测试连接上的 SELECT 或 WITH 只读 SQL";
+    button.disabled = !this.canRun;
+    button.textContent = "▶";
+    button.addEventListener("mousedown", (event) => {
+      event.preventDefault();
+    });
+    button.addEventListener("click", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      if (!this.canRun) {
+        return;
+      }
+      this.onRunStatementRef.current(this.statement.sql);
+    });
+    return button;
+  }
+}
+
+/**
+ * @param {boolean} canRunStatements
+ * @param {{current: (sqlText: string) => void}} onRunStatementRef
+ */
+function createSqlRunGutterExtension(canRunStatements, onRunStatementRef) {
+  return gutter({
+    class: "cm-sql-run-gutter",
+    initialSpacer: () => sqlRunGutterSpacerMarker,
+    markers(view) {
+      const markers =
+        /** @type {RangeSetBuilder<GutterMarker>} */ (new RangeSetBuilder());
+      for (const statement of findSqlEditorStatements(view.state.doc.toString())) {
+        const line = view.state.doc.lineAt(statement.from);
+        markers.add(
+          line.from,
+          line.from,
+          new SqlRunGutterMarker(
+            statement,
+            canRunStatements && isLikelyReadOnlySql(statement.sql),
+            onRunStatementRef,
+          ),
+        );
+      }
+      return markers.finish();
+    },
+  });
+}
+
+/**
+ * CodeMirror hides gutters from the accessibility tree by default because they
+ * usually contain line numbers. This gutter contains real execution controls.
+ *
+ * @param {EditorView} view
+ */
+function exposeSqlRunGutter(view) {
+  view.dom.querySelector(".cm-gutters")?.removeAttribute("aria-hidden");
+}
+
+/**
+ * Splits editor text into executable SQL statements while ignoring semicolons
+ * inside strings and comments. Leading comments are kept as annotations, not
+ * executable statement anchors.
+ *
+ * @param {string} sqlText
+ * @returns {SqlEditorStatement[]}
+ */
+function findSqlEditorStatements(sqlText) {
+  /** @type {SqlEditorStatement[]} */
+  const statements = [];
+  let statementStart = -1;
+  /** @type {"" | "'" | "\"" | "`"} */
+  let quotedBy = "";
+
+  for (let index = 0; index < sqlText.length; index += 1) {
+    const current = sqlText[index];
+    const next = sqlText[index + 1];
+
+    if (quotedBy) {
+      if (current === quotedBy) {
+        if (next === quotedBy) {
+          index += 1;
+        } else {
+          quotedBy = "";
+        }
+      }
+      continue;
+    }
+
+    if (current === "-" && next === "-") {
+      index = findLineEnd(sqlText, index + 2);
+      continue;
+    }
+
+    if (current === "/" && next === "*") {
+      const commentEnd = sqlText.indexOf("*/", index + 2);
+      index = commentEnd === -1 ? sqlText.length : commentEnd + 1;
+      continue;
+    }
+
+    if (current === "'" || current === "\"" || current === "`") {
+      if (statementStart === -1) {
+        statementStart = index;
+      }
+      quotedBy = current;
+      continue;
+    }
+
+    if (current === ";") {
+      appendSqlEditorStatement(statements, sqlText, statementStart, index);
+      statementStart = -1;
+      continue;
+    }
+
+    if (statementStart === -1 && !/\s/u.test(current)) {
+      statementStart = index;
+    }
+  }
+
+  appendSqlEditorStatement(statements, sqlText, statementStart, sqlText.length);
+  return statements;
+}
+
+/**
+ * @param {SqlEditorStatement[]} statements
+ * @param {string} sqlText
+ * @param {number} from
+ * @param {number} to
+ */
+function appendSqlEditorStatement(statements, sqlText, from, to) {
+  if (from < 0) {
+    return;
+  }
+  let end = to;
+  while (end > from && /\s/u.test(sqlText[end - 1] ?? "")) {
+    end -= 1;
+  }
+  const sql = sqlText.slice(from, end);
+  if (sql.trim().length === 0) {
+    return;
+  }
+  statements.push({ from, sql, to: end });
+}
+
+/**
+ * @param {string} value
+ * @param {number} start
+ */
+function findLineEnd(value, start) {
+  const newlineIndex = value.indexOf("\n", start);
+  return newlineIndex === -1 ? value.length : newlineIndex;
+}
+
+/**
+ * @param {{
+ *   canRunStatements: boolean,
+ *   onChange: (sqlText: string) => void,
+ *   onRunStatement: (sqlText: string) => void,
+ *   value: string,
+ * }} props
+ */
+function SqlCodeEditor({ canRunStatements, onChange, onRunStatement, value }) {
+  const rootRef = useRef(/** @type {HTMLDivElement | null} */ (null));
+  const viewRef = useRef(/** @type {EditorView | null} */ (null));
+  const onChangeRef = useRef(onChange);
+  const onRunStatementRef = useRef(onRunStatement);
+  const runGutterCompartmentRef = useRef(new Compartment());
+  const initialValueRef = useRef(value);
+  const initialCanRunStatementsRef = useRef(canRunStatements);
+  const isApplyingExternalValueRef = useRef(false);
+
+  useEffect(() => {
+    onChangeRef.current = onChange;
+  }, [onChange]);
+
+  useEffect(() => {
+    onRunStatementRef.current = onRunStatement;
+  }, [onRunStatement]);
+
+  useEffect(() => {
+    if (!rootRef.current) {
+      return undefined;
+    }
+
+    const view = new EditorView({
+      parent: rootRef.current,
+      state: EditorState.create({
+        doc: initialValueRef.current,
+        extensions: [
+          basicSetup,
+          runGutterCompartmentRef.current.of(
+            createSqlRunGutterExtension(initialCanRunStatementsRef.current, onRunStatementRef),
+          ),
+          sql(),
+          sqlEditorTheme,
+          syntaxHighlighting(sqlCommentHighlightStyle),
+          EditorView.lineWrapping,
+          EditorView.contentAttributes.of({
+            "aria-label": "SQL 文本",
+            "aria-multiline": "true",
+            autocapitalize: "off",
+            spellcheck: "false",
+          }),
+          EditorView.updateListener.of((update) => {
+            exposeSqlRunGutter(update.view);
+            if (!update.docChanged || isApplyingExternalValueRef.current) {
+              return;
+            }
+            onChangeRef.current(update.state.doc.toString());
+          }),
+        ],
+      }),
+    });
+
+    viewRef.current = view;
+    exposeSqlRunGutter(view);
+    return () => {
+      view.destroy();
+      viewRef.current = null;
+    };
+  }, []);
+
+  useEffect(() => {
+    const view = viewRef.current;
+    if (!view) {
+      return;
+    }
+
+    view.dispatch({
+      effects: runGutterCompartmentRef.current.reconfigure(
+        createSqlRunGutterExtension(canRunStatements, onRunStatementRef),
+      ),
+    });
+  }, [canRunStatements]);
+
+  useEffect(() => {
+    const view = viewRef.current;
+    if (!view) {
+      return;
+    }
+
+    const currentValue = view.state.doc.toString();
+    if (currentValue === value) {
+      return;
+    }
+
+    isApplyingExternalValueRef.current = true;
+    try {
+      view.dispatch({
+        changes: {
+          from: 0,
+          insert: value,
+          to: currentValue.length,
+        },
+      });
+    } finally {
+      isApplyingExternalValueRef.current = false;
+    }
+  }, [value]);
+
+  return <div className={styles.sqlCodeEditor} ref={rootRef} />;
 }
 
 /**
@@ -1030,7 +1538,7 @@ function ValidationReport({ error, isPending, report }) {
     return (
       <section className={styles.validationPanel} role="alert">
         <PanelHeading detail="请求被控制面拒绝或校验失败" icon={AlertTriangle} title="服务端校验" />
-        <p>{error.message}</p>
+        <ErrorMessageContent message={error.message} />
       </section>
     );
   }
@@ -1120,19 +1628,14 @@ function ResultPanel({
       />
       {isLoading ? <p role="status">正在读取执行结果。</p> : null}
       {errorMessage ? (
-        <div className={styles.errorSummary} role="alert">
-          <AlertTriangle aria-hidden="true" size={16} />
-          <span>{errorMessage}</span>
-        </div>
+        <ErrorSummary message={errorMessage} />
       ) : null}
       {execution && execution.status !== "SUCCEEDED" ? (
-        <div className={styles.errorSummary} role="alert">
-          <AlertTriangle aria-hidden="true" size={16} />
-          <span>
-            {execution.errorCode ? `${execution.errorCode}: ` : ""}
-            {execution.errorMessage ?? execution.status}
-          </span>
-        </div>
+        <ErrorSummary
+          message={`${execution.errorCode ? `${execution.errorCode}: ` : ""}${
+            execution.errorMessage ?? execution.status
+          }`}
+        />
       ) : null}
       {resultPage && columns.length > 0 ? (
         <>
@@ -1595,6 +2098,40 @@ function Notice({ detail, title }) {
 }
 
 /**
+ * @param {{message: string}} props
+ */
+function ErrorSummary({ message }) {
+  return (
+    <div className={styles.errorSummary} role="alert">
+      <AlertTriangle aria-hidden="true" size={16} />
+      <ErrorMessageContent message={message} />
+    </div>
+  );
+}
+
+/**
+ * @param {{message: string}} props
+ */
+function ErrorMessageContent({ message }) {
+  const { summary, details } = splitDiagnosticMessage(message);
+  return (
+    <div className={styles.errorText}>
+      <strong>{summary}</strong>
+      {details.length > 0 ? (
+        <div className={styles.errorDetails}>
+          <span>排查线索</span>
+          <ul>
+            {details.map((detail) => (
+              <li key={detail}>{detail}</li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+/**
  * @param {SqlConnectionSummary} connection
  * @returns {typeof DEFAULT_CONNECTION_FORM}
  */
@@ -1761,6 +2298,27 @@ function buildLimits(connection) {
 }
 
 /**
+ * @param {SqlConnectionSummary} connection
+ * @param {string} schema
+ * @param {"VALIDATE" | "PREFLIGHT_DML" | "RUN_READ_ONLY"} action
+ * @param {string} sql
+ * @param {string} idempotencyAction
+ */
+function buildSqlQueryRequest(connection, schema, action, sql, idempotencyAction) {
+  return {
+    contractVersion: "1.0",
+    connectionId: connection.connectionId,
+    targetEnvironment: connection.targetEnvironment,
+    schema,
+    action,
+    sql,
+    parameters: [],
+    limits: buildLimits(connection),
+    idempotencyKey: createSqlIdempotencyKey(idempotencyAction),
+  };
+}
+
+/**
  * @param {number} value
  * @param {number} min
  * @param {number} max
@@ -1777,7 +2335,63 @@ function formatValues(values) {
 }
 
 /**
- * @param {SqlWorkbenchSession} session
+ * @param {string} message
+ * @returns {{summary: string, details: string[]}}
+ */
+function splitDiagnosticMessage(message) {
+  const lines = message
+    .split(/\r?\n/u)
+    .map((line) => line.trim())
+    .filter(Boolean);
+  return {
+    summary: lines[0] ?? message,
+    details: lines.slice(1),
+  };
+}
+
+/**
+ * @param {unknown} error
+ */
+function shouldFetchValidationDiagnostics(error) {
+  return (
+    error instanceof ApiError &&
+    error.message.includes(LEGACY_READ_ONLY_VALIDATION_ERROR)
+  );
+}
+
+/**
+ * @param {SqlValidationReport} report
+ */
+function buildReadOnlyValidationDiagnosticMessage(report) {
+  return [
+    "SELECT 执行未通过服务端只读校验。控制面没有向 Worker 提交执行请求。",
+    `statementType=${report.statementType}`,
+    `validationLevel=${report.validationLevel}`,
+    `rejectionReasons=${formatValues(report.rejectionReasons)}`,
+    `risks=${formatValues(report.risks)}`,
+    `referencedObjects=${formatValues(report.referencedObjects)}`,
+    `unverifiedItems=${formatValues(report.unverifiedItems)}`,
+    `sqlHash=${report.sqlHash}`,
+    "nextStep=先修正 SQL 语法或点击校验查看完整报告；AI SQL 助手只提供参考，不能授权执行。",
+  ].join("\n");
+}
+
+/**
+ * @param {SqlValidationReport} report
+ */
+function shouldAutoAnalyzeValidation(report) {
+  if (report.validationLevel !== "REJECTED" || report.statementType !== "UNSUPPORTED") {
+    return false;
+  }
+  return report.rejectionReasons.some((reason) => /syntax|parse|解析|语法/iu.test(reason));
+}
+
+/**
+ * @param {{
+ *   errorMessage: string | null,
+ *   execution?: SqlQueryRunResult | null,
+ *   validation?: SqlValidationReport | null,
+ * }} session
  * @returns {string | undefined}
  */
 function buildAssistantDiagnosticContext(session) {
@@ -1788,6 +2402,11 @@ function buildAssistantDiagnosticContext(session) {
   if (session.execution?.errorCode || session.execution?.errorMessage) {
     parts.push(`executionErrorCode=${session.execution.errorCode ?? "none"}`);
     parts.push(`executionErrorMessage=${session.execution.errorMessage ?? "none"}`);
+  }
+  if (session.validation) {
+    parts.push(`statementType=${session.validation.statementType}`);
+    parts.push(`validationLevel=${session.validation.validationLevel}`);
+    parts.push(`sqlHash=${session.validation.sqlHash}`);
   }
   if (session.validation?.rejectionReasons.length) {
     parts.push(`rejectionReasons=${session.validation.rejectionReasons.join(" / ")}`);

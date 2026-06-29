@@ -314,7 +314,7 @@
   grid-template-rows: 32px minmax(0, 1fr);
 }
 
-.sqlEditor span {
+.sqlEditor > span {
   display: flex;
   min-width: 0;
   align-items: center;
@@ -328,22 +328,116 @@
   white-space: nowrap;
 }
 
-.sqlEditor textarea {
-  width: 100%;
+.sqlCodeEditor {
+  position: relative;
   min-height: 0;
-  resize: none;
-  padding: 12px 14px;
-  border: 0;
-  outline: none;
+  overflow: hidden;
   background:
     linear-gradient(rgba(34, 126, 166, 0.035) 1px, transparent 1px),
     oklch(0.99 0.004 230);
   background-size: 100% 22px;
-  color: var(--sql-ink);
+}
+
+.sqlCodeEditor :global(.cm-editor) {
+  height: 100%;
+  min-height: 0;
+  background: transparent;
+}
+
+.sqlCodeEditor :global(.cm-scroller) {
+  min-height: 0;
+  overflow: auto;
   font-family: Consolas, "SFMono-Regular", monospace;
-  font-size: 12px;
-  font-weight: 760;
-  line-height: 22px;
+}
+
+.sqlCodeEditor :global(.cm-content) {
+  min-height: 100%;
+  color: var(--sql-ink);
+  outline: none;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+}
+
+.sqlCodeEditor :global(.cm-line) {
+  padding: 0;
+}
+
+.sqlCodeEditor :global(.cm-gutters) {
+  border: 0;
+  background: transparent;
+}
+
+.sqlCodeEditor :global(.cm-lineNumbers),
+.sqlCodeEditor :global(.cm-foldGutter) {
+  display: none;
+}
+
+.sqlCodeEditor :global(.cm-sql-run-gutter) {
+  width: 30px;
+  min-width: 30px;
+  color: var(--sql-green);
+}
+
+.sqlCodeEditor :global(.cm-sql-run-button),
+.sqlCodeEditor :global(.cm-sql-run-spacer) {
+  display: grid;
+  width: 18px;
+  height: 18px;
+  margin: 2px 3px;
+  place-items: center;
+  border-radius: 999px;
+  font-size: 10px;
+  line-height: 1;
+}
+
+.sqlCodeEditor :global(.cm-sql-run-button) {
+  border: 1px solid rgba(22, 135, 90, 0.34);
+  background: rgba(22, 135, 90, 0.12);
+  color: var(--sql-green);
+  cursor: pointer;
+}
+
+.sqlCodeEditor :global(.cm-sql-run-button:hover:not(:disabled)),
+.sqlCodeEditor :global(.cm-sql-run-button:focus-visible:not(:disabled)) {
+  border-color: rgba(22, 135, 90, 0.58);
+  background: rgba(22, 135, 90, 0.2);
+  box-shadow: 0 0 0 3px rgba(22, 135, 90, 0.12);
+}
+
+.sqlCodeEditor :global(.cm-sql-run-button:focus-visible) {
+  outline: none;
+}
+
+.sqlCodeEditor :global(.cm-sql-run-button:disabled) {
+  border-color: rgba(96, 110, 126, 0.2);
+  background: rgba(96, 110, 126, 0.08);
+  color: var(--sql-muted);
+  cursor: not-allowed;
+  opacity: 0.42;
+}
+
+.sqlCodeEditor :global(.cm-sql-run-spacer) {
+  visibility: hidden;
+}
+
+.sqlCodeEditor :global(.cm-focused) {
+  outline: none;
+}
+
+.sqlCodeEditor :global(.cm-selectionBackground) {
+  background: rgba(34, 126, 166, 0.18) !important;
+}
+
+.sqlCodeEditor :global(.cm-activeLine) {
+  background: transparent;
+}
+
+.sqlCodeEditor :global(.cm-sql-comment) {
+  border-radius: 4px;
+  background: rgba(22, 135, 90, 0.08);
+  color: oklch(0.45 0.08 155);
+  font-style: italic;
+  font-weight: 780;
 }
 
 .panelHeading {
@@ -627,6 +721,51 @@
 
 .errorSummary svg {
   flex: 0 0 auto;
+}
+
+.errorText {
+  display: grid;
+  min-width: 0;
+  gap: 6px;
+}
+
+.errorText strong {
+  min-width: 0;
+  color: var(--sql-red);
+  font-size: 12px;
+  font-weight: 860;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.errorDetails {
+  display: grid;
+  min-width: 0;
+  gap: 4px;
+}
+
+.errorDetails span {
+  color: oklch(0.43 0.11 18);
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.errorDetails ul {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+  margin: 0;
+  padding-left: 16px;
+}
+
+.errorDetails li {
+  min-width: 0;
+  color: var(--sql-red);
+  font-family: Consolas, "SFMono-Regular", monospace;
+  font-size: 11px;
+  font-weight: 720;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
 }
 
 .resultFooter {

@@ -6,13 +6,38 @@
 
 ## 当前实现形态
 
-- 认证：支持开发态 `HS256` Bearer Token，以及真实 OIDC 模式。
+- 认证：默认使用正式内建身份 `built-in` 浏览器登录模式；仍支持开发态 `HS256` Bearer Token 和真实 OIDC 模式作为显式配置。
 - 授权：当前为服务端基础 RBAC V0，客户端、Prompt 和人格均不能绕过。
 - 审计：当前为追加式文件持久化审计链，默认写入 `var/audit/control-plane-audit.jsonl`。
 
-## 开发态配置
+## 默认内建身份配置
 
 `application.yaml` 默认使用：
+
+```yaml
+ops-agent:
+  security:
+    auth-mode: built-in
+    browser-login-enabled: true
+  built-in-identity:
+    schema-initializer-enabled: true
+    session-cookie-name: OPS_AGENT_SESSION
+  audit:
+    storage-mode: file
+    storage-path: var/audit/control-plane-audit.jsonl
+```
+
+适用场景：
+
+- 本地开发和人工联调；
+- 无企业身份提供方的内网部署；
+- 前端 `/login` 账号密码登录链路。
+
+账号、角色授予和密码凭据仍需通过受控方式预置到身份表；不得把测试账号或密码写入源码、配置样例或日志。
+
+## 开发态 Bearer Token 配置
+
+需要使用开发态 HS256 Bearer Token 调试内部接口时，必须显式覆盖：
 
 ```yaml
 ops-agent:
@@ -21,16 +46,7 @@ ops-agent:
     issuer: ops-agent-dev
     audience: ops-agent-internal
     shared-secret: your-dev-secret
-  audit:
-    storage-mode: file
-    storage-path: var/audit/control-plane-audit.jsonl
 ```
-
-适用场景：
-
-- 本地开发
-- 自动化测试
-- 尚未接入企业身份提供方的联调环境
 
 ## 真实 OIDC 配置
 

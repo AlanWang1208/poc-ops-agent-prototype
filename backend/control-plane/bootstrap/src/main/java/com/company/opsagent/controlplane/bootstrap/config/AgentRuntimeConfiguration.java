@@ -125,7 +125,8 @@ public class AgentRuntimeConfiguration {
     var initializer = new ConnectionFactoryInitializer();
     initializer.setConnectionFactory(connectionFactory);
     initializer.setDatabasePopulator(new ResourceDatabasePopulator(
-        new ClassPathResource("sql/migrations/V001__model_provider_schema.sql")));
+        new ClassPathResource("sql/migrations/V001__model_provider_schema.sql"),
+        new ClassPathResource("sql/migrations/V002__local_deepseek_model_provider_seed.sql")));
     return initializer;
   }
 

@@ -561,7 +561,7 @@ class ControlPlaneApplicationTest {
   }
 
   @Test
-  void managesModelProvidersWithoutReturningApiKeyMaterial() {
+  void managesModelProvidersWithoutReturningApiKeyMaterial() throws Exception {
     auditTrail.clear();
     webTestClient.post()
         .uri("/internal/model-providers")
@@ -588,15 +588,25 @@ class ControlPlaneApplicationTest {
         .jsonPath("$.apiKey").doesNotExist()
         .jsonPath("$.apiKeyCiphertext").doesNotExist();
 
-    webTestClient.get()
+    var responseBody = webTestClient.get()
         .uri("/internal/model-providers")
         .headers(headers -> headers.setBearerAuth(token("admin", List.of("ops-admin"), "ops-agent-internal")))
         .exchange()
         .expectStatus().isOk()
         .expectBody()
-        .jsonPath("$[0].displayName").isEqualTo("OpenAI")
-        .jsonPath("$[0].apiKey").doesNotExist()
-        .jsonPath("$[0].apiKeyCiphertext").doesNotExist();
+        .returnResult()
+        .getResponseBody();
+    Assertions.assertNotNull(responseBody);
+    var providers = new ObjectMapper().readTree(responseBody);
+    var openAiReturned = false;
+    for (var provider : providers) {
+      if ("OpenAI".equals(provider.path("displayName").asText())) {
+        openAiReturned = true;
+      }
+      Assertions.assertFalse(provider.has("apiKey"));
+      Assertions.assertFalse(provider.has("apiKeyCiphertext"));
+    }
+    Assertions.assertTrue(openAiReturned, "OpenAI model provider was not returned");
 
     Assertions.assertFalse(auditTrail.snapshot().stream()
         .map(AuditEvent::reason)

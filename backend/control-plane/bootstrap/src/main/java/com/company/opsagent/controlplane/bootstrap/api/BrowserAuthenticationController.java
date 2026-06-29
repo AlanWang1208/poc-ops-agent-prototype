@@ -69,7 +69,7 @@ public class BrowserAuthenticationController {
     if (isBuiltInMode()) {
       return Mono.just(ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED).build());
     }
-    if (!securityProperties.browserLoginEnabled()) {
+    if (!securityProperties.browserLoginEnabled() || !isOidcMode()) {
       return Mono.just(ResponseEntity.status(HttpStatus.NOT_FOUND).build());
     }
     return Mono.just(ResponseEntity.status(HttpStatus.FOUND)
@@ -179,6 +179,10 @@ public class BrowserAuthenticationController {
 
   private boolean isBuiltInMode() {
     return "built-in".equalsIgnoreCase(securityProperties.authMode());
+  }
+
+  private boolean isOidcMode() {
+    return "oidc".equalsIgnoreCase(securityProperties.authMode());
   }
 
   private Optional<String> readBuiltInSessionId(ServerWebExchange exchange) {
