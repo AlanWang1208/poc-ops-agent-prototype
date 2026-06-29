@@ -1,4 +1,5 @@
 import { http, HttpResponse } from "msw";
+import { EditorView } from "@codemirror/view";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, test } from "vitest";
 import { render, screen, waitFor, within } from "@testing-library/react";
@@ -17,6 +18,45 @@ function renderAt(path) {
       <App />
     </AppProviders>,
   );
+}
+
+/**
+ * @param {ReturnType<typeof userEvent.setup>} user
+ * @param {string} sql
+ */
+async function replaceSqlText(user, sql) {
+  const editor = await screen.findByLabelText("SQL 文本");
+  if (editor instanceof HTMLTextAreaElement) {
+    await user.clear(editor);
+    await user.type(editor, sql);
+    return;
+  }
+
+  const view = EditorView.findFromDOM(editor);
+  if (!view) {
+    throw new Error("Expected a CodeMirror SQL editor");
+  }
+  view.dispatch({
+    changes: {
+      from: 0,
+      insert: sql,
+      to: view.state.doc.length,
+    },
+  });
+  await waitFor(() => expect(view.state.doc.toString()).toBe(sql));
+}
+
+function readSqlText() {
+  const editor = screen.getByLabelText("SQL 文本");
+  if (editor instanceof HTMLTextAreaElement) {
+    return editor.value;
+  }
+
+  const view = EditorView.findFromDOM(editor);
+  if (view) {
+    return view.state.doc.toString();
+  }
+  return editor.textContent ?? "";
 }
 
 beforeEach(() => {
@@ -304,24 +344,21 @@ describe("SqlWorkbenchPage", () => {
 
     renderAt("/sql");
 
-    const editor = await screen.findByLabelText("SQL 文本");
-    await user.clear(editor);
-    await user.type(editor, "SELECT * FROM ORDERS.SESSION_ONE");
+    await replaceSqlText(user, "SELECT * FROM ORDERS.SESSION_ONE");
     await user.click(screen.getByRole("button", { name: "校验" }));
     expect(await screen.findAllByText("sha256:session-one")).toHaveLength(2);
 
     await user.click(screen.getByRole("button", { name: "+ 新建会话" }));
     expect(screen.getByRole("tab", { name: "SQL 2" })).toHaveAttribute("aria-selected", "true");
-    expect(screen.getByLabelText("SQL 文本")).not.toHaveValue("SELECT * FROM ORDERS.SESSION_ONE");
+    expect(readSqlText()).not.toBe("SELECT * FROM ORDERS.SESSION_ONE");
     expect(screen.queryByText("sha256:session-one")).not.toBeInTheDocument();
 
-    await user.clear(screen.getByLabelText("SQL 文本"));
-    await user.type(screen.getByLabelText("SQL 文本"), "SELECT * FROM ORDERS.SESSION_TWO");
+    await replaceSqlText(user, "SELECT * FROM ORDERS.SESSION_TWO");
     await user.click(screen.getByRole("button", { name: "校验" }));
     expect(await screen.findAllByText("sha256:session-two")).toHaveLength(2);
 
     await user.click(screen.getByRole("tab", { name: "SQL 1" }));
-    expect(screen.getByLabelText("SQL 文本")).toHaveValue("SELECT * FROM ORDERS.SESSION_ONE");
+    expect(readSqlText()).toBe("SELECT * FROM ORDERS.SESSION_ONE");
     expect(screen.getAllByText("sha256:session-one")).toHaveLength(2);
     expect(screen.queryByText("sha256:session-two")).not.toBeInTheDocument();
   });
@@ -359,8 +396,7 @@ describe("SqlWorkbenchPage", () => {
     await screen.findByText("已连接 · development");
     expect(screen.getByRole("button", { name: "执行 SELECT" })).toBeDisabled();
 
-    await user.clear(screen.getByLabelText("SQL 文本"));
-    await user.type(screen.getByLabelText("SQL 文本"), "SELECT * FROM ORDERS.ORDERS");
+    await replaceSqlText(user, "SELECT * FROM ORDERS.ORDERS");
     expect(screen.getByRole("button", { name: "执行 SELECT" })).toBeEnabled();
 
     await user.click(screen.getByRole("button", { name: "执行 SELECT" }));
@@ -379,14 +415,239 @@ describe("SqlWorkbenchPage", () => {
     expect(runRequests[0]).not.toHaveProperty("validationHash");
     expect(validationRequests).toHaveLength(0);
 
-    await user.clear(screen.getByLabelText("SQL 文本"));
-    await user.type(screen.getByLabelText("SQL 文本"), "UPDATE ORDERS.ORDERS SET status = 'X'");
+    await replaceSqlText(user, "UPDATE ORDERS.ORDERS SET status = 'X'");
     expect(screen.getByRole("button", { name: "执行 SELECT" })).toBeDisabled();
     await user.click(screen.getByRole("button", { name: "DML 预检" }));
     expect(await screen.findByText("DML_PRECHECK_ONLY")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "执行 SELECT" })).toBeDisabled();
     expect(runRequests).toHaveLength(1);
     expect(validationRequests.at(-1)).toMatchObject({ action: "PREFLIGHT_DML" });
+  });
+
+  test("highlights line comments and keeps commented SELECT runnable", async () => {
+    const user = userEvent.setup();
+    /** @type {unknown[]} */
+    const runRequests = [];
+    const commentedSql = "-- run this read-only smoke check\nSELECT * FROM ORDERS.ORDERS";
+    server.use(
+      http.get("/internal/sql-workbench/connections", () =>
+        HttpResponse.json(sqlConnections),
+      ),
+      http.post("/internal/sql-workbench/queries/run", async ({ request }) => {
+        runRequests.push(await request.json());
+        return HttpResponse.json(queryRunResult);
+      }),
+      http.get("/internal/sql-workbench/results/result-001", () =>
+        HttpResponse.json(resultPage),
+      ),
+    );
+
+    renderAt("/sql");
+
+    await screen.findByText("已连接 · development");
+    await replaceSqlText(user, commentedSql);
+
+    const editor = screen.getByLabelText("SQL 文本");
+    expect(editor).toHaveClass("cm-content");
+    expect(editor.querySelector(".cm-sql-comment")).toHaveTextContent(
+      "-- run this read-only smoke check",
+    );
+    expect(screen.getByRole("button", { name: "执行 SELECT" })).toBeEnabled();
+
+    await user.click(screen.getByRole("button", { name: "执行 SELECT" }));
+
+    await waitFor(() => expect(runRequests).toHaveLength(1));
+    expect(runRequests[0]).toMatchObject({
+      action: "RUN_READ_ONLY",
+      sql: commentedSql,
+    });
+  });
+
+  test("runs only the statement next to a CodeMirror gutter run button", async () => {
+    const user = userEvent.setup();
+    /** @type {unknown[]} */
+    const runRequests = [];
+    const multiStatementSql = [
+      "-- first query",
+      "SELECT * FROM ORDERS.ORDERS;",
+      "",
+      "SELECT * FROM INVENTORY.ITEMS",
+    ].join("\n");
+    server.use(
+      http.get("/internal/sql-workbench/connections", () =>
+        HttpResponse.json(sqlConnections),
+      ),
+      http.post("/internal/sql-workbench/queries/run", async ({ request }) => {
+        runRequests.push(await request.json());
+        return HttpResponse.json(queryRunResult);
+      }),
+      http.get("/internal/sql-workbench/results/result-001", () =>
+        HttpResponse.json(resultPage),
+      ),
+    );
+
+    renderAt("/sql");
+
+    await screen.findByText("已连接 · development");
+    await replaceSqlText(user, multiStatementSql);
+
+    const runStatementButtons = await screen.findAllByRole("button", {
+      name: "执行此 SQL",
+    });
+    expect(runStatementButtons).toHaveLength(2);
+    expect(screen.getByRole("button", { name: "执行 SELECT" })).toBeDisabled();
+
+    await user.click(runStatementButtons[1]);
+
+    await waitFor(() => expect(runRequests).toHaveLength(1));
+    expect(runRequests[0]).toMatchObject({
+      action: "RUN_READ_ONLY",
+      sql: "SELECT * FROM INVENTORY.ITEMS",
+    });
+    expect(String(/** @type {{sql: unknown}} */ (runRequests[0]).sql)).not.toContain(
+      "ORDERS.ORDERS",
+    );
+  });
+
+  test("disables gutter run buttons for non-read-only SQL statements", async () => {
+    const user = userEvent.setup();
+    server.use(
+      http.get("/internal/sql-workbench/connections", () =>
+        HttpResponse.json(sqlConnections),
+      ),
+    );
+
+    renderAt("/sql");
+
+    await screen.findByText("已连接 · development");
+    await replaceSqlText(
+      user,
+      "UPDATE ORDERS.ORDERS SET STATUS = 'X';\nSELECT * FROM ORDERS.ORDERS",
+    );
+
+    const runStatementButtons = await screen.findAllByRole("button", {
+      name: "执行此 SQL",
+    });
+    expect(runStatementButtons).toHaveLength(2);
+    expect(runStatementButtons[0]).toBeDisabled();
+    expect(runStatementButtons[1]).toBeEnabled();
+  });
+
+  test("shows server-side validation diagnostics when SELECT execution is rejected", async () => {
+    const user = userEvent.setup();
+    server.use(
+      http.get("/internal/sql-workbench/connections", () =>
+        HttpResponse.json(sqlConnections),
+      ),
+      http.post("/internal/sql-workbench/queries/run", () =>
+        HttpResponse.json(
+          {
+            code: "INVALID_ARGUMENT",
+            message: [
+              "SELECT 执行未通过服务端只读校验。",
+              "statementType=UNSUPPORTED",
+              "validationLevel=REJECTED",
+              "rejectionReasons=SQL syntax is not supported",
+              "sqlHash=sha256:bad",
+            ].join("\n"),
+          },
+          { status: 400 },
+        ),
+      ),
+    );
+
+    renderAt("/sql");
+
+    await screen.findByText("已连接 · development");
+    await replaceSqlText(user, "SELECT * FROM ORDERS.ORDERS");
+    await user.click(screen.getByRole("button", { name: "执行 SELECT" }));
+
+    const alerts = await screen.findAllByRole("alert");
+    const alert = alerts.find((element) =>
+      element.textContent?.includes("statementType=UNSUPPORTED"),
+    );
+    if (!alert) {
+      throw new Error("Expected a SQL execution validation alert");
+    }
+    expect(alert.textContent).toContain("SELECT 执行未通过服务端只读校验。");
+    expect(within(alert).getByText("排查线索")).toBeInTheDocument();
+    expect(within(alert).getByText("statementType=UNSUPPORTED")).toBeInTheDocument();
+    expect(within(alert).getByText("validationLevel=REJECTED")).toBeInTheDocument();
+    expect(within(alert).getByText("rejectionReasons=SQL syntax is not supported")).toBeInTheDocument();
+    expect(within(alert).getByText("sqlHash=sha256:bad")).toBeInTheDocument();
+    expect(screen.getAllByText("排查线索")).toHaveLength(2);
+  });
+
+  test("automatically asks AI assistant for syntax-error analysis after rejected SELECT execution", async () => {
+    const user = userEvent.setup();
+    /** @type {unknown[]} */
+    const validationRequests = [];
+    /** @type {unknown[]} */
+    const assistantRequests = [];
+    const syntaxSql = "select ORDER_ID, STATUS\nform PUBLIC.ORDERS";
+    const syntaxAssistantResponse = {
+      ...sqlAssistantResponse,
+      assistantAction: "ANALYZE_ERROR",
+      summary: "SQL 语法错误：FORM 应改为 FROM。",
+      suggestions: [
+        {
+          title: "修正 FROM 关键字",
+          rationale: "第二行的 form 不是 SQL 查询子句关键字。",
+          suggestedSql: "select ORDER_ID, STATUS\nfrom PUBLIC.ORDERS",
+        },
+      ],
+      safetyNotes: ["修正后必须重新执行服务端校验。"],
+    };
+    server.use(
+      http.get("/internal/sql-workbench/connections", () =>
+        HttpResponse.json(sqlConnections),
+      ),
+      http.post("/internal/sql-workbench/queries/run", () =>
+        HttpResponse.json(
+          {
+            code: "INVALID_ARGUMENT",
+            message: "query must pass read-only validation before execution",
+          },
+          { status: 400 },
+        ),
+      ),
+      http.post("/internal/sql-workbench/queries/validate", async ({ request }) => {
+        validationRequests.push(await request.json());
+        return HttpResponse.json(rejectedSyntaxReport);
+      }),
+      http.post("/internal/sql-workbench/assistant", async ({ request }) => {
+        assistantRequests.push(await request.json());
+        return HttpResponse.json(syntaxAssistantResponse);
+      }),
+    );
+
+    renderAt("/sql");
+
+    await screen.findByText("已连接 · development");
+    await replaceSqlText(user, syntaxSql);
+    await user.click(screen.getByRole("button", { name: "执行 SELECT" }));
+
+    expect(await screen.findByText("SQL syntax is not supported")).toBeInTheDocument();
+    expect(await screen.findByText("SQL 语法错误：FORM 应改为 FROM。")).toBeInTheDocument();
+    expect(screen.getByText("修正 FROM 关键字")).toBeInTheDocument();
+
+    await waitFor(() => expect(validationRequests).toHaveLength(1));
+    expect(validationRequests[0]).toMatchObject({
+      action: "RUN_READ_ONLY",
+      sql: syntaxSql,
+    });
+    await waitFor(() => expect(assistantRequests).toHaveLength(1));
+    expect(assistantRequests[0]).toMatchObject({
+      assistantAction: "ANALYZE_ERROR",
+      sql: syntaxSql,
+    });
+    const assistantRequest = /** @type {Record<string, unknown>} */ (assistantRequests[0]);
+    expect(String(assistantRequest.diagnosticContext)).toContain(
+      "statementType=UNSUPPORTED",
+    );
+    expect(String(assistantRequest.diagnosticContext)).toContain(
+      "SQL syntax is not supported",
+    );
   });
 
   test("paginates SQL result pages with explicit cursor navigation", async () => {
@@ -421,8 +682,7 @@ describe("SqlWorkbenchPage", () => {
     renderAt("/sql");
 
     await screen.findByText("已连接 · development");
-    await user.clear(screen.getByLabelText("SQL 文本"));
-    await user.type(screen.getByLabelText("SQL 文本"), "SELECT * FROM ORDERS.ORDERS");
+    await replaceSqlText(user, "SELECT * FROM ORDERS.ORDERS");
     await user.click(screen.getByRole("button", { name: "执行 SELECT" }));
 
     expect(await screen.findByText("OD-10500")).toBeInTheDocument();
@@ -508,9 +768,7 @@ describe("SqlWorkbenchPage", () => {
 
     renderAt("/sql");
 
-    const editor = await screen.findByLabelText("SQL 文本");
-    await user.clear(editor);
-    await user.type(editor, "SELECT * FROM ORDERS.ORDERS");
+    await replaceSqlText(user, "SELECT * FROM ORDERS.ORDERS");
     await user.click(screen.getByRole("button", { name: "校验" }));
     expect(await screen.findByText("VALIDATED")).toBeInTheDocument();
 
@@ -529,9 +787,7 @@ describe("SqlWorkbenchPage", () => {
     });
 
     await user.click(screen.getByRole("button", { name: "应用建议到编辑器" }));
-    expect(screen.getByLabelText("SQL 文本")).toHaveValue(
-      "select order_id, status from ORDERS.ORDERS",
-    );
+    expect(readSqlText()).toBe("select order_id, status from ORDERS.ORDERS");
     expect(screen.queryByText("VALIDATED")).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "执行 SELECT" })).toBeEnabled();
   });
@@ -608,6 +864,18 @@ const rejectedDmlReport = {
   risks: ["DML_PRECHECK_ONLY"],
   rejectionReasons: ["DML execution is not allowed in P1"],
   unverifiedItems: ["affectedRows"],
+};
+
+const rejectedSyntaxReport = {
+  contractVersion: "1.0",
+  statementType: "UNSUPPORTED",
+  validationLevel: "REJECTED",
+  sqlHash: "sha256:syntax",
+  validationHash: "sha256:validation-syntax",
+  referencedObjects: [],
+  risks: [],
+  rejectionReasons: ["SQL syntax is not supported"],
+  unverifiedItems: [],
 };
 
 const queryRunResult = {

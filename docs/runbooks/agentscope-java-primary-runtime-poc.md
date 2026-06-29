@@ -51,6 +51,8 @@ POST /internal/model-providers/{providerId}/disable
 
 这些入口只允许管理员角色访问。API Key 只在新增或轮换请求中直接输入一次；控制面返回的模型供应方摘要只包含 `apiKeyFingerprint`、`configVersion` 和时间戳，不返回明文或密文。切换默认供应方后，Agent Runtime 下一次调用会读取当前默认供应方并使用其配置构造 OpenAI-compatible AgentScope 客户端；未配置默认供应方时，才回退到上述环境变量配置。
 
+本地 H2 初始化脚本会种子化一个 `deepseek` / `deepseek-v4-pro` 的 OpenAI-compatible 供应方，用于新建本地库时保留模型供应方结构和默认选择。该种子只包含本地占位 API Key 的加密值；占位 Key 不会触发真实出网调用。已经通过操作台配置了同名、同 Base URL、同模型名的供应方时，启动脚本不会重复插入。需要真实调用 DeepSeek 时，仍必须通过“模型设置”页面或受保护管理 API 轮换真实 API Key，并在生产或长期环境中提供 `OPS_AGENT_MODEL_SECRET_MASTER_KEY`。
+
 `POST /internal/model-providers/{providerId}/test` 会将供应方 `baseUrl` 拼接 `/chat/completions`，发送最小 OpenAI-compatible 非流式请求做受控连通性探测。控制面只返回 `SUCCEEDED`、`FAILED`、`SKIPPED_FAKE_API_KEY` 等稳定状态和脱敏说明；本地占位 Key 不会出网，401/403、网络异常和供应方错误响应体不会回显给操作台、日志或审计原因。
 
 动态模型配置需要提供模型密钥加密主密钥：

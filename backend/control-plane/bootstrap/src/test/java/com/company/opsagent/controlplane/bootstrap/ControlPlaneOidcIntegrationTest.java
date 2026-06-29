@@ -23,6 +23,7 @@ import org.springframework.test.web.reactive.server.WebTestClient;
 @AutoConfigureWebTestClient
 @TestPropertySource(properties = {
     "ops-agent.security.auth-mode=oidc",
+    "ops-agent.security.browser-login-enabled=false",
     "ops-agent.security.audience=ops-agent-internal",
     "ops-agent.security.username-claim=preferred_username",
     "ops-agent.security.role-claim=groups",

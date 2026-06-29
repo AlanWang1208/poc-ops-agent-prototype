@@ -10,7 +10,7 @@ ops-agent:
     api-version: 0.1.0-SNAPSHOT
     api-description: 只读诊断 MVP 的控制面服务骨架。
   security:
-    auth-mode: dev-hs256
+    auth-mode: built-in
     issuer: ops-agent-dev
     audience: ops-agent-internal
     shared-secret: ops-agent-dev-secret-2026-06-06-0001
@@ -19,7 +19,7 @@ ops-agent:
     username-claim: preferred_username
     role-claim: roles
     role-prefix: ROLE_
-    browser-login-enabled: false
+    browser-login-enabled: true
     browser-registration-id: ops-agent
     browser-login-success-uri: /auth/session
     browser-logout-success-uri: "{baseUrl}/"

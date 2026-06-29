@@ -170,7 +170,7 @@ public class DefaultSqlWorkbenchService implements SqlWorkbenchService {
     }
     SqlValidationReport report = validate(request);
     if (report.validationLevel() != SqlValidationLevel.VALIDATED) {
-      throw new IllegalArgumentException("query must pass read-only validation before execution");
+      throw new IllegalArgumentException(readOnlyValidationFailureMessage(report));
     }
     SqlQueryExecutionRequest executionRequest = new SqlQueryExecutionRequest(
         "1.0",
@@ -188,6 +188,24 @@ public class DefaultSqlWorkbenchService implements SqlWorkbenchService {
   @Override
   public SqlResultPage readResultPage(String resultId) {
     return workerClient.readResultPage(resultId);
+  }
+
+  private String readOnlyValidationFailureMessage(SqlValidationReport report) {
+    return String.join(
+        System.lineSeparator(),
+        "SELECT 执行未通过服务端只读校验。控制面没有向 Worker 提交执行请求。",
+        "statementType=" + report.statementType(),
+        "validationLevel=" + report.validationLevel(),
+        "rejectionReasons=" + formatReportValues(report.rejectionReasons()),
+        "risks=" + formatReportValues(report.risks()),
+        "referencedObjects=" + formatReportValues(report.referencedObjects()),
+        "unverifiedItems=" + formatReportValues(report.unverifiedItems()),
+        "sqlHash=" + report.sqlHash(),
+        "nextStep=先执行校验查看完整报告；如果是 INSERT、UPDATE 或 DELETE，请改用 DML 预检。");
+  }
+
+  private String formatReportValues(List<String> values) {
+    return values.isEmpty() ? "none" : String.join(" / ", values);
   }
 
   private static final class FailClosedSqlWorkbenchWorkerClient implements SqlWorkbenchWorkerClient {

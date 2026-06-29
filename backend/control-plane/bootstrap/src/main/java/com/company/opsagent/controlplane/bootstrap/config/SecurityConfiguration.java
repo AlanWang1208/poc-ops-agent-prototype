@@ -153,11 +153,12 @@ public class SecurityConfiguration {
             .anyExchange().permitAll())
         .addFilterAt(policyEnforcementWebFilter, SecurityWebFiltersOrder.AUTHENTICATION);
 
-    if (securityProperties.browserLoginEnabled()) {
-      if (isBuiltInMode(securityProperties)) {
-        http.logout(ServerHttpSecurity.LogoutSpec::disable);
-        return http.build();
-      }
+    if (securityProperties.browserLoginEnabled() && isBuiltInMode(securityProperties)) {
+      http.logout(ServerHttpSecurity.LogoutSpec::disable);
+      return http.build();
+    }
+
+    if (securityProperties.browserLoginEnabled() && isOidcMode(securityProperties)) {
       ReactiveClientRegistrationRepository clientRegistrationRepository =
           clientRegistrationRepositoryProvider.getIfAvailable();
       if (clientRegistrationRepository == null) {
@@ -173,10 +174,10 @@ public class SecurityConfiguration {
               clientRegistrationRepository,
               securityProperties,
               localOidcProviderPropertiesProvider.getIfAvailable())));
-    } else {
-      http.logout(ServerHttpSecurity.LogoutSpec::disable);
+      return http.build();
     }
 
+    http.logout(ServerHttpSecurity.LogoutSpec::disable);
     return http.build();
   }
 
@@ -218,5 +219,9 @@ public class SecurityConfiguration {
 
   private boolean isBuiltInMode(SecurityProperties securityProperties) {
     return "built-in".equalsIgnoreCase(securityProperties.authMode());
+  }
+
+  private boolean isOidcMode(SecurityProperties securityProperties) {
+    return "oidc".equalsIgnoreCase(securityProperties.authMode());
   }
 }

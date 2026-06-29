@@ -6,19 +6,23 @@ import com.company.opsagent.controlplane.modules.agentruntime.ModelProviderSecre
 import com.company.opsagent.controlplane.modules.agentruntime.ModelProviderStore;
 import com.company.opsagent.controlplane.modules.sqlworkbench.CalciteSqlValidationService;
 import com.company.opsagent.controlplane.modules.sqlworkbench.DefaultSqlWorkbenchService;
-import com.company.opsagent.controlplane.modules.sqlworkbench.InMemorySqlConnectionCatalog;
+import com.company.opsagent.controlplane.modules.sqlworkbench.R2dbcSqlConnectionCatalog;
 import com.company.opsagent.controlplane.modules.sqlworkbench.SqlAssistantClient;
 import com.company.opsagent.controlplane.modules.sqlworkbench.SqlConnectionCatalog;
 import com.company.opsagent.controlplane.modules.sqlworkbench.SqlValidationService;
 import com.company.opsagent.controlplane.modules.sqlworkbench.SqlWorkbenchWorkerClient;
 import com.company.opsagent.controlplane.modules.sqlworkbench.SqlWorkbenchService;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.r2dbc.spi.ConnectionFactory;
 import java.net.http.HttpClient;
 import java.time.Clock;
 import java.time.Duration;
-import java.util.List;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.r2dbc.connection.init.ConnectionFactoryInitializer;
+import org.springframework.r2dbc.connection.init.ResourceDatabasePopulator;
+import org.springframework.r2dbc.core.DatabaseClient;
 import org.springframework.web.reactive.function.client.WebClient;
 
 /**
@@ -28,8 +32,18 @@ import org.springframework.web.reactive.function.client.WebClient;
 public class SqlWorkbenchConfiguration {
 
   @Bean
-  SqlConnectionCatalog sqlConnectionCatalog() {
-    return new InMemorySqlConnectionCatalog(List.of());
+  SqlConnectionCatalog sqlConnectionCatalog(DatabaseClient databaseClient, ObjectMapper objectMapper) {
+    return new R2dbcSqlConnectionCatalog(databaseClient, objectMapper);
+  }
+
+  @Bean
+  ConnectionFactoryInitializer sqlWorkbenchSchemaInitializer(ConnectionFactory connectionFactory) {
+    var initializer = new ConnectionFactoryInitializer();
+    initializer.setConnectionFactory(connectionFactory);
+    initializer.setDatabasePopulator(new ResourceDatabasePopulator(
+        new ClassPathResource("sql/migrations/V001__sql_connection_catalog_schema.sql"),
+        new ClassPathResource("sql/migrations/V002__local_h2_sql_connection_seed.sql")));
+    return initializer;
   }
 
   @Bean

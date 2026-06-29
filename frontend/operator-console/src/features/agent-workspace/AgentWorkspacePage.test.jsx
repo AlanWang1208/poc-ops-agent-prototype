@@ -117,7 +117,7 @@ describe("AgentWorkspacePage", () => {
     expect(screen.queryByText("health")).not.toBeInTheDocument();
   });
 
-  test("keeps right rail summary rows visually compact and consistently aligned", () => {
+  test("keeps right rail summaries compact without lined field rows", () => {
     const agentLayoutRule =
       agentWorkspaceCss.match(/(?:^|\n)[.]agentLayout\s*[{][^}]+[}]/u)?.[0] ?? "";
     const agentSideRule =
@@ -126,17 +126,16 @@ describe("AgentWorkspacePage", () => {
       agentWorkspaceCss.match(/(?:^|\n)[.]agentPanel\s*[{][^}]+[}]/u)?.[0] ?? "";
     const panelHeadingRule =
       agentWorkspaceCss.match(/(?:^|\n)[.]agentPanel h3\s*[{][^}]+[}]/u)?.[0] ?? "";
-    const miniRowRule =
-      agentWorkspaceCss.match(/(?:^|\n)[.]miniRow\s*[{][^}]+[}]/u)?.[0] ?? "";
-    const miniRowValueRule =
-      agentWorkspaceCss.match(/(?:^|\n)[.]miniRow strong\s*[{][^}]*display:\s*inline-flex;[^}]+[}]/u)?.[0] ??
-      "";
+    const panelSummaryRule =
+      agentWorkspaceCss.match(/(?:^|\n)[.]panelSummary\s*[{][^}]+[}]/u)?.[0] ?? "";
+    const panelSummaryValueRule =
+      agentWorkspaceCss.match(/(?:^|\n)[.]panelSummary strong\s*[{][^}]+[}]/u)?.[0] ?? "";
+    const panelSummaryTextRule =
+      agentWorkspaceCss.match(/(?:^|\n)[.]panelSummary p\s*[{][^}]+[}]/u)?.[0] ?? "";
     const detailButtonRule =
       agentWorkspaceCss.match(/(?:^|\n)[.]detailButton\s*[{][^}]+[}]/u)?.[0] ?? "";
     const panelDetailButtonRule =
       agentWorkspaceCss.match(/[.]agentPanel\s*[>]\s*[.]detailButton\s*[{][^}]+[}]/u)?.[0] ?? "";
-    const panelStatusNoteRule =
-      agentWorkspaceCss.match(/[.]panelStatusNote\s*[{][^}]+[}]/u)?.[0] ?? "";
 
     expect(agentLayoutRule).toContain("align-items: stretch");
     expect(agentSideRule).toContain("max-height: 100%");
@@ -149,26 +148,24 @@ describe("AgentWorkspacePage", () => {
     expect(agentSideRule).toContain("align-content: stretch");
     expect(agentSideRule).not.toContain("grid-auto-rows: max-content");
     expect(agentSideRule).not.toContain("overflow-y: hidden");
-    expect(agentPanelRule).toContain("grid-template-rows: 44px repeat(5, minmax(34px, 1fr)) 32px");
+    expect(agentPanelRule).toContain("grid-template-rows: auto minmax(0, 1fr) auto");
     expect(agentPanelRule).toContain("align-content: stretch");
-    expect(agentPanelRule).toContain("gap: 6px");
+    expect(agentPanelRule).toContain("gap: 8px");
     expect(agentPanelRule).toContain("overflow: hidden");
     expect(agentWorkspaceCss).not.toContain(".agentPanel::before");
     expect(agentPanelRule).not.toContain("minmax(38px, 1fr)");
     expect(agentWorkspaceCss).not.toContain(".agentPanel:has(> .statusNote)");
-    expect(panelStatusNoteRule).toContain("min-height: 0");
-    expect(panelStatusNoteRule).toContain("max-height: 58px");
-    expect(panelStatusNoteRule).toContain("overflow-y: auto");
-    expect(panelStatusNoteRule).toContain("overflow-wrap: anywhere");
-    expect(panelStatusNoteRule).toContain("word-break: break-word");
+    expect(agentWorkspaceCss).not.toContain(".panelStatusNote");
     expect(panelHeadingRule).toContain("min-height: 40px");
-    expect(miniRowRule).toContain("display: grid");
-    expect(miniRowRule).toContain("min-height: 30px");
-    expect(miniRowRule).toContain("grid-template-columns: minmax(0, 1fr) minmax(72px, 52%)");
-    expect(miniRowRule).toContain("align-items: center");
-    expect(miniRowValueRule).toContain("box-sizing: border-box");
-    expect(miniRowValueRule).toContain("max-width: 100%");
-    expect(miniRowValueRule).toContain("height: 22px");
+    expect(panelSummaryRule).toContain("display: grid");
+    expect(panelSummaryRule).toContain("align-content: center");
+    expect(panelSummaryRule).toContain("border: 1px solid rgba(37, 132, 169, 0.12)");
+    expect(panelSummaryRule).not.toContain("border-top");
+    expect(panelSummaryValueRule).toContain("width: fit-content");
+    expect(panelSummaryValueRule).toContain("max-width: 100%");
+    expect(panelSummaryTextRule).toContain("overflow-wrap: anywhere");
+    expect(agentWorkspaceSource).toContain("styles.panelSummary");
+    expect(agentWorkspaceSource).not.toContain("styles.panelStatusNote");
     expect(detailButtonRule).toContain("min-height: 32px");
     expect(detailButtonRule).toContain("margin-top: 0");
     expect(panelDetailButtonRule).toContain("align-self: stretch");
@@ -250,19 +247,19 @@ describe("AgentWorkspacePage", () => {
 
     expect(await screen.findByText("已完成只读诊断，未发现阻塞风险。")).toBeInTheDocument();
     expect(await screen.findByText("AGENT_TASK_RESULT")).toBeInTheDocument();
-    expect(await screen.findByText("tools 1")).toBeInTheDocument();
+    expect(await screen.findByText(/tools 1/u)).toBeInTheDocument();
     expect(await screen.findByText("Shanghai")).toBeInTheDocument();
     expect(await screen.findByText("Sunny")).toBeInTheDocument();
     expect(await screen.findByText("31.2°C")).toBeInTheDocument();
     expect(await screen.findByText("对话执行状态")).toBeInTheDocument();
-    expect(screen.getByText("当前输入")).toBeInTheDocument();
-    expect(screen.getByText("已完成")).toBeInTheDocument();
+    expect(screen.queryByText("当前输入")).not.toBeInTheDocument();
+    expect(screen.getAllByText("已完成").length).toBeGreaterThan(0);
     expect(screen.getAllByText("检查 node-a 健康状态并总结风险")).toHaveLength(1);
     expect(await screen.findByText("已执行 Skill")).toBeInTheDocument();
-    expect(screen.getByText("weather-current-read")).toBeInTheDocument();
+    expect(screen.getByText(/weather-current-read/u)).toBeInTheDocument();
     expect(screen.getByText("执行链")).toBeInTheDocument();
-    expect(screen.getByText("READ_ONLY 策略")).toBeInTheDocument();
-    expect(screen.getByText("M07 Worker")).toBeInTheDocument();
+    expect(screen.queryByText("READ_ONLY 策略")).not.toBeInTheDocument();
+    expect(screen.queryByText("M07 Worker")).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "查看对话执行详情" })).toBeEnabled();
     expect(screen.getByRole("button", { name: "查看 Skill 调用详情" })).toBeEnabled();
     expect(screen.getByRole("button", { name: "查看执行链详情" })).toBeEnabled();
@@ -284,6 +281,8 @@ describe("AgentWorkspacePage", () => {
     expect(screen.queryByText("P1 只读诊断")).not.toBeInTheDocument();
     expect(document.documentElement.style.overflow).toBe("hidden");
     expect(document.body.style.overflow).toBe("hidden");
+    expect(within(taskDialog).getByText("状态")).toBeInTheDocument();
+    expect(within(taskDialog).getByText("策略")).toBeInTheDocument();
     expect(screen.getByText("输入意图")).toBeInTheDocument();
     expect(screen.getAllByText("检查 node-a 健康状态并总结风险")).toHaveLength(2);
     expect(screen.getByText("development")).toBeInTheDocument();
@@ -549,10 +548,13 @@ describe("AgentWorkspacePage", () => {
     renderPage();
 
     expect(await screen.findByText("AGENT_TASK_RESULT")).toBeInTheDocument();
-    expect(await screen.findAllByText(agentTaskResult.workflowId)).toHaveLength(2);
+    expect(screen.queryByText(agentTaskResult.workflowId)).not.toBeInTheDocument();
     expect(screen.queryByText("Shanghai")).not.toBeInTheDocument();
     expect(screen.queryByText("Sunny")).not.toBeInTheDocument();
     expect(screen.queryByText("31.2°C")).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "查看对话执行详情" }));
+    const taskDialog = await screen.findByRole("dialog", { name: "对话执行详情" });
+    expect(within(taskDialog).getByText(agentTaskResult.workflowId)).toBeInTheDocument();
   });
 
   test("shows AgentScope runtime disabled response without falling back to fixed Skill", async () => {
@@ -594,8 +596,8 @@ describe("AgentWorkspacePage", () => {
     expect(agentMessages[0]).toHaveTextContent(
       "AGENT_RUNTIME_DISABLED: Agent runtime is disabled for this environment.",
     );
-    expect(await screen.findAllByText("失败")).toHaveLength(3);
-    expect(screen.getByText("当前输入")).toBeInTheDocument();
+    expect(await screen.findByText("Agent 诊断请求失败。")).toBeInTheDocument();
+    expect(screen.queryByText("当前输入")).not.toBeInTheDocument();
     expect(screen.getAllByText("检查 node-a 健康状态")).toHaveLength(1);
     expect(screen.queryByLabelText("当前 Agent 诊断任务")).not.toBeInTheDocument();
     expect(fixedSkillRequests).toEqual([]);

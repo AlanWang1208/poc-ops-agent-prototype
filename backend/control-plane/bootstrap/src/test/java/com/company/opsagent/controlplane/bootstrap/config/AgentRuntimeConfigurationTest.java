@@ -11,9 +11,13 @@ import com.company.opsagent.controlplane.modules.agentruntime.AgentscopeAgentRes
 import com.company.opsagent.controlplane.modules.agentruntime.DynamicModelProviderAgentscopeAgentClient;
 import com.company.opsagent.controlplane.modules.agentruntime.InMemoryModelProviderStore;
 import com.company.opsagent.controlplane.modules.agentruntime.LocalWeatherSmokeAgentClient;
+import com.company.opsagent.controlplane.modules.agentruntime.ModelProvider;
+import com.company.opsagent.controlplane.modules.agentruntime.R2dbcModelProviderStore;
+import io.r2dbc.spi.ConnectionFactories;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
+import org.springframework.r2dbc.core.DatabaseClient;
 import reactor.core.publisher.Mono;
 
 class AgentRuntimeConfigurationTest {
@@ -60,6 +64,21 @@ class AgentRuntimeConfigurationTest {
         new AesGcmModelProviderSecretCodec("0123456789abcdef0123456789abcdef"));
 
     assertInstanceOf(DynamicModelProviderAgentscopeAgentClient.class, client);
+  }
+
+  @Test
+  void modelProviderInitializerSeedsLocalDeepseekDefaultProvider() {
+    var connectionFactory = ConnectionFactories.get(
+        "r2dbc:h2:mem:///bootstrap-model-provider-seed-" + System.nanoTime() + ";DB_CLOSE_DELAY=-1");
+
+    new AgentRuntimeConfiguration().modelProviderSchemaInitializer(connectionFactory).afterPropertiesSet();
+
+    R2dbcModelProviderStore store = new R2dbcModelProviderStore(DatabaseClient.create(connectionFactory));
+    ModelProvider provider = store.findById("local-deepseek-default").orElseThrow();
+    assertEquals("deepseek", provider.displayName());
+    assertEquals("https://api.deepseek.com", provider.baseUrl());
+    assertEquals("deepseek-v4-pro", provider.modelName());
+    assertEquals("fp_XMKCRAGIOQU", provider.apiKeyFingerprint());
   }
 
   private AgentscopeAgentInvocation invocation() {

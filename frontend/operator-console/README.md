@@ -64,6 +64,7 @@
 - 只展示控制面返回的开发和测试连接；当前连接契约允许 `DB2_FOR_I`、`H2` 和 `MYSQL` 三类平台类型，生产连接仍被契约拒绝。
 - 新建连接表单只提交连接元数据和 `credentialAlias`，不包含密码、JDBC URL 或真实凭据。
 - 支持多 SQL 会话标签，每个会话独立保存 SQL 文本、连接、Schema、服务端校验报告、执行状态和结果引用。
+- SQL 编辑器使用 MIT 许可的 CodeMirror 6 与官方 `@codemirror/lang-sql` 语言包处理光标、选择、SQL 注释高亮和单条 SQL gutter 执行入口；该依赖只负责前端编辑体验，不参与授权、校验或执行决策。原自绘透明 `textarea` 高亮无法可靠处理注释后的光标可见性和语法扩展。
 - 支持单条 SELECT 校验与受控执行，结果通过控制面分页读取；INSERT、UPDATE、DELETE 仍只做静态预检。
 - P1 不提供 DML 执行、交互事务、Commit 或 Rollback。
 - 服务端校验详情展示在右侧信息面板；Copilot / AI SQL 助手在模型评测和数据脱敏门禁通过前保持禁用。
@@ -116,17 +117,19 @@ npm run test:e2e
 
 端到端测试通过浏览器路由 Mock 控制面接口，用于验证页面流程、桌面视口布局、禁用状态和关键操作可达性；它不替代后端契约测试。
 
-## 本地 Mock OIDC 联调
+## 本地 built-in 登录联调
 
-默认联调方式是浏览器会话登录：
+默认联调方式是控制面内建身份的浏览器会话登录：
 
-1. 启动控制面并启用 `local-oidc` profile。
+1. 启动控制面；默认 `application.yaml` 使用 `ops-agent.security.auth-mode=built-in`。
 2. 打开操作台首页。
 3. 在登录页输入控制面内建身份账号与密码，点击“登录”。
 4. 登录成功后应跳转 `/overview`，并通过 `/auth/session` 读取浏览器会话主体。
 5. 诊断请求最终应复用浏览器会话访问 `/internal/**`，当前页面不得在浏览器中自行构造授权事实。
 
 如需排障，不得把 Bearer Token 覆盖入口作为默认链路；当前重写版本也尚未重新实现该调试入口。
+
+`local-oidc` 仅用于显式启用 `local-oidc` profile 的 Mock OIDC 联调，不作为默认启动模式。
 
 详细步骤见 [docs/runbooks/local-oidc-mock-testing.md](../../docs/runbooks/local-oidc-mock-testing.md)。
 

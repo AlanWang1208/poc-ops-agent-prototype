@@ -19,7 +19,7 @@ import org.springframework.test.web.reactive.server.WebTestClient;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureWebTestClient
 @TestPropertySource(properties = {
-    "ops-agent.security.auth-mode=dev-hs256",
+    "ops-agent.security.auth-mode=oidc",
     "ops-agent.security.shared-secret=ops-agent-dev-secret-2026-06-06-0001",
     "ops-agent.security.issuer=ops-agent-dev",
     "ops-agent.security.audience=ops-agent-internal",
