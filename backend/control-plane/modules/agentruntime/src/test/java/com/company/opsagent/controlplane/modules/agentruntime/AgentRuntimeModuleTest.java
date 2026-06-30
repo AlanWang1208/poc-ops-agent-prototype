@@ -8,7 +8,7 @@ import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 /**
- * Agent 主运行时模块元信息与默认关闭行为测试。
+ * Agent 主运行时模块元信息与显式禁用服务行为测试。
  */
 class AgentRuntimeModuleTest {
 

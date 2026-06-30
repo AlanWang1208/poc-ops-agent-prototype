@@ -40,6 +40,8 @@ const sqlAssistantActionSchema = z.enum([
   "EXPLAIN_SQL",
   "OPTIMIZE_SQL",
   "ANALYZE_ERROR",
+  "GENERATE_SELECT",
+  "COMPARE_SUMMARY",
 ]);
 
 const sqlConnectionSchema = z

@@ -1,0 +1,61 @@
+<h2>每个 SQL 会话的三种模式</h2>
+<p class="subtitle">SQL 编辑、自然语言生成和 Compare 都属于同一个 SQL tab；自然语言先生成可审查草稿，用户确认后再应用到编辑器。</p>
+
+<div class="mockup">
+  <div class="mockup-header">SQL 1 会话</div>
+  <div class="mockup-body">
+    <div class="mock-nav">SQL | 自然语言 | Compare</div>
+    <div style="display:grid;grid-template-columns:300px 1fr;gap:12px;margin-top:10px">
+      <div class="mock-sidebar">
+        <strong>自然语言模式</strong><br>
+        连接：h2-local-test<br>
+        库名：ST1<br>
+        表名：ELADREF<br>
+        相关字段：CONFIG_KEY, CONFIG_VALUE, CONFIG_GROUP<br><br>
+        <label><input type="checkbox"> 引用当前编辑器 SQL</label><br><br>
+        用户描述：查询配置组 A 中启用的配置项<br><br>
+        <button class="mock-button">生成 SELECT 草稿</button>
+      </div>
+      <div class="mock-content">
+        <div class="placeholder" style="height:78px">
+          生成 SQL 草稿：select CONFIG_KEY, CONFIG_VALUE from ST1.ELADREF where CONFIG_GROUP = 'A' and ENABLED = 'Y'
+        </div>
+        <div class="placeholder" style="height:54px;margin-top:10px">
+          假设：ENABLED 字段表示启用状态；CONFIG_GROUP 是配置组字段。假设会随 SQL 一起展示。
+        </div>
+        <div class="placeholder" style="height:68px;margin-top:10px">
+          “引用当前编辑器 SQL”默认关闭；打开后，模型会把当前编辑器内容当作修改基准，适合“加条件”“改汇总”“调整排序”等场景。
+        </div>
+        <div class="placeholder" style="height:68px;margin-top:10px">
+          用户点击“应用到编辑器并校验”后，草稿才会写入 SQL 编辑器并触发服务端校验；当前编辑器内容不会被自动覆盖。
+        </div>
+        <div class="placeholder" style="height:68px;margin-top:10px">
+          服务端校验失败时：展示真实错误、错误位置和只读校验原因；用户点击“让 AI 修正”后，模型基于错误信息生成新版草稿。
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="pros-cons">
+  <div class="pros">
+    <h4>自然语言模式第一版</h4>
+    <ul>
+      <li>只生成 SELECT。</li>
+      <li>生成后先显示在自然语言结果区，不自动覆盖 SQL 编辑器。</li>
+      <li>用户点击“应用到编辑器并校验”后才写入当前 SQL 会话。</li>
+      <li>用户提供连接、库名、表名和字段提示。</li>
+      <li>当前编辑器 SQL 只在用户打开开关后作为上下文。</li>
+      <li>校验失败先展示真实错误，AI 修正必须由用户点击触发。</li>
+    </ul>
+  </div>
+  <div class="cons">
+    <h4>不做</h4>
+    <ul>
+      <li>不生成 INSERT / UPDATE / DELETE。</li>
+      <li>不依赖尚未接入的对象元数据自动推断表结构。</li>
+      <li>不让模型绕过服务端校验和人工执行确认。</li>
+      <li>不在失败时自动循环修 SQL。</li>
+    </ul>
+  </div>
+</div>

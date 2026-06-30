@@ -1,7 +1,7 @@
 import { http, HttpResponse } from "msw";
 import { EditorView } from "@codemirror/view";
 import { MemoryRouter } from "react-router-dom";
-import { beforeEach, describe, expect, test } from "vitest";
+import { beforeEach, describe, expect, test, vi } from "vitest";
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
@@ -133,6 +133,227 @@ describe("SqlWorkbenchPage", () => {
     expect(screen.queryByLabelText("数据库对象浏览器")).not.toBeInTheDocument();
     expect(screen.queryByLabelText("SQL 信息面板")).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "退出展开" })).toBeInTheDocument();
+  });
+
+  test("shows SQL session modes as functional tabs", async () => {
+    server.use(
+      http.get("/internal/sql-workbench/connections", () =>
+        HttpResponse.json(sqlConnections),
+      ),
+    );
+
+    renderAt("/sql");
+
+    await screen.findByText("已连接 · development");
+
+    expect(screen.getByRole("tab", { name: "SQL" })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "自然语言" })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "Compare" })).toBeInTheDocument();
+  });
+
+  test("imports a .sql file into the current session only after overwrite confirmation", async () => {
+    const user = userEvent.setup();
+    const confirmSpy = vi.spyOn(window, "confirm");
+    confirmSpy.mockReturnValueOnce(false).mockReturnValueOnce(true);
+    server.use(
+      http.get("/internal/sql-workbench/connections", () =>
+        HttpResponse.json(sqlConnections),
+      ),
+    );
+
+    renderAt("/sql");
+
+    await screen.findByText("已连接 · development");
+    await replaceSqlText(user, "select * from ORDERS.ORDERS");
+
+    const importedFile = new File(
+      ["select ORDER_ID, STATUS from ORDERS.ORDERS"],
+      "orders.sql",
+      { type: "application/sql" },
+    );
+    const importInput = screen.getByLabelText("导入 .sql");
+
+    await user.upload(importInput, importedFile);
+    expect(readSqlText()).toBe("select * from ORDERS.ORDERS");
+
+    await user.upload(importInput, importedFile);
+    await waitFor(() =>
+      expect(readSqlText()).toBe("select ORDER_ID, STATUS from ORDERS.ORDERS"),
+    );
+    expect(confirmSpy).toHaveBeenCalledWith("导入会覆盖当前 SQL，是否继续？");
+  });
+
+  test("generates SELECT from natural language as a draft before applying it", async () => {
+    const user = userEvent.setup();
+    /** @type {unknown[]} */
+    const assistantRequests = [];
+    /** @type {unknown[]} */
+    const validationRequests = [];
+    server.use(
+      http.get("/internal/sql-workbench/connections", () =>
+        HttpResponse.json(sqlConnections),
+      ),
+      http.post("/internal/sql-workbench/assistant", async ({ request }) => {
+        assistantRequests.push(await request.json());
+        return HttpResponse.json({
+          ...sqlAssistantResponse,
+          assistantAction: "GENERATE_SELECT",
+          summary: "已生成只读 SELECT 草稿。",
+          suggestions: [
+            {
+              title: "未完成订单查询",
+              rationale: "用户要求查询未完成订单，限定为 SELECT。",
+              suggestedSql:
+                "select ORDER_ID, STATUS from ORDERS.ORDERS where STATUS <> 'DONE'",
+            },
+          ],
+          safetyNotes: ["应用后必须重新执行服务端校验。"],
+        });
+      }),
+      http.post("/internal/sql-workbench/queries/validate", async ({ request }) => {
+        validationRequests.push(await request.json());
+        return HttpResponse.json(validatedSelectReport);
+      }),
+    );
+
+    renderAt("/sql");
+
+    await screen.findByText("已连接 · development");
+    await user.click(screen.getByRole("tab", { name: "自然语言" }));
+    expect(screen.getByRole("heading", { name: "生成结果" })).toBeInTheDocument();
+    expect(screen.getByLabelText("自然语言快捷录入")).toBeInTheDocument();
+    expect(screen.queryByLabelText("目标库")).not.toBeInTheDocument();
+    await user.type(
+      screen.getByLabelText("自然语言需求"),
+      "查询未完成订单 @ORDERS #ORDERS $ORDER_ID,STATUS",
+    );
+    await user.click(screen.getByRole("button", { name: "生成 SELECT" }));
+
+    expect(
+      await screen.findByText(
+        "select ORDER_ID, STATUS from ORDERS.ORDERS where STATUS <> 'DONE'",
+      ),
+    ).toBeInTheDocument();
+    await waitFor(() => expect(assistantRequests).toHaveLength(1));
+    expect(assistantRequests[0]).toMatchObject({
+      assistantAction: "GENERATE_SELECT",
+      sql: "SELECT 1",
+    });
+    const diagnosticContext = String(
+      /** @type {Record<string, unknown>} */ (assistantRequests[0]).diagnosticContext,
+    );
+    expect(diagnosticContext).toContain("naturalLanguage=查询未完成订单");
+    expect(diagnosticContext).toContain("targetLibrary=ORDERS");
+    expect(diagnosticContext).toContain("targetTable=ORDERS");
+    expect(diagnosticContext).toContain("requestedFields=ORDER_ID,STATUS");
+
+    await user.click(screen.getByRole("button", { name: "应用到编辑器并校验" }));
+
+    await waitFor(() =>
+      expect(readSqlText()).toBe(
+        "select ORDER_ID, STATUS from ORDERS.ORDERS where STATUS <> 'DONE'",
+      ),
+    );
+    await waitFor(() => expect(validationRequests).toHaveLength(1));
+    expect(validationRequests[0]).toMatchObject({
+      action: "VALIDATE",
+      sql: "select ORDER_ID, STATUS from ORDERS.ORDERS where STATUS <> 'DONE'",
+    });
+  });
+
+  test("compares the same table across two libraries and asks AI for a summary", async () => {
+    const user = userEvent.setup();
+    /** @type {unknown[]} */
+    const runRequests = [];
+    /** @type {unknown[]} */
+    const assistantRequests = [];
+    server.use(
+      http.get("/internal/sql-workbench/connections", () =>
+        HttpResponse.json([
+          {
+            ...sqlConnections[0],
+            allowedSchemas: ["ORDERS", "ST1", "ST2"],
+          },
+        ]),
+      ),
+      http.post("/internal/sql-workbench/queries/run", async ({ request }) => {
+        const body = await request.json();
+        runRequests.push(body);
+        const sqlText = String(/** @type {{sql?: unknown}} */ (body).sql ?? "");
+        return HttpResponse.json({
+          ...queryRunResult,
+          resultId: sqlText.includes("ST1.") ? "compare-base" : "compare-target",
+        });
+      }),
+      http.get("/internal/sql-workbench/results/:resultId", ({ params }) => {
+        return HttpResponse.json({
+          ...resultPage,
+          resultId: String(params.resultId),
+          columns: [
+            { name: "REFKEY", type: "VARCHAR", masked: false },
+            { name: "REFVAL", type: "VARCHAR", masked: false },
+          ],
+          rows:
+            params.resultId === "compare-base"
+              ? [
+                  ["A", "1"],
+                  ["B", "2"],
+                ]
+              : [
+                  ["A", "1"],
+                  ["B", "3"],
+                  ["C", "4"],
+                ],
+        });
+      }),
+      http.post("/internal/sql-workbench/assistant", async ({ request }) => {
+        assistantRequests.push(await request.json());
+        return HttpResponse.json({
+          ...sqlAssistantResponse,
+          assistantAction: "COMPARE_SUMMARY",
+          summary: "ST1 与 ST2 存在 1 行字段差异，且 ST2 多 1 行。",
+          suggestions: [],
+          safetyNotes: ["摘要仅基于确定性 diff，不执行 SQL。"],
+        });
+      }),
+    );
+
+    renderAt("/sql");
+
+    await screen.findByText("已连接 · development");
+    await user.click(screen.getByRole("tab", { name: "Compare" }));
+    await user.clear(screen.getByLabelText("基准库"));
+    await user.type(screen.getByLabelText("基准库"), "ST1");
+    await user.clear(screen.getByLabelText("对比库"));
+    await user.type(screen.getByLabelText("对比库"), "ST2");
+    await user.type(screen.getByLabelText("目标表"), "ELADREF");
+    await user.type(screen.getByLabelText("主键字段"), "REFKEY");
+    await user.type(screen.getByLabelText("比较字段"), "REFVAL");
+    await user.click(screen.getByRole("button", { name: "执行对比" }));
+
+    expect(await screen.findByText("字段差异 1")).toBeInTheDocument();
+    expect(screen.getByText("仅在对比存在 1")).toBeInTheDocument();
+    expect(
+      await screen.findByText("ST1 与 ST2 存在 1 行字段差异，且 ST2 多 1 行。"),
+    ).toBeInTheDocument();
+
+    await waitFor(() => expect(runRequests).toHaveLength(2));
+    expect(runRequests[0]).toMatchObject({
+      action: "RUN_READ_ONLY",
+      schema: "ST1",
+      sql: "select REFKEY, REFVAL from ST1.ELADREF",
+    });
+    expect(runRequests[1]).toMatchObject({
+      action: "RUN_READ_ONLY",
+      schema: "ST2",
+      sql: "select REFKEY, REFVAL from ST2.ELADREF",
+    });
+    await waitFor(() => expect(assistantRequests).toHaveLength(1));
+    expect(assistantRequests[0]).toMatchObject({
+      assistantAction: "COMPARE_SUMMARY",
+    });
+    expect(String(/** @type {Record<string, unknown>} */ (assistantRequests[0]).diagnosticContext))
+      .toContain("mismatchedRows=1");
   });
 
   test("switches the active connection from the top connection selector", async () => {
@@ -424,6 +645,49 @@ describe("SqlWorkbenchPage", () => {
     expect(validationRequests.at(-1)).toMatchObject({ action: "PREFLIGHT_DML" });
   });
 
+  test("shows an execution animation while SELECT is running", async () => {
+    const user = userEvent.setup();
+    /** @type {() => void} */
+    let releaseRun = () => {};
+    /** @type {() => void} */
+    let markRunStarted = () => {};
+    const runGate = new Promise((resolve) => {
+      releaseRun = () => resolve(undefined);
+    });
+    const runStarted = new Promise((resolve) => {
+      markRunStarted = () => resolve(undefined);
+    });
+
+    server.use(
+      http.get("/internal/sql-workbench/connections", () =>
+        HttpResponse.json(sqlConnections),
+      ),
+      http.post("/internal/sql-workbench/queries/run", async () => {
+        markRunStarted();
+        await runGate;
+        return HttpResponse.json(queryRunResult);
+      }),
+      http.get("/internal/sql-workbench/results/result-001", () =>
+        HttpResponse.json(resultPage),
+      ),
+    );
+
+    renderAt("/sql");
+
+    await replaceSqlText(user, "SELECT * FROM ORDERS.ORDERS");
+    await user.click(screen.getByRole("button", { name: "执行 SELECT" }));
+    await runStarted;
+
+    expect(screen.getByRole("status")).toHaveTextContent("正在执行 SELECT 查询");
+    expect(screen.getByText("控制面正在提交只读执行请求")).toBeInTheDocument();
+
+    releaseRun();
+    expect(await screen.findByText("OD-10500")).toBeInTheDocument();
+    await waitFor(() =>
+      expect(screen.queryByText("正在执行 SELECT 查询")).not.toBeInTheDocument(),
+    );
+  });
+
   test("highlights line comments and keeps commented SELECT runnable", async () => {
     const user = userEvent.setup();
     /** @type {unknown[]} */
@@ -650,6 +914,72 @@ describe("SqlWorkbenchPage", () => {
     );
   });
 
+  test("automatically asks AI assistant for failed SELECT execution result", async () => {
+    const user = userEvent.setup();
+    /** @type {unknown[]} */
+    const assistantRequests = [];
+    const failedSql = "select * from eladrefp";
+    const failedExecution = {
+      ...queryRunResult,
+      status: "FAILED",
+      resultId: null,
+      errorCode: "SQL_EXECUTION_FAILED",
+      errorMessage: "SQL query execution failed",
+    };
+    const executionAssistantResponse = {
+      ...sqlAssistantResponse,
+      assistantAction: "ANALYZE_ERROR",
+      summary: "SQL 执行失败：请先确认表名 eladrefp 是否存在并在当前 Schema 可访问。",
+      suggestions: [
+        {
+          title: "核对对象名",
+          rationale: "该 SQL 语法上可解析，但执行阶段找不到或无法访问目标对象时会失败。",
+          suggestedSql: "select * from PUBLIC.eladrefp",
+        },
+      ],
+      safetyNotes: ["AI 分析只提供参考，修正后必须重新执行服务端校验。"],
+    };
+    server.use(
+      http.get("/internal/sql-workbench/connections", () =>
+        HttpResponse.json(sqlConnections),
+      ),
+      http.post("/internal/sql-workbench/queries/run", () =>
+        HttpResponse.json(failedExecution),
+      ),
+      http.post("/internal/sql-workbench/assistant", async ({ request }) => {
+        assistantRequests.push(await request.json());
+        return HttpResponse.json(executionAssistantResponse);
+      }),
+    );
+
+    renderAt("/sql");
+
+    await screen.findByText("已连接 · development");
+    await user.click(screen.getByRole("button", { name: "展开工作区" }));
+    expect(screen.queryByLabelText("SQL 信息面板")).not.toBeInTheDocument();
+    await replaceSqlText(user, failedSql);
+    await user.click(screen.getByRole("button", { name: "执行 SELECT" }));
+
+    expect(await screen.findByText("SQL_EXECUTION_FAILED: SQL query execution failed")).toBeInTheDocument();
+    expect(screen.getAllByRole("alert")).toHaveLength(1);
+    expect(
+      await screen.findByText("SQL 执行失败：请先确认表名 eladrefp 是否存在并在当前 Schema 可访问。"),
+    ).toBeInTheDocument();
+
+    await waitFor(() => expect(assistantRequests).toHaveLength(1));
+    expect(assistantRequests[0]).toMatchObject({
+      assistantAction: "ANALYZE_ERROR",
+      sql: failedSql,
+    });
+    const assistantRequest = /** @type {Record<string, unknown>} */ (assistantRequests[0]);
+    expect(String(assistantRequest.diagnosticContext)).toContain(
+      "executionErrorCode=SQL_EXECUTION_FAILED",
+    );
+    expect(String(assistantRequest.diagnosticContext)).toContain(
+      "executionErrorMessage=SQL query execution failed",
+    );
+  });
+
   test("paginates SQL result pages with explicit cursor navigation", async () => {
     const user = userEvent.setup();
     /** @type {(string | null)[]} */
@@ -790,6 +1120,45 @@ describe("SqlWorkbenchPage", () => {
     expect(readSqlText()).toBe("select order_id, status from ORDERS.ORDERS");
     expect(screen.queryByText("VALIDATED")).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "执行 SELECT" })).toBeEnabled();
+  });
+
+  test("shows an AI SQL assistant loading animation while advice is pending", async () => {
+    const user = userEvent.setup();
+    /** @type {() => void} */
+    let releaseAssistant = () => {};
+    /** @type {() => void} */
+    let markAssistantStarted = () => {};
+    const assistantGate = new Promise((resolve) => {
+      releaseAssistant = () => resolve(undefined);
+    });
+    const assistantStarted = new Promise((resolve) => {
+      markAssistantStarted = () => resolve(undefined);
+    });
+    server.use(
+      http.get("/internal/sql-workbench/connections", () =>
+        HttpResponse.json(sqlConnections),
+      ),
+      http.post("/internal/sql-workbench/assistant", async () => {
+        markAssistantStarted();
+        await assistantGate;
+        return HttpResponse.json(sqlAssistantResponse);
+      }),
+    );
+
+    renderAt("/sql");
+
+    await replaceSqlText(user, "SELECT * FROM ORDERS.ORDERS");
+    await user.click(screen.getByRole("button", { name: "分析错误" }));
+    await assistantStarted;
+
+    expect(screen.getByRole("status")).toHaveTextContent("正在请求 AI SQL 助手");
+    expect(screen.getByText("服务端模型正在生成参考建议")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "解释 SQL" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "优化建议" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "分析错误" })).toBeDisabled();
+
+    releaseAssistant();
+    expect(await screen.findByText("Use explicit columns.")).toBeInTheDocument();
   });
 });
 

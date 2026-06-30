@@ -9,6 +9,7 @@ import com.company.opsagent.contracts.sqlworkbench.SqlQueryRequest;
 import com.company.opsagent.contracts.workflow.OperatorContext;
 import com.company.opsagent.contracts.workflow.PolicyDecisionReference;
 import com.company.opsagent.contracts.workflow.TraceContext;
+import java.sql.SQLSyntaxErrorException;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.OffsetDateTime;
@@ -63,6 +64,35 @@ class RestrictedSqlQueryExecutionWorkerTest {
 
     assertEquals("REJECTED", result.status());
     assertEquals("SQL_EGRESS_NOT_ALLOWED", result.errorCode());
+  }
+
+  @Test
+  void includesSafeRootCauseForExecutionFailure() {
+    var worker = new RestrictedSqlQueryExecutionWorker(
+        new CalciteSqlReadOnlyGuard(),
+        request -> {
+          throw new IllegalStateException(
+              "read-only JDBC query failed",
+              new SQLSyntaxErrorException(
+                  "Table \"ELADREFP\" not found; SQL statement: select * from eladrefp [42102-224]",
+                  "42S02",
+                  42102));
+        },
+        CLOCK);
+
+    var result = worker.execute(request("select * from eladrefp", "development", 30));
+
+    assertEquals("FAILED", result.status());
+    assertEquals("SQL_EXECUTION_FAILED", result.errorCode());
+    assertEquals(
+        String.join(
+            System.lineSeparator(),
+            "SQL query execution failed",
+            "failureType=SQLSyntaxErrorException",
+            "sqlState=42S02",
+            "vendorCode=42102",
+            "message=Table \"ELADREFP\" not found"),
+        result.errorMessage());
   }
 
   private SqlQueryExecutionRequest request(String sql, String environment, int expiresInSeconds) {

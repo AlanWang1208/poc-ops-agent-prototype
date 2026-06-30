@@ -17,6 +17,7 @@ public final class DynamicModelProviderAgentscopeAgentClient implements Agentsco
         String modelName,
         String baseUrl,
         int maxIters,
+        int maxToolCalls,
         Duration timeout);
   }
 
@@ -68,6 +69,7 @@ public final class DynamicModelProviderAgentscopeAgentClient implements Agentsco
         provider.modelName(),
         provider.baseUrl(),
         provider.maxIterations(),
+        provider.maxToolCalls(),
         provider.timeout());
   }
 }

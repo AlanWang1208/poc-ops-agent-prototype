@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.company.opsagent.contracts.agent.AgentToolCall;
 import com.company.opsagent.contracts.agent.AgentToolResult;
@@ -213,6 +214,46 @@ class WorkflowBackedAgentToolExecutorTest {
     assertEquals("policy-v1", auditEvent.policyVersion());
     assertEquals("DENY", auditEvent.result());
     assertEquals("missing permission", auditEvent.reason());
+  }
+
+  @Test
+  void normalizesWorkerNullNodeOutputToEmptyObjectForAgentToolContract() {
+    var store = new InMemoryAgentWorkflowStore();
+    var eventStore = new InMemoryReadOnlyWorkflowStoreFixture();
+    var auditTrail = new InMemoryAuditTrail();
+    var policyService = new RecordingPolicyDecisionService(true);
+    WorkerGateway workerGateway = request -> Mono.just(new WorkerExecutionResult(
+        "1.0",
+        request.executionRequestId(),
+        request.command().commandId(),
+        request.command().workflowId(),
+        WorkerExecutionStatus.REJECTED,
+        request.command().skill().outputSchemaId(),
+        objectMapper.nullNode(),
+        "HTTP_SKILL_SOURCE_NOT_CONFIGURED",
+        "configured HTTP skill endpoint is not configured",
+        request.authorizedAt().plusSeconds(1)));
+    AgentToolExecutor executor = new WorkflowBackedAgentToolExecutor(
+        catalogProvider(),
+        policyService,
+        store,
+        eventStore,
+        auditTrail,
+        workerGateway,
+        objectMapper,
+        clock);
+
+    StepVerifier.create(seedWorkflow(store)
+        .then(executor.execute(
+            runtimeRequest(),
+            toolCall("node-health", "1.0.0", "sha256:caller-supplied"))))
+        .assertNext(result -> {
+          assertEquals("REJECTED", result.status());
+          assertTrue(result.output().isObject());
+          assertEquals(0, result.output().size());
+          assertEquals("HTTP_SKILL_SOURCE_NOT_CONFIGURED", result.errorCode());
+        })
+        .verifyComplete();
   }
 
   private Mono<StoredAgentWorkflow> seedWorkflow(AgentWorkflowStore store) {

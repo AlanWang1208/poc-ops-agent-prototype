@@ -42,9 +42,11 @@
       "enum": [
         "EXPLAIN_SQL",
         "OPTIMIZE_SQL",
-        "ANALYZE_ERROR"
+        "ANALYZE_ERROR",
+        "GENERATE_SELECT",
+        "COMPARE_SUMMARY"
       ],
-      "description": "助手建议类型。"
+      "description": "助手建议、SELECT 生成或对比摘要类型。"
     },
     "sql": {
       "type": "string",

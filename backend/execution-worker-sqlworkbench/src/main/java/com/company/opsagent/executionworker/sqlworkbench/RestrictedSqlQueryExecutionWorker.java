@@ -2,8 +2,10 @@ package com.company.opsagent.executionworker.sqlworkbench;
 
 import com.company.opsagent.contracts.sqlworkbench.SqlQueryExecutionRequest;
 import com.company.opsagent.contracts.sqlworkbench.SqlQueryExecutionResult;
+import java.sql.SQLException;
 import java.time.Clock;
 import java.time.OffsetDateTime;
+import java.util.Locale;
 
 /**
  * SQL 查询专用受限 Worker，只接受未过期的开发测试环境 SELECT。
@@ -53,7 +55,7 @@ public class RestrictedSqlQueryExecutionWorker {
           "FAILED",
           null,
           "SQL_EXECUTION_FAILED",
-          "SQL query execution failed");
+          safeExecutionFailureMessage(exception));
     }
   }
 
@@ -69,5 +71,59 @@ public class RestrictedSqlQueryExecutionWorker {
         null,
         code,
         message);
+  }
+
+  private String safeExecutionFailureMessage(RuntimeException exception) {
+    Throwable rootCause = rootCause(exception);
+    StringBuilder message = new StringBuilder("SQL query execution failed");
+    message.append(System.lineSeparator()).append("failureType=").append(rootCause.getClass().getSimpleName());
+    if (rootCause instanceof SQLException sqlException) {
+      if (hasText(sqlException.getSQLState())) {
+        message.append(System.lineSeparator()).append("sqlState=").append(sqlException.getSQLState());
+      }
+      if (sqlException.getErrorCode() != 0) {
+        message.append(System.lineSeparator()).append("vendorCode=").append(sqlException.getErrorCode());
+      }
+    }
+    String safeMessage = sanitizeFailureMessage(rootCause.getMessage());
+    if (safeMessage != null) {
+      message.append(System.lineSeparator()).append("message=").append(safeMessage);
+    }
+    return message.toString();
+  }
+
+  private Throwable rootCause(Throwable exception) {
+    Throwable current = exception;
+    while (current.getCause() != null && current.getCause() != current) {
+      current = current.getCause();
+    }
+    return current;
+  }
+
+  private String sanitizeFailureMessage(String rawMessage) {
+    if (!hasText(rawMessage)) {
+      return null;
+    }
+    String message = rawMessage.replaceAll("\\R+", " ").trim();
+    int sqlStatementIndex = indexOfIgnoreCase(message, "SQL statement:");
+    if (sqlStatementIndex >= 0) {
+      message = message.substring(0, sqlStatementIndex).trim();
+    }
+    message = message.replaceAll("(?i)(password|pwd|secret|token)\\s*=\\s*[^\\s;]+", "$1=<redacted>");
+    if (message.endsWith(";")) {
+      message = message.substring(0, message.length() - 1).trim();
+    }
+    if (message.length() > 240) {
+      message = message.substring(0, 240).trim();
+    }
+    return hasText(message) ? message : null;
+  }
+
+  private int indexOfIgnoreCase(String value, String marker) {
+    return value.toLowerCase(Locale.ROOT).indexOf(marker.toLowerCase(Locale.ROOT));
+  }
+
+  private boolean hasText(String value) {
+    return value != null && !value.isBlank();
   }
 }

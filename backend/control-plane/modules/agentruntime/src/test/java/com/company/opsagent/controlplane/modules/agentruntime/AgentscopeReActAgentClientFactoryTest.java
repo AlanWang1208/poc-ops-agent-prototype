@@ -14,6 +14,7 @@ class AgentscopeReActAgentClientFactoryTest {
         "test-model",
         "https://model-provider.example/v1",
         3,
+        2,
         Duration.ofSeconds(5));
 
     assertInstanceOf(AgentscopeReActAgentClient.class, client);

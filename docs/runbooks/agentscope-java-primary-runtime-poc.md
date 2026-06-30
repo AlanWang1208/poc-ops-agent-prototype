@@ -16,7 +16,7 @@ POST /api/v1/agent/diagnostics
 
 ## 主链路运行条件
 
-控制面默认关闭 Agent Runtime。需要真正走模型和 Skill Tool Call 时，优先启用已提交的 `agent-runtime` Spring profile。该 profile 文件位于 `backend/control-plane/bootstrap/src/main/resources/application-agent-runtime.yaml`，只保存非敏感配置：
+控制面默认启用 Agent Runtime。默认配置仍依赖本地占位模型密钥或动态模型供应方配置；缺少可用模型供应方时会进入运行时失败关闭，不会伪造成诊断成功。需要覆盖静态模型参数时，可以启用已提交的 `agent-runtime` Spring profile。该 profile 文件位于 `backend/control-plane/bootstrap/src/main/resources/application-agent-runtime.yaml`，只保存非敏感配置：
 
 ```yaml
 ops-agent:
@@ -77,7 +77,7 @@ export OPENAI_API_KEY="<由密钥系统注入的真实值>"
 
 也可以在 systemd、Docker、Kubernetes Secret、CI/CD 变量或外部 Spring 配置文件中设置同等配置；原则是 profile 和非敏感模型参数可以进配置文件，真实 Key 只进密钥通道。
 
-未配置模型供应方、API Key 或启用开关时，主入口必须失败关闭，返回明确错误，不得静默改走未审计路径。
+未配置模型供应方、API Key 或显式关闭启用开关时，主入口必须失败关闭，返回明确错误，不得静默改走未审计路径。
 
 ## 回退
 
@@ -89,7 +89,7 @@ ops-agent:
     enabled: false
 ```
 
-回退后：
+显式关闭后：
 
 - `/api/v1/agent/diagnostics` 返回 `AGENT_RUNTIME_DISABLED`。
 - `/internal/diagnostics/read-only` 单 Skill 只读闭环作为兼容和紧急回退路径继续可用。
@@ -128,7 +128,7 @@ Linux、macOS 或容器环境：
 
 | 现象 | 处理 |
 |---|---|
-| 返回 `AGENT_RUNTIME_DISABLED` | 检查 `ops-agent.agent-runtime.enabled` 是否为 `true` |
+| 返回 `AGENT_RUNTIME_DISABLED` | 检查 `ops-agent.agent-runtime.enabled` 是否被显式设置为 `false` |
 | 返回 `AGENT_RUNTIME_NOT_CONFIGURED` | 检查 `agent-runtime` profile、`model-name`、`base-url` 和 `api-key-env` 指向的运行环境变量 |
 | 返回 `AGENT_RUNTIME_FAKE_API_KEY` | 当前仍使用本地占位 Key；通过 `OPS_AGENT_AGENT_RUNTIME_API_KEY` 或 `OPENAI_API_KEY` 注入真实密钥后重启 |
 | 模型设置页保存失败 | 检查调用身份是否具备 `internal.model-providers.write`，并确认 `baseUrl` 使用 HTTPS，或仅在本地开发使用 `http://localhost` / `http://127.0.0.1` |

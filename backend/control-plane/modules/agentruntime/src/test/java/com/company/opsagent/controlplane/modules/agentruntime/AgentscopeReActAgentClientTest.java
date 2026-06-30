@@ -21,6 +21,7 @@ import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -120,6 +121,84 @@ class AgentscopeReActAgentClientTest {
     assertEquals("request-1", call.trace().requestId());
   }
 
+  @Test
+  void returnsRecordedToolResultsWhenModelFailsAfterToolExecution() {
+    AgentToolExecutor toolExecutor = (runtimeRequest, toolCall) -> Mono.just(new AgentToolResult(
+        "1.0",
+        toolCall.toolCallId(),
+        toolCall.taskId(),
+        toolCall.workflowId(),
+        "REJECTED",
+        toolCall.skill().outputSchemaId(),
+        objectMapper.createObjectNode(),
+        "HTTP_SKILL_SOURCE_NOT_CONFIGURED",
+        "configured HTTP skill endpoint is not configured",
+        OffsetDateTime.of(2026, 6, 23, 10, 0, 0, 0, ZoneOffset.UTC)));
+    var client = new AgentscopeReActAgentClient(
+        new FailingAfterToolUseModel(),
+        4,
+        Duration.ofSeconds(5));
+
+    StepVerifier.create(client.run(new AgentscopeAgentInvocation(
+            runtimeRequest(),
+            List.of(readOnlyTool()),
+            toolExecutor)))
+        .assertNext(response -> {
+          assertEquals("AGENT_RUNTIME_FAILED", response.status());
+          assertTrue(response.summary().contains("after 1 platform tool call"), response.summary());
+          assertTrue(response.summary().contains("HTTP_SKILL_SOURCE_NOT_CONFIGURED"), response.summary());
+          assertEquals(1, response.toolCallCount());
+          assertEquals(1, response.toolResults().size());
+          assertEquals("REJECTED", response.toolResults().getFirst().status());
+          assertEquals("HTTP_SKILL_SOURCE_NOT_CONFIGURED", response.toolResults().getFirst().errorCode());
+        })
+        .verifyComplete();
+  }
+
+  @Test
+  void rejectsToolCallsAfterConfiguredLimitWithoutCallingWorker() {
+    AtomicInteger workerCalls = new AtomicInteger();
+    AgentToolExecutor toolExecutor = (runtimeRequest, toolCall) -> {
+      workerCalls.incrementAndGet();
+      return Mono.just(new AgentToolResult(
+          "1.0",
+          toolCall.toolCallId(),
+          toolCall.taskId(),
+          toolCall.workflowId(),
+          "SUCCEEDED",
+          toolCall.skill().outputSchemaId(),
+          objectMapper.createObjectNode()
+              .put("nodeId", toolCall.parameters().get("nodeId"))
+              .put("status", "UP"),
+          null,
+          null,
+          OffsetDateTime.of(2026, 6, 23, 10, 0, 0, 0, ZoneOffset.UTC)));
+    };
+    var client = new AgentscopeReActAgentClient(
+        new RepeatedToolUseModel(),
+        5,
+        Duration.ofSeconds(5),
+        1);
+
+    StepVerifier.create(client.run(new AgentscopeAgentInvocation(
+            runtimeRequest(),
+            List.of(readOnlyTool()),
+            toolExecutor)))
+        .assertNext(response -> {
+          assertEquals("SUCCEEDED", response.status());
+          assertEquals("tool limit enforced", response.summary());
+          assertEquals(2, response.toolCallCount());
+          assertEquals(2, response.toolResults().size());
+          assertEquals("SUCCEEDED", response.toolResults().getFirst().status());
+          AgentToolResult limitedResult = response.toolResults().get(1);
+          assertEquals("REJECTED", limitedResult.status());
+          assertEquals("AGENT_TOOL_CALL_LIMIT_EXCEEDED", limitedResult.errorCode());
+        })
+        .verifyComplete();
+
+    assertEquals(1, workerCalls.get());
+  }
+
   private AgentRuntimeRequest runtimeRequest() {
     return new AgentRuntimeRequest(
         "task-1",
@@ -197,6 +276,72 @@ class AgentscopeReActAgentClientTest {
     @Override
     public String getModelName() {
       return "fake-tool-model";
+    }
+  }
+
+  private static final class FailingAfterToolUseModel implements Model {
+
+    private int streamCalls;
+
+    @Override
+    public Flux<ChatResponse> stream(
+        List<Msg> messages,
+        List<ToolSchema> tools,
+        GenerateOptions options) {
+      streamCalls++;
+      if (streamCalls == 1) {
+        return Flux.just(ChatResponse.builder()
+            .id("response-tool-use")
+            .content(List.of(ToolUseBlock.builder()
+                .id("tool-call-1")
+                .name("node-health")
+                .input(Map.of("nodeId", "node-1"))
+                .content("{\"nodeId\":\"node-1\"}")
+                .build()))
+            .finishReason("tool_calls")
+            .build());
+      }
+      return Flux.error(new RuntimeException("model failed after tool execution"));
+    }
+
+    @Override
+    public String getModelName() {
+      return "fake-failing-after-tool-model";
+    }
+  }
+
+  private static final class RepeatedToolUseModel implements Model {
+
+    private int streamCalls;
+
+    @Override
+    public Flux<ChatResponse> stream(
+        List<Msg> messages,
+        List<ToolSchema> tools,
+        GenerateOptions options) {
+      streamCalls++;
+      if (streamCalls <= 2) {
+        return Flux.just(ChatResponse.builder()
+            .id("response-tool-use-" + streamCalls)
+            .content(List.of(ToolUseBlock.builder()
+                .id("tool-call-" + streamCalls)
+                .name("node-health")
+                .input(Map.of("nodeId", "node-1"))
+                .content("{\"nodeId\":\"node-1\"}")
+                .build()))
+            .finishReason("tool_calls")
+            .build());
+      }
+      return Flux.just(ChatResponse.builder()
+          .id("response-final")
+          .content(List.of(TextBlock.builder().text("tool limit enforced").build()))
+          .finishReason("stop")
+          .build());
+    }
+
+    @Override
+    public String getModelName() {
+      return "fake-repeated-tool-model";
     }
   }
 }

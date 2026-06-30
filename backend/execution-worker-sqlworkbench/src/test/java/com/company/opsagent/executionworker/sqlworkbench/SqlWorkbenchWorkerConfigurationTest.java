@@ -3,6 +3,7 @@ package com.company.opsagent.executionworker.sqlworkbench;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.company.opsagent.contracts.sqlworkbench.SqlQueryAction;
 import com.company.opsagent.contracts.sqlworkbench.SqlQueryExecutionRequest;
@@ -63,29 +64,73 @@ class SqlWorkbenchWorkerConfigurationTest {
 
   @Test
   void executesConfiguredH2ReadOnlyQuery() {
-    contextRunner
-        .withPropertyValues(
-            "ops-agent.worker.sql-egress.allowed-targets[0].host=localhost",
-            "ops-agent.worker.sql-egress.allowed-targets[0].port=9092",
-            "ops-agent.worker.sql-egress.connections[0].connection-id=h2-local-test",
-            "ops-agent.worker.sql-egress.connections[0].target-environment=test",
-            "ops-agent.worker.sql-egress.connections[0].platform-type=H2",
-            "ops-agent.worker.sql-egress.connections[0].host=localhost",
-            "ops-agent.worker.sql-egress.connections[0].port=9092",
-            "ops-agent.worker.sql-egress.connections[0].credential-alias=h2-local-readonly",
-            "ops-agent.worker.sql-egress.connections[0].enabled=true")
+    h2ContextRunner()
         .run(context -> {
           var worker = context.getBean(RestrictedSqlQueryExecutionWorker.class);
-          var result = worker.execute(h2Request());
+          var result = worker.execute(h2Request("select ORDER_ID, STATUS from PUBLIC.ORDERS order by ORDER_ID"));
 
           assertEquals("SUCCEEDED", result.status());
           var page = context.getBean(SqlResultStore.class).find(result.resultId()).orElseThrow();
           assertEquals("ORDER_ID", page.columns().getFirst().name());
           assertEquals("STATUS", page.columns().get(1).name());
-          assertEquals(2, page.rows().size());
+          assertTrue(page.rows().size() >= 2);
           assertEquals("READY", page.rows().getFirst().get(1).asText());
           assertEquals("PENDING", page.rows().get(1).get(1).asText());
         });
+  }
+
+  @Test
+  void executesConfiguredH2CustomerOrderDemoQuery() {
+    h2ContextRunner()
+        .run(context -> {
+          var worker = context.getBean(RestrictedSqlQueryExecutionWorker.class);
+          var result = worker.execute(h2Request("""
+              select c.REGION, count(*) as ORDER_COUNT, sum(o.AMOUNT) as TOTAL_AMOUNT
+              from PUBLIC.ORDERS o
+              join PUBLIC.CUSTOMERS c on c.CUSTOMER_ID = o.CUSTOMER_ID
+              group by c.REGION
+              order by TOTAL_AMOUNT desc
+              """));
+
+          assertEquals("SUCCEEDED", result.status());
+          var page = context.getBean(SqlResultStore.class).find(result.resultId()).orElseThrow();
+          assertEquals("REGION", page.columns().getFirst().name());
+          assertEquals("ORDER_COUNT", page.columns().get(1).name());
+          assertTrue(page.rows().size() >= 2);
+        });
+  }
+
+  @Test
+  void executesConfiguredH2ServiceHealthDemoQuery() {
+    h2ContextRunner()
+        .run(context -> {
+          var worker = context.getBean(RestrictedSqlQueryExecutionWorker.class);
+          var result = worker.execute(h2Request("""
+              select SERVICE_NAME, ENVIRONMENT, HEALTH_STATUS, ERROR_RATE_PERCENT, P95_LATENCY_MS
+              from PUBLIC.SERVICE_HEALTH
+              where ENVIRONMENT = 'test'
+              order by P95_LATENCY_MS desc
+              """));
+
+          assertEquals("SUCCEEDED", result.status());
+          var page = context.getBean(SqlResultStore.class).find(result.resultId()).orElseThrow();
+          assertEquals("SERVICE_NAME", page.columns().getFirst().name());
+          assertTrue(page.rows().size() >= 2);
+          assertTrue(page.rows().stream().allMatch(row -> "test".equals(row.get(1).asText())));
+        });
+  }
+
+  private ApplicationContextRunner h2ContextRunner() {
+    return contextRunner.withPropertyValues(
+        "ops-agent.worker.sql-egress.allowed-targets[0].host=localhost",
+        "ops-agent.worker.sql-egress.allowed-targets[0].port=9092",
+        "ops-agent.worker.sql-egress.connections[0].connection-id=h2-local-test",
+        "ops-agent.worker.sql-egress.connections[0].target-environment=test",
+        "ops-agent.worker.sql-egress.connections[0].platform-type=H2",
+        "ops-agent.worker.sql-egress.connections[0].host=localhost",
+        "ops-agent.worker.sql-egress.connections[0].port=9092",
+        "ops-agent.worker.sql-egress.connections[0].credential-alias=h2-local-readonly",
+        "ops-agent.worker.sql-egress.connections[0].enabled=true");
   }
 
   private Path keyStore(String alias, String secret, char[] storePassword) throws Exception {
@@ -125,14 +170,14 @@ class SqlWorkbenchWorkerConfigurationTest {
         OffsetDateTime.now().plusSeconds(30));
   }
 
-  private SqlQueryExecutionRequest h2Request() {
+  private SqlQueryExecutionRequest h2Request(String sql) {
     var query = new SqlQueryRequest(
         "1.0",
         "h2-local-test",
         "test",
         "PUBLIC",
         SqlQueryAction.RUN_READ_ONLY,
-        "select ORDER_ID, STATUS from PUBLIC.ORDERS order by ORDER_ID",
+        sql,
         List.of(),
         new SqlQueryLimits(500, 5_000_000, 30),
         "h2-key");

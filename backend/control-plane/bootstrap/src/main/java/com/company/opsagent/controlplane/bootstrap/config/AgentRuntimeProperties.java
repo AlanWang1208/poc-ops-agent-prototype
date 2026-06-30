@@ -9,7 +9,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @ConfigurationProperties(prefix = "ops-agent.agent-runtime")
 public class AgentRuntimeProperties {
 
-  private boolean enabled;
+  private boolean enabled = true;
   private String provider = "agentscope";
   private String modelName = "";
   private String baseUrl = "";

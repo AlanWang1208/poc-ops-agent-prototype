@@ -1,0 +1,73 @@
+<h2>SQL Compare 方案 A：工作台内 Compare + AI 摘要</h2>
+<p class="subtitle">大模型只解释确定性对比结果，不参与 SQL 执行、不决定一致性结论。</p>
+
+<div class="mockup">
+  <div class="mockup-header">Compare 面板结构</div>
+  <div class="mockup-body">
+    <div class="mock-nav">SQL 1 | Compare</div>
+    <div style="display:grid;grid-template-columns:290px 1fr;gap:12px;margin-top:10px">
+      <div class="mock-sidebar">
+        <strong>对比目标</strong><br>
+        连接：as400-test<br>
+        表名：ELADREF<br>
+        基准库：ST1<br>
+        对比库：ST2<br>
+        业务键：CONFIG_KEY<br>
+        忽略字段：UPDATED_AT<br>
+        条件：CONFIG_GROUP='A'<br><br>
+        <button class="mock-button">执行 Compare</button>
+      </div>
+      <div class="mock-content">
+        <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px">
+          <div class="placeholder">状态<br><strong>存在差异</strong></div>
+          <div class="placeholder">基准 128</div>
+          <div class="placeholder">一致 124</div>
+          <div class="placeholder">缺失 2</div>
+          <div class="placeholder">值差异 2</div>
+        </div>
+        <div class="placeholder" style="height:70px;margin-top:10px">
+          AI 摘要：ST2 相比 ST1 缺少 2 个配置项，另有 2 个配置值不同。差异集中在 PAYMENT_GROUP，建议先核对发布批次。
+        </div>
+        <div class="placeholder" style="height:125px;margin-top:10px">
+          差异表：状态 | CONFIG_KEY | 字段 | ST1 值 | ST2 值
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="pros-cons">
+  <div class="pros">
+    <h4>确定性 Compare 引擎</h4>
+    <ul>
+      <li>执行两条服务端校验通过的 SELECT。</li>
+      <li>按用户选择的业务键对齐行。</li>
+      <li>输出缺失、多余、字段值不同、列结构问题和执行失败。</li>
+    </ul>
+  </div>
+  <div class="cons">
+    <h4>AI 摘要边界</h4>
+    <ul>
+      <li>只接收结构化差异摘要和有限样例，不接收无限量原始结果。</li>
+      <li>只能解释原因、归纳模式和建议下一步核查。</li>
+      <li>不能修改一致性结论，不能执行 SQL。</li>
+    </ul>
+  </div>
+</div>
+
+<div class="options">
+  <div class="option" data-choice="extend-assistant" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>扩展现有 SQL Assistant</h3>
+      <p>给现有 AI SQL 助手增加 COMPARE_SUMMARY 动作。适合 SQL 工作台内使用，改动集中。</p>
+    </div>
+  </div>
+  <div class="option" data-choice="new-skill" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>新增只读 Skill</h3>
+      <p>新增 sql-compare-summary-read，供 AgentScope 也能调用。适合未来让主 Agent 主动解释对比报告。</p>
+    </div>
+  </div>
+</div>

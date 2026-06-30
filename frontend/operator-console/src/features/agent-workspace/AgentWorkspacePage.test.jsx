@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 
 import { http, HttpResponse } from "msw";
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
@@ -117,7 +117,7 @@ describe("AgentWorkspacePage", () => {
     expect(screen.queryByText("health")).not.toBeInTheDocument();
   });
 
-  test("keeps right rail summaries compact without lined field rows", () => {
+  test("keeps right rail summaries and fact rows compact", () => {
     const agentLayoutRule =
       agentWorkspaceCss.match(/(?:^|\n)[.]agentLayout\s*[{][^}]+[}]/u)?.[0] ?? "";
     const agentSideRule =
@@ -128,10 +128,21 @@ describe("AgentWorkspacePage", () => {
       agentWorkspaceCss.match(/(?:^|\n)[.]agentPanel h3\s*[{][^}]+[}]/u)?.[0] ?? "";
     const panelSummaryRule =
       agentWorkspaceCss.match(/(?:^|\n)[.]panelSummary\s*[{][^}]+[}]/u)?.[0] ?? "";
+    const panelSummaryLabelRule =
+      agentWorkspaceCss.match(/(?:^|\n)[.]panelSummaryLabel\s*[{][^}]+[}]/u)?.[0] ?? "";
     const panelSummaryValueRule =
       agentWorkspaceCss.match(/(?:^|\n)[.]panelSummary strong\s*[{][^}]+[}]/u)?.[0] ?? "";
     const panelSummaryTextRule =
       agentWorkspaceCss.match(/(?:^|\n)[.]panelSummary p\s*[{][^}]+[}]/u)?.[0] ?? "";
+    const panelFactRule =
+      agentWorkspaceCss.match(/(?:^|\n)[.]panelFact\s*[{][^}]+[}]/u)?.[0] ?? "";
+    const panelFactLabelRule =
+      agentWorkspaceCss.match(/(?:^|\n)[.]panelFact dt\s*[{][^}]+[}]/u)?.[0] ?? "";
+    const panelFactValueRules = Array.from(
+      agentWorkspaceCss.matchAll(/(?:^|\n)[.]panelFact dd\s*[{][^}]+[}]/gu),
+      (match) => match[0],
+    );
+    const panelFactValueRule = panelFactValueRules.at(-1) ?? "";
     const detailButtonRule =
       agentWorkspaceCss.match(/(?:^|\n)[.]detailButton\s*[{][^}]+[}]/u)?.[0] ?? "";
     const panelDetailButtonRule =
@@ -148,7 +159,7 @@ describe("AgentWorkspacePage", () => {
     expect(agentSideRule).toContain("align-content: stretch");
     expect(agentSideRule).not.toContain("grid-auto-rows: max-content");
     expect(agentSideRule).not.toContain("overflow-y: hidden");
-    expect(agentPanelRule).toContain("grid-template-rows: auto minmax(0, 1fr) auto");
+    expect(agentPanelRule).toContain("grid-template-rows: auto auto minmax(0, 1fr) auto");
     expect(agentPanelRule).toContain("align-content: stretch");
     expect(agentPanelRule).toContain("gap: 8px");
     expect(agentPanelRule).toContain("overflow: hidden");
@@ -158,17 +169,65 @@ describe("AgentWorkspacePage", () => {
     expect(agentWorkspaceCss).not.toContain(".panelStatusNote");
     expect(panelHeadingRule).toContain("min-height: 40px");
     expect(panelSummaryRule).toContain("display: grid");
-    expect(panelSummaryRule).toContain("align-content: center");
-    expect(panelSummaryRule).toContain("border: 1px solid rgba(37, 132, 169, 0.12)");
-    expect(panelSummaryRule).not.toContain("border-top");
+    expect(panelSummaryRule).toContain("grid-template-columns: minmax(0, 0.64fr) minmax(82px, 1fr)");
+    expect(panelSummaryRule).toContain('grid-template-areas: "label value" "note note"');
+    expect(panelSummaryRule).toContain("border-bottom: 1px solid rgba(37, 132, 169, 0.11)");
+    expect(panelSummaryRule).not.toContain("border: 1px solid rgba(37, 132, 169, 0.12)");
+    expect(panelSummaryRule).not.toContain("border-radius: 10px");
+    expect(panelSummaryRule).not.toContain("background:");
+    expect(panelSummaryLabelRule).toContain("grid-area: label");
+    expect(panelSummaryLabelRule).toContain("align-self: center");
+    expect(panelSummaryLabelRule).toContain("color: #698190");
+    expect(panelSummaryLabelRule).toContain("font-size: 12px");
+    expect(panelSummaryValueRule).toContain("grid-area: value");
+    expect(panelSummaryValueRule).toContain("align-self: center");
+    expect(panelSummaryValueRule).toContain("justify-self: end");
+    expect(panelSummaryValueRule).toContain("justify-content: center");
     expect(panelSummaryValueRule).toContain("width: fit-content");
     expect(panelSummaryValueRule).toContain("max-width: 100%");
+    expect(panelSummaryValueRule).toContain("font-size: 11px");
+    expect(panelSummaryValueRule).toContain("text-align: center");
+    expect(panelSummaryTextRule).toContain("grid-area: note");
+    expect(panelSummaryTextRule).toContain("font-size: 12px");
     expect(panelSummaryTextRule).toContain("overflow-wrap: anywhere");
+    expect(panelFactRule).toContain("padding: 6px 0");
+    expect(panelFactLabelRule).toContain("align-self: center");
+    expect(panelFactLabelRule).toContain("font-size: 12px");
+    expect(panelFactValueRule).toContain("align-self: center");
+    expect(panelFactValueRule).toContain("justify-content: center");
+    expect(panelFactValueRule).toContain("font-size: 11px");
+    expect(panelFactValueRule).toContain("text-align: center");
     expect(agentWorkspaceSource).toContain("styles.panelSummary");
+    expect(agentWorkspaceSource).toContain("styles.panelSummaryLabel");
     expect(agentWorkspaceSource).not.toContain("styles.panelStatusNote");
     expect(detailButtonRule).toContain("min-height: 32px");
+    expect(detailButtonRule).toContain("font-size: 12px");
     expect(detailButtonRule).toContain("margin-top: 0");
     expect(panelDetailButtonRule).toContain("align-self: stretch");
+  });
+
+  test("keeps right rail basic diagnostics visible before submission", async () => {
+    const { container } = renderPage();
+
+    const sideRail = container.querySelector("aside");
+    expect(sideRail).toBeInTheDocument();
+    const rail = within(/** @type {HTMLElement} */ (sideRail));
+
+    expect(await rail.findByText("对话执行状态")).toBeInTheDocument();
+    expect(rail.getByText("策略")).toBeInTheDocument();
+    expect(rail.getAllByText("READ_ONLY").length).toBeGreaterThan(0);
+    expect(rail.getByText("环境")).toBeInTheDocument();
+    expect(rail.getByText("development")).toBeInTheDocument();
+    expect(rail.getAllByText("workflow").length).toBeGreaterThan(0);
+    expect(rail.getAllByText("pending").length).toBeGreaterThan(0);
+    expect(rail.getByText("路由")).toBeInTheDocument();
+    expect(rail.getByText("服务端待路由")).toBeInTheDocument();
+    expect(rail.getByText("Worker")).toBeInTheDocument();
+    expect(rail.getByText("等待调用")).toBeInTheDocument();
+    expect(rail.getByText("Runtime")).toBeInTheDocument();
+    expect(rail.getByText("Tool 调用")).toBeInTheDocument();
+    expect(agentWorkspaceSource).toContain("PanelFactList");
+    expect(agentWorkspaceCss).toContain(".panelFactList");
   });
 
   test("keeps the single-track Skill route animation compact", () => {
@@ -230,6 +289,53 @@ describe("AgentWorkspacePage", () => {
     ).not.toBeInTheDocument();
   });
 
+  test("shows the inline execution indicator with elapsed time while a task is running", async () => {
+    vi.useFakeTimers({ now: new Date("2026-06-30T10:00:00Z") });
+    vi.spyOn(crypto, "randomUUID").mockReturnValue("00000000-0000-4000-8000-000000000099");
+    /** @type {undefined | ((response: Response) => void)} */
+    let resolveDiagnostic;
+    const diagnosticResponse = new Promise((resolve) => {
+      resolveDiagnostic = resolve;
+    });
+    server.use(
+      http.post("/api/v1/agent/diagnostics", async ({ request }) => {
+        diagnosticRequests.push(await request.json());
+        return diagnosticResponse;
+      }),
+    );
+    const { container } = renderPage();
+    const taskGoal = screen.getByRole("textbox", { name: "任务目标" });
+
+    fireEvent.change(taskGoal, { target: { value: "今天北京天气怎么样？" } });
+    const sendButton = screen.getByRole("button", { name: "发送任务" });
+    expect(sendButton).toBeEnabled();
+    fireEvent.click(sendButton);
+
+    expect(screen.getByText("正在执行只读诊断。")).toBeInTheDocument();
+    const executionIndicator = container.querySelector('[data-agent-execution-indicator="running"]');
+    expect(executionIndicator).toBeInTheDocument();
+    expect(within(/** @type {HTMLElement} */ (executionIndicator)).getByText("执行中")).toBeInTheDocument();
+    expect(within(/** @type {HTMLElement} */ (executionIndicator)).getByText("耗时 00:00")).toBeInTheDocument();
+    expect(executionIndicator?.querySelector('[class*="executionInfoMark"]')?.textContent).toBe("i");
+
+    await act(async () => {
+      vi.advanceTimersByTime(3000);
+    });
+
+    expect(within(/** @type {HTMLElement} */ (executionIndicator)).getByText("耗时 00:03")).toBeInTheDocument();
+    expect(agentWorkspaceCss).toContain(".executionProgress");
+    expect(agentWorkspaceCss).toContain("@keyframes agent-execution-info-pulse");
+    const executionProgressRule =
+      agentWorkspaceCss.match(/(?:^|\n)[.]executionProgress\s*[{][^}]+[}]/u)?.[0] ?? "";
+    expect(executionProgressRule).toContain("overflow: visible");
+    expect(executionProgressRule).toContain("padding: 10px 0 3px 4px");
+
+    await act(async () => {
+      resolveDiagnostic?.(HttpResponse.json(agentTaskResult));
+      await Promise.resolve();
+    });
+  });
+
   test("submits typed task goals through the main AgentScope diagnostic endpoint", async () => {
     vi.spyOn(crypto, "randomUUID").mockReturnValue("00000000-0000-4000-8000-000000000001");
     const user = userEvent.setup();
@@ -256,7 +362,7 @@ describe("AgentWorkspacePage", () => {
     expect(screen.getAllByText("已完成").length).toBeGreaterThan(0);
     expect(screen.getAllByText("检查 node-a 健康状态并总结风险")).toHaveLength(1);
     expect(await screen.findByText("已执行 Skill")).toBeInTheDocument();
-    expect(screen.getByText(/weather-current-read/u)).toBeInTheDocument();
+    expect(screen.getAllByText(/weather-current-read/u).length).toBeGreaterThan(0);
     expect(screen.getByText("执行链")).toBeInTheDocument();
     expect(screen.queryByText("READ_ONLY 策略")).not.toBeInTheDocument();
     expect(screen.queryByText("M07 Worker")).not.toBeInTheDocument();
@@ -285,8 +391,8 @@ describe("AgentWorkspacePage", () => {
     expect(within(taskDialog).getByText("策略")).toBeInTheDocument();
     expect(screen.getByText("输入意图")).toBeInTheDocument();
     expect(screen.getAllByText("检查 node-a 健康状态并总结风险")).toHaveLength(2);
-    expect(screen.getByText("development")).toBeInTheDocument();
-    expect(screen.getByText(agentTaskResult.taskId)).toBeInTheDocument();
+    expect(within(taskDialog).getByText("development")).toBeInTheDocument();
+    expect(within(taskDialog).getByText(agentTaskResult.taskId)).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "关闭详情" }));
     expect(document.documentElement.style.overflow).toBe("");
     expect(document.body.style.overflow).toBe("");
@@ -548,7 +654,7 @@ describe("AgentWorkspacePage", () => {
     renderPage();
 
     expect(await screen.findByText("AGENT_TASK_RESULT")).toBeInTheDocument();
-    expect(screen.queryByText(agentTaskResult.workflowId)).not.toBeInTheDocument();
+    expect(screen.getAllByText(agentTaskResult.workflowId).length).toBeGreaterThan(0);
     expect(screen.queryByText("Shanghai")).not.toBeInTheDocument();
     expect(screen.queryByText("Sunny")).not.toBeInTheDocument();
     expect(screen.queryByText("31.2°C")).not.toBeInTheDocument();

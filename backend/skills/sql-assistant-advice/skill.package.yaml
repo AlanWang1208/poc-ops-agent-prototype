@@ -2,7 +2,7 @@ schemaVersion: ops-agent.skill/v1
 skillId: sql-assistant-advice-read
 version: 1.0.0
 displayName: "AI SQL 助手建议"
-description: "对开发和测试环境 SQL 进行只读解释、错误分析和优化建议，不执行 SQL。"
+description: "对开发和测试环境 SQL 进行只读解释、错误分析、优化建议、SELECT 草稿生成和结果对比摘要，不执行 SQL。"
 category: APPLICATION_DIAGNOSTICS
 riskLevel: READ_ONLY
 readOnly: true
@@ -49,10 +49,10 @@ parameters:
     defaultValue: null
   - name: assistantAction
     displayName: "助手动作"
-    description: "解释 SQL、优化 SQL 或分析错误。"
+    description: "解释 SQL、优化 SQL、分析错误、生成 SELECT 草稿或总结 SQL 结果对比。"
     type: ENUM
     required: true
-    allowedValues: [EXPLAIN_SQL, OPTIMIZE_SQL, ANALYZE_ERROR]
+    allowedValues: [EXPLAIN_SQL, OPTIMIZE_SQL, ANALYZE_ERROR, GENERATE_SELECT, COMPARE_SUMMARY]
     defaultValue: null
   - name: sql
     displayName: "SQL"

@@ -1,0 +1,62 @@
+<h2>SQL Compare 第一版收敛方案</h2>
+<p class="subtitle">目标：同一连接下，同表名、不同库名的配置数据一致性对比。</p>
+
+<div class="mockup">
+  <div class="mockup-header">工作台内 Compare 模式</div>
+  <div class="mockup-body">
+    <div class="mock-nav">SQL 1 | Compare</div>
+    <div style="display:grid;grid-template-columns:300px 1fr;gap:12px;margin-top:10px">
+      <div class="mock-sidebar">
+        <strong>输入</strong><br>
+        连接：as400-test<br>
+        表名：ELADREF<br>
+        基准库：ST1<br>
+        对比库：ST2<br>
+        业务键：CONFIG_KEY<br>
+        忽略字段：UPDATED_AT<br>
+        where 条件：CONFIG_GROUP='A'<br>
+        maxRows：500<br><br>
+        <button class="mock-button">执行 Compare</button>
+      </div>
+      <div class="mock-content">
+        <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px">
+          <div class="placeholder">结论<br><strong>存在差异</strong></div>
+          <div class="placeholder">基准行 128</div>
+          <div class="placeholder">一致 124</div>
+          <div class="placeholder">缺失 2</div>
+          <div class="placeholder">值差异 2</div>
+        </div>
+        <div class="placeholder" style="height:66px;margin-top:10px">AI 摘要：基于统计和少量样例生成，不能推翻确定性结论。</div>
+        <div class="placeholder" style="height:42px;margin-top:10px">生成 SQL（默认折叠）：ST1 查询 / ST2 查询</div>
+        <div class="placeholder" style="height:130px;margin-top:10px">差异表：状态 | 业务键 | 字段 | 基准值 | 对比值</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="pros-cons">
+  <div class="pros">
+    <h4>第一版包含</h4>
+    <ul>
+      <li>后端同步 Compare API。</li>
+      <li>控制面生成两条只读 SELECT，并通过现有 Worker 执行。</li>
+      <li>按用户选择的业务键做行对齐。</li>
+      <li>严格字段对比，允许忽略字段。</li>
+      <li>摘要指标、差异表、AI 对比摘要。</li>
+    </ul>
+  </div>
+  <div class="cons">
+    <h4>第一版不包含</h4>
+    <ul>
+      <li>多数据源 N 路矩阵。</li>
+      <li>字段映射和复杂 ETL 规则。</li>
+      <li>大表异步对账和历史报告。</li>
+      <li>生产连接或任何写执行。</li>
+    </ul>
+  </div>
+</div>
+
+<div class="section">
+  <h3>AI 摘要边界</h3>
+  <p>模型只接收结构化差异统计和少量样例：缺失、多余、字段值不同、执行失败和列结构问题。完整数据结果不进入模型上下文。</p>
+</div>

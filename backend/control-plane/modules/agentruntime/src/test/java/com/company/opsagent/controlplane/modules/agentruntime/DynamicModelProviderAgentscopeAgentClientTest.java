@@ -37,8 +37,8 @@ class DynamicModelProviderAgentscopeAgentClientTest {
     AgentscopeAgentClient client = new DynamicModelProviderAgentscopeAgentClient(
         store,
         codec,
-        (apiKey, modelName, baseUrl, maxIters, timeout) -> {
-          captured.set(new CapturedFactoryInput(apiKey, modelName, baseUrl, maxIters, timeout));
+        (apiKey, modelName, baseUrl, maxIters, maxToolCalls, timeout) -> {
+          captured.set(new CapturedFactoryInput(apiKey, modelName, baseUrl, maxIters, maxToolCalls, timeout));
           return invocation -> Mono.just(new AgentscopeAgentResponse("SUCCEEDED", "ok", 0));
         },
         invocation -> Mono.just(new AgentscopeAgentResponse("LEGACY", "legacy", 0)));
@@ -51,6 +51,7 @@ class DynamicModelProviderAgentscopeAgentClientTest {
     assertEquals("gpt-4.1-mini", captured.get().modelName());
     assertEquals("https://api.openai.com/v1", captured.get().baseUrl());
     assertEquals(7, captured.get().maxIters());
+    assertEquals(4, captured.get().maxToolCalls());
     assertEquals(Duration.ofSeconds(17), captured.get().timeout());
   }
 
@@ -59,7 +60,7 @@ class DynamicModelProviderAgentscopeAgentClientTest {
     AgentscopeAgentClient client = new DynamicModelProviderAgentscopeAgentClient(
         new InMemoryModelProviderStore(),
         new AesGcmModelProviderSecretCodec("0123456789abcdef0123456789abcdef"),
-        (apiKey, modelName, baseUrl, maxIters, timeout) -> invocation -> Mono.just(
+        (apiKey, modelName, baseUrl, maxIters, maxToolCalls, timeout) -> invocation -> Mono.just(
             new AgentscopeAgentResponse("UNEXPECTED", "unexpected", 0)),
         invocation -> Mono.just(new AgentscopeAgentResponse("LEGACY", "legacy", 0)));
 
@@ -90,6 +91,7 @@ class DynamicModelProviderAgentscopeAgentClientTest {
       String modelName,
       String baseUrl,
       int maxIters,
+      int maxToolCalls,
       Duration timeout) {
   }
 }

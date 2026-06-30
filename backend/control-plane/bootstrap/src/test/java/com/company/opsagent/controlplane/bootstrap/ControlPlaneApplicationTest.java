@@ -491,17 +491,19 @@ class ControlPlaneApplicationTest {
   }
 
   @Test
-  void reportsAgentRuntimeDisabledUntilExplicitlyEnabled() {
+  void usesAgentRuntimeByDefaultAndFailsClosedWithoutUsableModelProvider() {
     auditTrail.clear();
     webTestClient.post()
         .uri("/api/v1/agent/diagnostics")
         .headers(headers -> headers.setBearerAuth(token("alice", List.of("ops-reader"), "ops-agent-internal")))
         .contentType(APPLICATION_JSON)
-        .bodyValue(agentDiagnosticBody("agent-disabled"))
+        .bodyValue(agentDiagnosticBody("agent-runtime-default"))
         .exchange()
-        .expectStatus().isEqualTo(503)
+        .expectStatus().isOk()
         .expectBody()
-        .jsonPath("$.code").isEqualTo("AGENT_RUNTIME_DISABLED");
+        .jsonPath("$.status").isEqualTo("FAILED_TERMINAL")
+        .jsonPath("$.summary").isEqualTo(
+            "Agent runtime failed before a tool call could be completed.");
   }
 
   @Test

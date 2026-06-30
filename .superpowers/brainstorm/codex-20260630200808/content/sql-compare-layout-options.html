@@ -1,0 +1,97 @@
+<h2>SQL Compare 第一版布局选择</h2>
+<p class="subtitle">场景：同一连接下，对比 ST1.ELADREF 与 ST2.ELADREF 中某类配置是否一致。</p>
+
+<div class="cards">
+  <div class="card" data-choice="a" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div class="mockup">
+        <div class="mockup-header">A. 工作台内 Compare 面板</div>
+        <div class="mockup-body">
+          <div class="mock-nav">SQL 1 | Compare</div>
+          <div style="display:grid;grid-template-columns: 280px 1fr;gap:12px;margin-top:10px">
+            <div class="mock-sidebar">
+              <strong>Compare 输入</strong><br>
+              连接 h2-local-test<br>
+              表 ELADREF<br>
+              基准库 ST1<br>
+              对比库 ST2<br>
+              业务键 CONFIG_KEY<br>
+              条件 CONFIG_GROUP='A'
+            </div>
+            <div class="mock-content">
+              <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">
+                <div class="placeholder">总行数 128</div>
+                <div class="placeholder">一致 124</div>
+                <div class="placeholder">缺失 2</div>
+                <div class="placeholder">值差异 2</div>
+              </div>
+              <div class="placeholder" style="height:120px;margin-top:10px">差异表：CONFIG_KEY | ST1.VALUE | ST2.VALUE | 状态</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>内嵌在 SQL 工作台</h3>
+      <p>新增 Compare 标签或模式，左侧填对比目标，右侧显示摘要和差异表。和现有 SQL 编辑体验最连贯。</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="b" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div class="mockup">
+        <div class="mockup-header">B. Compare 向导</div>
+        <div class="mockup-body">
+          <div class="mock-nav">1 目标 | 2 字段 | 3 执行 | 4 差异</div>
+          <div style="display:grid;gap:10px;margin-top:10px">
+            <div class="placeholder">Step 1: 连接、基准库、对比库、表名</div>
+            <div class="placeholder">Step 2: 选择业务键、忽略字段、过滤条件</div>
+            <div class="placeholder">Step 3: 双侧执行状态和错误信息</div>
+            <div class="placeholder">Step 4: 一致性摘要和差异明细</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>分步向导</h3>
+      <p>适合配置项较多、需要防误操作的场景。流程清晰，但会让一次简单对比多几步。</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="c" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div class="mockup">
+        <div class="mockup-header">C. 独立 Compare 页面</div>
+        <div class="mockup-body">
+          <div style="display:grid;grid-template-columns: 1fr 1fr;gap:10px">
+            <div class="placeholder">基准目标 ST1.ELADREF</div>
+            <div class="placeholder">对比目标 ST2.ELADREF</div>
+          </div>
+          <div class="placeholder" style="height:70px;margin-top:10px">差异分布条：缺失 / 多余 / 值不同 / 类型不同</div>
+          <div class="placeholder" style="height:100px;margin-top:10px">差异矩阵和筛选器</div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>独立 Compare 工作区</h3>
+      <p>后续适合做批量对账、历史报告和大表任务。第一版投入较大，可能打断当前 SQL 工作台节奏。</p>
+    </div>
+  </div>
+</div>
+
+<div class="pros-cons">
+  <div class="pros">
+    <h4>推荐</h4>
+    <ul>
+      <li>第一版选 A：把 Compare 当成 SQL 工作台里的一个模式。</li>
+      <li>原因：复用连接上下文、执行状态、AI 分析和结果面板，不引入新的工作区系统。</li>
+    </ul>
+  </div>
+  <div class="cons">
+    <h4>暂缓</h4>
+    <ul>
+      <li>暂不做历史报告、批量任务、字段映射和 N 数据源矩阵。</li>
+      <li>暂不支持生产连接，仍限定 development/test。</li>
+    </ul>
+  </div>
+</div>
