@@ -122,7 +122,7 @@ ops-agent:
   workflow:
     startup-recovery-enabled: true
   agent-runtime:
-    enabled: false
+    enabled: true
     provider: agentscope
     model-name: ""
     base-url: ""

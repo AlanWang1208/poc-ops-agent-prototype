@@ -116,6 +116,7 @@
 .secondaryButton,
 .editorToolbar button,
 .sessionTabs button,
+.sessionModeTabs button,
 .drawerHeader button,
 .connectionButton,
 .connectionManagerCreateButton,
@@ -164,6 +165,10 @@
 
 .secondaryButton {
   background: var(--sql-panel-soft);
+}
+
+.secondaryButton {
+  position: relative;
 }
 
 .primaryButton:disabled,
@@ -258,8 +263,30 @@
 
 .editorCard {
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-rows: auto auto minmax(0, 1fr);
   overflow: hidden;
+}
+
+.sessionModeTabs {
+  display: flex;
+  min-width: 0;
+  gap: 6px;
+  overflow-x: auto;
+  padding: 7px 7px 0;
+}
+
+.sessionModeTabs button {
+  min-width: 78px;
+  height: 30px;
+  flex: 0 0 auto;
+  padding: 0 11px;
+  color: var(--sql-muted);
+}
+
+.sessionModeTabs .activeModeTab {
+  border-color: rgba(22, 135, 90, 0.28);
+  background: rgba(22, 135, 90, 0.08);
+  color: var(--sql-green);
 }
 
 .editorToolbar {
@@ -269,16 +296,372 @@
   border-bottom: 1px solid rgba(34, 126, 166, 0.12);
 }
 
-.editorToolbar button:nth-child(2) {
+.editorToolbar .runButton {
   border-color: rgba(22, 135, 90, 0.28);
   background: rgba(22, 135, 90, 0.08);
   color: var(--sql-green);
 }
 
-.editorToolbar button:nth-child(3) {
+.editorToolbar .preflightButton {
   border-color: rgba(189, 123, 29, 0.28);
   background: rgba(189, 123, 29, 0.08);
   color: var(--sql-gold);
+}
+
+.fileInput {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.modePlaceholder,
+.modePanel {
+  display: grid;
+  min-height: 0;
+  padding: 14px;
+  background: oklch(0.99 0.004 230);
+}
+
+.modePanel {
+  align-content: start;
+  gap: 12px;
+  overflow: auto;
+}
+
+.modePlaceholder h3 {
+  margin: 0;
+  color: var(--sql-muted);
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.modeFormGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.modeFormGrid label {
+  display: grid;
+  min-width: 0;
+  gap: 6px;
+}
+
+.modeFormGrid label span,
+.inlineCheck span {
+  color: var(--sql-muted);
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.modeFormGrid input,
+.modeFormGrid textarea {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid oklch(0.81 0.029 230);
+  border-radius: 8px;
+  background: oklch(0.99 0.004 230);
+  color: var(--sql-ink);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 760;
+  outline: none;
+}
+
+.modeFormGrid input {
+  height: 34px;
+  padding: 0 10px;
+}
+
+.modeFormGrid textarea {
+  resize: vertical;
+  min-height: 92px;
+  padding: 9px 10px;
+  line-height: 1.45;
+}
+
+.modeFormGrid input:focus,
+.modeFormGrid textarea:focus {
+  border-color: rgba(34, 126, 166, 0.58);
+  box-shadow: 0 0 0 3px rgba(34, 126, 166, 0.12);
+}
+
+.modeWideField {
+  grid-column: span 2;
+}
+
+.naturalLanguageLayout {
+  display: grid;
+  grid-template-columns: minmax(360px, 1fr) minmax(280px, 0.48fr);
+  gap: 14px;
+  align-items: start;
+}
+
+.naturalPromptField,
+.naturalContextGrid label {
+  display: grid;
+  min-width: 0;
+  gap: 6px;
+}
+
+.naturalPromptField span,
+.naturalContextGrid label span {
+  color: var(--sql-muted);
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.naturalPromptField textarea,
+.naturalContextGrid input {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid oklch(0.81 0.029 230);
+  border-radius: 8px;
+  background: oklch(0.99 0.004 230);
+  color: var(--sql-ink);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 760;
+  outline: none;
+}
+
+.naturalPromptField textarea {
+  min-height: 142px;
+  resize: vertical;
+  padding: 10px 11px;
+  line-height: 1.45;
+}
+
+.naturalContextGrid input {
+  height: 34px;
+  padding: 0 10px;
+}
+
+.naturalPromptField textarea:focus,
+.naturalContextGrid input:focus {
+  border-color: rgba(34, 126, 166, 0.58);
+  box-shadow: 0 0 0 3px rgba(34, 126, 166, 0.12);
+}
+
+.naturalContextPanel {
+  display: grid;
+  min-width: 0;
+  gap: 10px;
+}
+
+.naturalContextGrid {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.naturalFullField,
+.naturalContextGrid .inlineCheck {
+  grid-column: 1 / -1;
+}
+
+.naturalContextPanel .modeActions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.naturalContextPanel .modeActions button {
+  width: 100%;
+  padding-inline: 8px;
+}
+
+.naturalComposer {
+  min-height: 136px;
+}
+
+.naturalComposerInput {
+  min-height: 108px;
+}
+
+.naturalShortcutBar {
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  gap: 7px;
+  align-items: center;
+  padding: 0 2px;
+}
+
+.naturalShortcutBar > span {
+  color: var(--sql-muted);
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.naturalShortcutBar button {
+  height: 26px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 9px;
+  border: 1px solid rgba(34, 126, 166, 0.16);
+  border-radius: 999px;
+  background: rgba(34, 126, 166, 0.055);
+  color: var(--sql-muted);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 860;
+  cursor: pointer;
+}
+
+.naturalShortcutBar button:hover,
+.naturalShortcutBar button:focus-visible,
+.naturalShortcutBar .activeShortcut {
+  border-color: rgba(22, 135, 90, 0.28);
+  background: rgba(22, 135, 90, 0.08);
+  color: var(--sql-green);
+  outline: none;
+}
+
+.inlineCheck {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  align-items: center;
+}
+
+.inlineCheck input {
+  width: 16px;
+  height: 16px;
+  padding: 0;
+}
+
+.modeActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.modeStatus,
+.modeError {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 780;
+  line-height: 1.45;
+}
+
+.modeStatus {
+  color: var(--sql-green);
+}
+
+.modeError {
+  color: var(--sql-red);
+}
+
+.sqlDraftPreview {
+  max-height: 260px;
+  margin: 0;
+  overflow: auto;
+  padding: 10px;
+  border: 1px solid rgba(34, 126, 166, 0.12);
+  border-radius: 8px;
+  background:
+    linear-gradient(rgba(34, 126, 166, 0.035) 1px, transparent 1px),
+    oklch(0.992 0.004 230);
+  background-size: 100% 22px;
+  color: var(--sql-ink);
+  font-family: Consolas, "SFMono-Regular", monospace;
+  font-size: 12px;
+  font-weight: 760;
+  line-height: 22px;
+  white-space: pre-wrap;
+}
+
+.generatedResult {
+  display: grid;
+  min-width: 0;
+  gap: 9px;
+}
+
+.generatedResultActions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.generatedResultActions button {
+  min-width: 160px;
+}
+
+.compareReport,
+.compareAiSummary {
+  display: grid;
+  gap: 9px;
+  padding: 10px;
+  border: 1px solid rgba(34, 126, 166, 0.12);
+  border-radius: 8px;
+  background: var(--sql-panel);
+}
+
+.compareReportHeader {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 7px;
+  color: var(--sql-blue);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.compareReportHeader strong {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--sql-ink);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.compareMetrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.compareMetrics span {
+  min-width: 0;
+  padding: 8px;
+  border: 1px solid rgba(34, 126, 166, 0.1);
+  border-radius: 8px;
+  background: var(--sql-panel-soft);
+  color: var(--sql-ink);
+  font-size: 11px;
+  font-weight: 880;
+  overflow-wrap: anywhere;
+}
+
+.compareSamples {
+  display: grid;
+  gap: 7px;
+}
+
+.compareSamples article {
+  display: grid;
+  gap: 4px;
+  padding: 8px;
+  border-radius: 8px;
+  background: oklch(0.985 0.006 230);
+}
+
+.compareSamples strong,
+.compareAiSummary strong {
+  color: var(--sql-ink);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.compareSamples p,
+.compareAiSummary p {
+  margin: 0;
+  color: var(--sql-muted);
+  font-size: 12px;
+  font-weight: 760;
+  line-height: 1.45;
 }
 
 .resultResizeHandle {
@@ -667,8 +1050,120 @@
   flex-direction: column;
   align-content: stretch;
   gap: 5px;
-  overflow: hidden;
+  overflow: auto;
   padding: 10px 10px 6px;
+}
+
+.queryLoadingStatus,
+.aiAssistantLoadingStatus {
+  position: relative;
+  display: grid;
+  min-height: 40px;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+  overflow: hidden;
+  padding: 7px 10px 10px;
+  border: 1px solid rgba(34, 126, 166, 0.18);
+  border-radius: 8px;
+  background: oklch(0.975 0.012 220);
+  color: var(--sql-ink);
+}
+
+.queryLoadingIcon {
+  display: inline-flex;
+  width: 24px;
+  height: 24px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: rgba(34, 126, 166, 0.09);
+  color: var(--sql-blue);
+}
+
+.queryLoadingIcon svg {
+  animation: sqlLoadingSpin 0.95s linear infinite;
+}
+
+.queryLoadingCopy {
+  display: grid;
+  min-width: 0;
+  gap: 1px;
+}
+
+.queryLoadingCopy strong {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--sql-ink);
+  font-size: 12px;
+  font-weight: 900;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.queryLoadingCopy span {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--sql-muted);
+  font-size: 10px;
+  font-weight: 820;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.queryLoadingDots {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.queryLoadingDots span {
+  width: 5px;
+  height: 5px;
+  border-radius: 999px;
+  animation: sqlLoadingDot 1.05s ease-out infinite;
+  background: var(--sql-green);
+}
+
+.queryLoadingDots span:nth-child(2) {
+  animation-delay: 0.14s;
+}
+
+.queryLoadingDots span:nth-child(3) {
+  animation-delay: 0.28s;
+}
+
+.queryLoadingTrack {
+  position: absolute;
+  right: 10px;
+  bottom: 4px;
+  left: 10px;
+  height: 2px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(34, 126, 166, 0.11);
+}
+
+.queryLoadingTrack span {
+  position: absolute;
+  inset-block: 0;
+  width: 36%;
+  border-radius: inherit;
+  animation: sqlLoadingTrack 1.25s ease-out infinite;
+  background: var(--sql-blue);
+}
+
+.aiAssistantLoadingStatus {
+  min-height: 46px;
+  padding: 7px 9px 10px;
+  background: oklch(0.978 0.014 210);
+}
+
+.aiAssistantLoadingStatus .queryLoadingCopy strong,
+.aiAssistantLoadingStatus .queryLoadingCopy span {
+  white-space: normal;
 }
 
 .resultTable {
@@ -1153,6 +1648,52 @@
   color: var(--sql-red);
 }
 
+@keyframes sqlLoadingSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes sqlLoadingDot {
+  0%,
+  100% {
+    opacity: 0.35;
+    transform: translateY(0);
+  }
+
+  45% {
+    opacity: 1;
+    transform: translateY(-2px);
+  }
+}
+
+@keyframes sqlLoadingTrack {
+  from {
+    transform: translateX(-115%);
+  }
+
+  to {
+    transform: translateX(320%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .queryLoadingIcon svg,
+  .queryLoadingDots span,
+  .queryLoadingTrack span {
+    animation: none;
+  }
+
+  .queryLoadingDots span {
+    opacity: 0.72;
+  }
+
+  .queryLoadingTrack span {
+    width: 100%;
+    opacity: 0.45;
+  }
+}
+
 @media (max-width: 1360px) {
   .sqlCanvas {
     gap: 10px;
@@ -1203,6 +1744,17 @@
 
   .editorPanel {
     grid-template-rows: auto 320px 8px 220px;
+  }
+
+  .naturalLanguageLayout,
+  .naturalContextGrid,
+  .naturalContextPanel .modeActions {
+    grid-template-columns: 1fr;
+  }
+
+  .naturalFullField,
+  .naturalContextGrid .inlineCheck {
+    grid-column: auto;
   }
 
   .connectionForm {

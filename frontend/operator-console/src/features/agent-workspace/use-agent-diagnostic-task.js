@@ -16,6 +16,7 @@ import { agentTaskResultSchema } from "../../schemas/agent-schemas.js";
  *   userIntent: string,
  *   errorCode: string | null,
  *   errorMessage: string | null,
+ *   startedAt?: number,
  * }} AgentDiagnosticTaskExchange
  * @typedef {{
  *   status: AgentDiagnosticTaskStatus,
@@ -68,6 +69,7 @@ export function useAgentDiagnosticTask() {
       userIntent: trimmedIntent,
       errorCode: null,
       errorMessage: null,
+      startedAt: Date.now(),
     };
 
     setState((current) => ({

@@ -402,7 +402,9 @@ public final class WorkflowBackedAgentToolExecutor implements AgentToolExecutor 
   }
 
   private JsonNode safeOutput(JsonNode output) {
-    return output == null ? objectMapper.createObjectNode() : output;
+    return output == null || output.isNull() || output.isMissingNode()
+        ? objectMapper.createObjectNode()
+        : output;
   }
 
   /**

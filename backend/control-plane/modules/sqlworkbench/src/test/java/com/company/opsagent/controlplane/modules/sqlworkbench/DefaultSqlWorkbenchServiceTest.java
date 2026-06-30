@@ -276,6 +276,20 @@ class DefaultSqlWorkbenchServiceTest {
     assertEquals(0, assistantClient.askCount);
   }
 
+  @Test
+  void assistantCanGenerateSelectFromNaturalLanguageWithoutStaticSqlValidation() {
+    SqlAssistantResponse response = service.assist(assistantRequest(
+        SqlAssistantAction.GENERATE_SELECT,
+        "用户要求：查询未完成订单",
+        "naturalLanguage=查询未完成订单"));
+
+    assertEquals(SqlAssistantStatus.SUCCEEDED, response.status());
+    assertEquals(1, assistantClient.askCount);
+    assertEquals(SqlValidationLevel.PARTIAL, assistantClient.lastPrompt.validationReport().validationLevel());
+    assertTrue(assistantClient.lastPrompt.validationReport().risks().contains("ADVISORY_ONLY"));
+    assertTrue(assistantClient.lastPrompt.diagnosticContext().contains("naturalLanguage=查询未完成订单"));
+  }
+
   private SqlQueryRequest request(String schema) {
     return request(schema, SqlQueryAction.RUN_READ_ONLY, "select * from ORDERS.ORDERS");
   }

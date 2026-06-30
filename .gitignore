@@ -45,3 +45,4 @@ credentials/
 .cache/
 .scannerwork/
 frontend/operator-console/test-results/
+.demo/

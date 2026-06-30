@@ -4,6 +4,7 @@ import com.company.opsagent.contracts.sqlworkbench.SqlConnectionCreateRequest;
 import com.company.opsagent.contracts.sqlworkbench.SqlConnectionProbeResult;
 import com.company.opsagent.contracts.sqlworkbench.SqlConnectionSummary;
 import com.company.opsagent.contracts.sqlworkbench.SqlConnectionUpdateRequest;
+import com.company.opsagent.contracts.sqlworkbench.SqlAssistantAction;
 import com.company.opsagent.contracts.sqlworkbench.SqlAssistantRequest;
 import com.company.opsagent.contracts.sqlworkbench.SqlAssistantResponse;
 import com.company.opsagent.contracts.sqlworkbench.SqlAssistantStatus;
@@ -12,6 +13,7 @@ import com.company.opsagent.contracts.sqlworkbench.SqlQueryExecutionRequest;
 import com.company.opsagent.contracts.sqlworkbench.SqlQueryExecutionResult;
 import com.company.opsagent.contracts.sqlworkbench.SqlQueryRequest;
 import com.company.opsagent.contracts.sqlworkbench.SqlResultPage;
+import com.company.opsagent.contracts.sqlworkbench.SqlStatementType;
 import com.company.opsagent.contracts.sqlworkbench.SqlValidationLevel;
 import com.company.opsagent.contracts.sqlworkbench.SqlValidationReport;
 import com.company.opsagent.contracts.workflow.OperatorContext;
@@ -135,19 +137,19 @@ public class DefaultSqlWorkbenchService implements SqlWorkbenchService {
 
   @Override
   public SqlAssistantResponse assist(SqlAssistantRequest request) {
-    SqlConnectionSummary connection = connectionCatalog.find(request.connectionId())
-        .orElseThrow(() -> new IllegalArgumentException("SQL connection is not available"));
-    SqlQueryRequest validationRequest = new SqlQueryRequest(
-        "1.0",
-        request.connectionId(),
-        request.targetEnvironment(),
-        request.schema(),
-        SqlQueryAction.VALIDATE,
-        request.sql(),
-        List.of(),
-        request.limits(),
-        request.idempotencyKey());
-    SqlValidationReport report = validate(validationRequest);
+    SqlConnectionSummary connection = requireAssistantConnection(request);
+    SqlValidationReport report = requiresSqlValidation(request.assistantAction())
+        ? validate(new SqlQueryRequest(
+            "1.0",
+            request.connectionId(),
+            request.targetEnvironment(),
+            request.schema(),
+            SqlQueryAction.VALIDATE,
+            request.sql(),
+            List.of(),
+            request.limits(),
+            request.idempotencyKey()))
+        : advisoryOnlyReport(request);
     return assistantClient.ask(new SqlAssistantPrompt(
         request.assistantAction(),
         connection.connectionId(),
@@ -157,6 +159,37 @@ public class DefaultSqlWorkbenchService implements SqlWorkbenchService {
         request.sql(),
         report,
         request.diagnosticContext()));
+  }
+
+  private SqlConnectionSummary requireAssistantConnection(SqlAssistantRequest request) {
+    SqlConnectionSummary connection = connectionCatalog.find(request.connectionId())
+        .orElseThrow(() -> new IllegalArgumentException("SQL connection is not available"));
+    if (!connection.targetEnvironment().equalsIgnoreCase(request.targetEnvironment())) {
+      throw new IllegalArgumentException("target environment does not match connection");
+    }
+    boolean schemaAllowed = connection.allowedSchemas().stream()
+        .anyMatch(schema -> schema.equalsIgnoreCase(request.schema()));
+    if (!schemaAllowed) {
+      throw new IllegalArgumentException("schema is not allowed for connection");
+    }
+    return connection;
+  }
+
+  private boolean requiresSqlValidation(SqlAssistantAction action) {
+    return action != SqlAssistantAction.GENERATE_SELECT
+        && action != SqlAssistantAction.COMPARE_SUMMARY;
+  }
+
+  private SqlValidationReport advisoryOnlyReport(SqlAssistantRequest request) {
+    return new SqlValidationReport(
+        "1.0",
+        SqlStatementType.UNSUPPORTED,
+        SqlValidationLevel.PARTIAL,
+        "sha256:advisory-context",
+        List.of(),
+        List.of("ADVISORY_ONLY"),
+        List.of(),
+        List.of("sqlValidationSkippedForAssistantAction=" + request.assistantAction()));
   }
 
   @Override

@@ -19,7 +19,15 @@
     "connectionId": { "type": "string", "minLength": 1, "maxLength": 200 },
     "targetEnvironment": { "enum": ["development", "test"] },
     "schema": { "type": "string", "minLength": 1, "maxLength": 128 },
-    "assistantAction": { "enum": ["EXPLAIN_SQL", "OPTIMIZE_SQL", "ANALYZE_ERROR"] },
+    "assistantAction": {
+      "enum": [
+        "EXPLAIN_SQL",
+        "OPTIMIZE_SQL",
+        "ANALYZE_ERROR",
+        "GENERATE_SELECT",
+        "COMPARE_SUMMARY"
+      ]
+    },
     "sql": { "type": "string", "minLength": 1, "maxLength": 20000 },
     "limits": {
       "type": "object",

@@ -7,7 +7,7 @@ import {
   ShieldCheck,
   UserRound,
 } from "lucide-react";
-import { Fragment, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
@@ -245,6 +245,68 @@ function parseOutputSchemaId(outputSchemaId) {
 }
 
 /**
+ * @typedef {{ label: string, value: string, tone?: "default" | "info" | "ok" | "danger" }} PanelFact
+ */
+
+/**
+ * @param {import("./use-agent-diagnostic-task.js").AgentDiagnosticTaskState} task
+ * @returns {PanelFact[]}
+ */
+function buildTaskPanelFacts(task) {
+  const result = task.result;
+  return [
+    { label: "策略", value: agentRequestScope.policy, tone: "ok" },
+    { label: "环境", value: agentRequestScope.targetEnvironment, tone: "info" },
+    { label: "workflow", value: task.workflowId ?? "pending", tone: task.workflowId ? "info" : "default" },
+    {
+      label: "Skill 调用",
+      value: result ? `${result.toolResults.length}/${result.toolCallCount}` : "0/0",
+      tone: "info",
+    },
+  ];
+}
+
+/**
+ * @param {import("./use-agent-diagnostic-task.js").AgentDiagnosticTaskState} task
+ * @returns {PanelFact[]}
+ */
+function buildSkillPanelFacts(task) {
+  const toolResults = task.result?.toolResults ?? [];
+  const firstToolResult = toolResults[0];
+  const firstToolDescriptor = firstToolResult
+    ? parseOutputSchemaId(firstToolResult.outputSchemaId)
+    : null;
+  return [
+    { label: "路由", value: firstToolDescriptor?.skillId ?? "服务端待路由", tone: firstToolDescriptor ? "ok" : "info" },
+    { label: "授权", value: "READ_ONLY", tone: "ok" },
+    { label: "workflow", value: task.workflowId ?? "pending", tone: task.workflowId ? "info" : "default" },
+    {
+      label: "Worker",
+      value: toolResults.length > 0 ? `${toolResults.length} 次只读调用` : "等待调用",
+      tone: toolResults.length > 0 ? "ok" : "info",
+    },
+  ];
+}
+
+/**
+ * @param {import("./use-agent-diagnostic-task.js").AgentDiagnosticTaskState} task
+ * @returns {PanelFact[]}
+ */
+function buildChainPanelFacts(task) {
+  const toolResults = task.result?.toolResults ?? [];
+  return [
+    { label: "Runtime", value: task.status === "idle" ? "等待接收" : "已接收", tone: "info" },
+    { label: "workflow", value: task.workflowId ?? "pending", tone: task.workflowId ? "info" : "default" },
+    {
+      label: "Tool 调用",
+      value: task.result ? `${toolResults.length}/${task.result.toolCallCount}` : "0/0",
+      tone: toolResults.length > 0 ? "ok" : "info",
+    },
+    { label: "审计", value: "policy-v1", tone: "ok" },
+  ];
+}
+
+/**
  * @param {import("./use-agent-diagnostic-task.js").AgentDiagnosticTaskState} task
  * @returns {Array<{ label: string, value: string, tone: "info" | "ok" | "danger" }>}
  */
@@ -448,7 +510,7 @@ function Message({ author, children, tone }) {
  */
 function AgentTaskChatReply({ exchange }) {
   if (exchange.status === "running") {
-    return <p>正在执行只读诊断。</p>;
+    return <RunningAgentTaskReply exchange={exchange} />;
   }
 
   if (exchange.result) {
@@ -467,6 +529,77 @@ function AgentTaskChatReply({ exchange }) {
       {exchange.errorMessage ?? "Agent 诊断请求失败"}
     </p>
   );
+}
+
+/**
+ * @param {{ exchange: import("./use-agent-diagnostic-task.js").AgentDiagnosticTaskExchange }} props
+ */
+function RunningAgentTaskReply({ exchange }) {
+  const elapsedSeconds = useElapsedSeconds(exchange.startedAt);
+
+  return (
+    <>
+      <p>正在执行只读诊断。</p>
+      <div
+        aria-label={`Agent 正在执行，已耗时 ${formatElapsedDuration(elapsedSeconds)}`}
+        className={styles.executionProgress}
+        data-agent-execution-indicator="running"
+        role="status"
+      >
+        <span aria-hidden="true" className={styles.executionInfoMark}>
+          i
+        </span>
+        <span className={styles.executionProgressCopy}>
+          <strong>执行中</strong>
+          <span>耗时 {formatElapsedDuration(elapsedSeconds)}</span>
+        </span>
+        <span aria-hidden="true" className={styles.executionProgressTrack}>
+          <i />
+        </span>
+      </div>
+    </>
+  );
+}
+
+/**
+ * @param {number | undefined} startedAt
+ */
+function useElapsedSeconds(startedAt) {
+  const [now, setNow] = useState(() => Date.now());
+
+  useEffect(() => {
+    if (typeof startedAt !== "number") {
+      return undefined;
+    }
+    const intervalId = window.setInterval(() => {
+      setNow(Date.now());
+    }, 1000);
+    return () => window.clearInterval(intervalId);
+  }, [startedAt]);
+
+  if (typeof startedAt !== "number") {
+    return 0;
+  }
+
+  return Math.max(0, Math.floor((now - startedAt) / 1000));
+}
+
+/**
+ * @param {number} elapsedSeconds
+ */
+function formatElapsedDuration(elapsedSeconds) {
+  const totalSeconds = Math.max(0, Math.floor(elapsedSeconds));
+  const seconds = totalSeconds % 60;
+  const minutes = Math.floor(totalSeconds / 60) % 60;
+  const hours = Math.floor(totalSeconds / 3600);
+  const paddedSeconds = String(seconds).padStart(2, "0");
+  const paddedMinutes = String(minutes).padStart(2, "0");
+
+  if (hours > 0) {
+    return `${hours}:${paddedMinutes}:${paddedSeconds}`;
+  }
+
+  return `${paddedMinutes}:${paddedSeconds}`;
 }
 
 /**
@@ -546,6 +679,7 @@ function TaskDetailPanel({ onShowDetail, task }) {
       <PanelSummary tone={taskTone(task)} value={statusLabel}>
         {summaryText}
       </PanelSummary>
+      <PanelFactList facts={buildTaskPanelFacts(task)} />
       <Button
         aria-label="查看对话执行详情"
         className={styles.detailButton}
@@ -592,6 +726,7 @@ function SkillEventPanel({ onShowDetail, task }) {
       <PanelSummary tone={toolResults.length > 0 ? "ok" : taskTone(task)} value={latestEventType}>
         {routeSummary}
       </PanelSummary>
+      <PanelFactList facts={buildSkillPanelFacts(task)} />
       <Button
         aria-label="查看 Skill 调用详情"
         className={styles.detailButton}
@@ -671,6 +806,7 @@ function SessionContextPanel({ onShowDetail, task }) {
       <PanelSummary tone={taskTone(task)} value={currentInputStatusLabel(task)}>
         {chainSummary}
       </PanelSummary>
+      <PanelFactList facts={buildChainPanelFacts(task)} />
       <Button
         aria-label="查看执行链详情"
         className={styles.detailButton}
@@ -961,9 +1097,26 @@ function DetailRow({ label, tone = "default", value }) {
 function PanelSummary({ children, tone = "default", value }) {
   return (
     <div className={styles.panelSummary}>
+      <span className={styles.panelSummaryLabel}>状态</span>
       <strong data-tone={tone}>{value}</strong>
       <p>{children}</p>
     </div>
+  );
+}
+
+/**
+ * @param {{facts: PanelFact[]}} props
+ */
+function PanelFactList({ facts }) {
+  return (
+    <dl className={styles.panelFactList}>
+      {facts.map((fact) => (
+        <div className={styles.panelFact} key={`${fact.label}-${fact.value}`}>
+          <dt>{fact.label}</dt>
+          <dd data-tone={fact.tone ?? "default"}>{fact.value}</dd>
+        </div>
+      ))}
+    </dl>
   );
 }
 

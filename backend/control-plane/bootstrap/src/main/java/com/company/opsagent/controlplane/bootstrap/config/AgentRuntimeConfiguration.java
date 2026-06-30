@@ -87,6 +87,7 @@ public class AgentRuntimeConfiguration {
         properties.getModelName(),
         properties.getBaseUrl(),
         properties.getMaxIterations(),
+        properties.getMaxToolCalls(),
         properties.getTimeout());
   }
 

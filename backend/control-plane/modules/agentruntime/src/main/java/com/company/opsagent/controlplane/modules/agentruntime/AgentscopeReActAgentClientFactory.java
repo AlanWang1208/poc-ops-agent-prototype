@@ -19,6 +19,7 @@ public final class AgentscopeReActAgentClientFactory {
       String modelName,
       String baseUrl,
       int maxIters,
+      int maxToolCalls,
       Duration timeout) {
     var builder = OpenAIChatModel.builder()
         .apiKey(apiKey)
@@ -27,6 +28,6 @@ public final class AgentscopeReActAgentClientFactory {
     if (baseUrl != null && !baseUrl.isBlank()) {
       builder.baseUrl(baseUrl);
     }
-    return new AgentscopeReActAgentClient(builder.build(), maxIters, timeout);
+    return new AgentscopeReActAgentClient(builder.build(), maxIters, timeout, maxToolCalls);
   }
 }

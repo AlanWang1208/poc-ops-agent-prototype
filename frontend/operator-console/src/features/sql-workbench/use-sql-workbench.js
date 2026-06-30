@@ -67,6 +67,37 @@ export function useSqlAssistant() {
   });
 }
 
+export function useRunSqlCompare() {
+  return useMutation({
+    /**
+     * @param {{
+     *   baseRequest: import("../../schemas/sql-schemas.js").SqlQueryRunRequest,
+     *   compareRequest: import("../../schemas/sql-schemas.js").SqlQueryRunRequest,
+     * }} input
+     */
+    mutationFn: async (input) => {
+      const baseExecution = await runReadOnlySqlQuery(input.baseRequest);
+      const compareExecution = await runReadOnlySqlQuery(input.compareRequest);
+      const [basePage, comparePage] = await Promise.all([
+        baseExecution.resultId
+          ? readSqlResultPage({ resultId: baseExecution.resultId })
+          : Promise.resolve(null),
+        compareExecution.resultId
+          ? readSqlResultPage({ resultId: compareExecution.resultId })
+          : Promise.resolve(null),
+      ]);
+      return {
+        baseExecution,
+        basePage,
+        baseRequest: input.baseRequest,
+        compareExecution,
+        comparePage,
+        compareRequest: input.compareRequest,
+      };
+    },
+  });
+}
+
 /**
  * @param {string | null | undefined} resultId
  * @param {string | null | undefined} pageToken

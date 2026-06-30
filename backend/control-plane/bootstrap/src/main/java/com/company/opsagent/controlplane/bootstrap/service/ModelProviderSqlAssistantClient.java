@@ -121,6 +121,8 @@ public class ModelProviderSqlAssistantClient implements SqlAssistantClient {
         只能返回一个 JSON 对象，字段为 summary、suggestions 和 safetyNotes。
         每条 suggestions 必须包含 title、rationale，并可选包含 suggestedSql。
         suggestedSql 只能作为参考，执行前必须重新通过服务端校验。
+        当 Assistant action 为 GENERATE_SELECT 时，只能生成一条 SELECT 或 WITH 查询；信息不足时不要编造表字段，应在 summary 和 rationale 中说明需要补充的信息。
+        当 Assistant action 为 COMPARE_SUMMARY 时，只能总结诊断上下文中的确定性 diff 事实，不得推断未提供的原因、影响范围或修复动作。
         """;
   }
 

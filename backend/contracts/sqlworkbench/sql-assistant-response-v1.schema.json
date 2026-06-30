@@ -16,7 +16,15 @@
   "properties": {
     "contractVersion": { "const": "1.0" },
     "status": { "enum": ["SUCCEEDED", "MODEL_NOT_CONFIGURED", "FAILED", "REJECTED"] },
-    "assistantAction": { "enum": ["EXPLAIN_SQL", "OPTIMIZE_SQL", "ANALYZE_ERROR"] },
+    "assistantAction": {
+      "enum": [
+        "EXPLAIN_SQL",
+        "OPTIMIZE_SQL",
+        "ANALYZE_ERROR",
+        "GENERATE_SELECT",
+        "COMPARE_SUMMARY"
+      ]
+    },
     "summary": { "type": "string", "minLength": 1, "maxLength": 4000 },
     "suggestions": {
       "type": "array",

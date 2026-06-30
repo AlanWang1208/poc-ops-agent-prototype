@@ -9,6 +9,7 @@ import io.agentscope.core.model.Model;
 import io.agentscope.core.tool.Toolkit;
 import java.time.Clock;
 import java.time.Duration;
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -25,6 +26,7 @@ import reactor.core.publisher.Mono;
 public final class AgentscopeReActAgentClient implements AgentscopeAgentClient {
 
   private static final String AGENT_NAME = "ops-agent-primary";
+  private static final String SCHEMA_VERSION = "1.0";
   private static final String SYSTEM_PROMPT = """
       You are the primary enterprise operations diagnostic agent.
       Use only the read-only tools exposed by the platform.
@@ -34,6 +36,7 @@ public final class AgentscopeReActAgentClient implements AgentscopeAgentClient {
   private final Model model;
   private final int maxIters;
   private final Duration timeout;
+  private final int maxToolCalls;
   private final ObjectMapper objectMapper;
   private final Clock clock;
 
@@ -41,7 +44,15 @@ public final class AgentscopeReActAgentClient implements AgentscopeAgentClient {
       Model model,
       int maxIters,
       Duration timeout) {
-    this(model, maxIters, timeout, new ObjectMapper(), Clock.systemUTC());
+    this(model, maxIters, timeout, Integer.MAX_VALUE, new ObjectMapper(), Clock.systemUTC());
+  }
+
+  public AgentscopeReActAgentClient(
+      Model model,
+      int maxIters,
+      Duration timeout,
+      int maxToolCalls) {
+    this(model, maxIters, timeout, maxToolCalls, new ObjectMapper(), Clock.systemUTC());
   }
 
   AgentscopeReActAgentClient(
@@ -50,9 +61,20 @@ public final class AgentscopeReActAgentClient implements AgentscopeAgentClient {
       Duration timeout,
       ObjectMapper objectMapper,
       Clock clock) {
+    this(model, maxIters, timeout, Integer.MAX_VALUE, objectMapper, clock);
+  }
+
+  AgentscopeReActAgentClient(
+      Model model,
+      int maxIters,
+      Duration timeout,
+      int maxToolCalls,
+      ObjectMapper objectMapper,
+      Clock clock) {
     this.model = model;
     this.maxIters = maxIters;
     this.timeout = timeout;
+    this.maxToolCalls = maxToolCalls <= 0 ? 1 : maxToolCalls;
     this.objectMapper = objectMapper;
     this.clock = clock;
   }
@@ -61,9 +83,12 @@ public final class AgentscopeReActAgentClient implements AgentscopeAgentClient {
   public Mono<AgentscopeAgentResponse> run(AgentscopeAgentInvocation invocation) {
     AtomicLong stepSequence = new AtomicLong();
     List<AgentToolResult> toolResults = new CopyOnWriteArrayList<>();
-    AgentToolExecutor recordingToolExecutor = (runtimeRequest, toolCall) -> invocation.toolExecutor()
-        .execute(runtimeRequest, toolCall)
-        .doOnNext(toolResults::add);
+    AgentToolExecutor recordingToolExecutor = (runtimeRequest, toolCall) -> {
+      Mono<AgentToolResult> result = toolCall.stepSequence() > maxToolCalls
+          ? Mono.just(toolCallLimitExceededResult(toolCall))
+          : invocation.toolExecutor().execute(runtimeRequest, toolCall);
+      return result.doOnNext(toolResults::add);
+    };
     Toolkit toolkit = new Toolkit();
     /*
      * 必须注册真实 AgentTool，而不是 registerSchemas。registerSchemas 会创建
@@ -93,7 +118,8 @@ public final class AgentscopeReActAgentClient implements AgentscopeAgentClient {
             "SUCCEEDED",
             summary(message),
             Math.toIntExact(stepSequence.get()),
-            List.copyOf(toolResults)));
+            List.copyOf(toolResults)))
+        .onErrorResume(error -> Mono.just(failedResponse(toolResults, stepSequence)));
   }
 
   private Msg toUserMessage(AgentscopeAgentInvocation invocation) {
@@ -160,5 +186,54 @@ public final class AgentscopeReActAgentClient implements AgentscopeAgentClient {
             || line.startsWith("chain of thought")
             || line.startsWith("action:")
             || line.startsWith("observation:"));
+  }
+
+  private AgentToolResult toolCallLimitExceededResult(com.company.opsagent.contracts.agent.AgentToolCall toolCall) {
+    return new AgentToolResult(
+        SCHEMA_VERSION,
+        toolCall.toolCallId(),
+        toolCall.taskId(),
+        toolCall.workflowId(),
+        "REJECTED",
+        toolCall.skill().outputSchemaId(),
+        objectMapper.createObjectNode(),
+        "AGENT_TOOL_CALL_LIMIT_EXCEEDED",
+        "agent tool call limit exceeded",
+        OffsetDateTime.now(clock));
+  }
+
+  private AgentscopeAgentResponse failedResponse(
+      List<AgentToolResult> toolResults,
+      AtomicLong stepSequence) {
+    if (toolResults.isEmpty()) {
+      return new AgentscopeAgentResponse(
+          "AGENT_RUNTIME_FAILED",
+          "AgentScope runtime failed before producing a valid result.",
+          Math.toIntExact(stepSequence.get()));
+    }
+    AgentToolResult lastResult = toolResults.getLast();
+    return new AgentscopeAgentResponse(
+        "AGENT_RUNTIME_FAILED",
+        failedAfterToolSummary(toolResults.size(), lastResult),
+        Math.toIntExact(stepSequence.get()),
+        List.copyOf(toolResults));
+  }
+
+  private String failedAfterToolSummary(int toolResultCount, AgentToolResult lastResult) {
+    String toolCallLabel = toolResultCount == 1 ? "platform tool call" : "platform tool calls";
+    StringBuilder summary = new StringBuilder()
+        .append("AgentScope runtime failed after ")
+        .append(toolResultCount)
+        .append(' ')
+        .append(toolCallLabel)
+        .append("; returning recorded tool result. Last tool status=")
+        .append(lastResult.status());
+    if (lastResult.errorCode() != null && !lastResult.errorCode().isBlank()) {
+      summary.append(", errorCode=").append(lastResult.errorCode());
+    }
+    if (lastResult.errorMessage() != null && !lastResult.errorMessage().isBlank()) {
+      summary.append(", errorMessage=").append(lastResult.errorMessage());
+    }
+    return summary.append('.').toString();
   }
 }

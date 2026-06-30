@@ -1,0 +1,18 @@
+ops-agent:
+  security:
+    auth-mode: built-in
+    browser-login-enabled: true
+  local-oidc-provider:
+    enabled: false
+  worker:
+    base-url: http://127.0.0.1:8091
+    transport-auth:
+      enabled: false
+  demo:
+    identity-seed:
+      enabled: true
+      username: admin
+      password: "Admin#2026Demo"
+      roles:
+        - ROLE_ops-admin
+        - ROLE_ops-reader
